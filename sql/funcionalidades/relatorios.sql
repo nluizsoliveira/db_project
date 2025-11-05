@@ -50,3 +50,17 @@ BEGIN
         RAISE NOTICE 'Instalação: %, Reservas: %', rec.nome, total;
     END LOOP;
 END $$;
+
+-- Total de reservas e duração total por instalação
+SELECT 
+    i.NOME AS NOME_INSTALACAO,
+    COUNT(r.ID_RESERVA) AS NUM_RESERVAS,
+    SUM(EXTRACT(EPOCH FROM (r.HORARIO_FIM - r.HORARIO_INICIO)) / 3600) AS DURACAO_TOTAL_HORAS
+FROM 
+    RESERVA r
+JOIN 
+    INSTALACAO i ON r.ID_INSTALACAO = i.ID_INSTALACAO
+GROUP BY 
+    i.NOME
+ORDER BY 
+    NUM_RESERVAS DESC, DURACAO_TOTAL_HORAS DESC;
