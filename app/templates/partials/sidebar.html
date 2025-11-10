@@ -23,12 +23,17 @@
                 <a href="{{ build_url('admin.reserva_index') or '#' }}" class="mt-1 block rounded px-2 py-2 text-sm text-white hover:bg-uspsecondary hover:text-uspprimary">Reservas de Instalações</a>
                 <a href="{{ build_url('admin.atividade_index') or '#' }}" class="block rounded px-2 py-2 text-sm text-white hover:bg-uspsecondary hover:text-uspprimary">Atividades Esportivas</a>
             </div>
+            {% if profile_navigation %}
             <div class="mt-6">
                 <div class="px-2 text-xs font-semibold uppercase tracking-wide text-uspyellow">Perfis</div>
-                <a href="{{ build_url('staff.dashboard') or '#' }}" class="mt-1 block rounded px-2 py-2 text-sm text-white hover:bg-uspsecondary hover:text-uspprimary">Funcionário CEFER</a>
-                <a href="{{ build_url('internal.dashboard') or '#' }}" class="block rounded px-2 py-2 text-sm text-white hover:bg-uspsecondary hover:text-uspprimary">Interno USP</a>
-                <a href="{{ build_url('external.dashboard') or '#' }}" class="block rounded px-2 py-2 text-sm text-white hover:bg-uspsecondary hover:text-uspprimary">Externo USP</a>
+                {% for profile in profile_navigation %}
+                    {% set profile_href = build_url(profile.endpoint) %}
+                    {% if profile_href %}
+                    <a href="{{ profile_href }}" class="block rounded px-2 py-2 text-sm text-white hover:bg-uspsecondary hover:text-uspprimary {% if loop.first %}mt-1{% endif %}">{{ profile.label }}</a>
+                    {% endif %}
+                {% endfor %}
             </div>
+            {% endif %}
         </nav>
         <div class="px-6 py-4 text-xs text-uspsecondary">
             {% block sidebar_footer %}

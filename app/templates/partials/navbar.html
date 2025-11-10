@@ -6,9 +6,10 @@
         </div>
         <div class="flex items-center space-x-4">
             {% block navbar_actions %}
-            <form method="post" action="{{ build_url('auth.logout') or '#' }}" class="hidden sm:block">
-                <button type="submit" class="rounded bg-uspprimary px-4 py-2 text-sm font-medium text-white hover:bg-uspsecondary hover:text-uspprimary">Logout</button>
-            </form>
+            <a href="{{ url_for('auth.logout') }}"
+               class="hidden sm:inline-flex rounded bg-uspprimary px-4 py-2 text-sm font-medium text-white hover:bg-uspsecondary hover:text-uspprimary">
+                Logout
+            </a>
             <button class="rounded bg-uspsecondary px-4 py-2 text-sm font-medium text-white hover:bg-uspprimary sm:hidden" aria-label="Abrir menu">
                 Menu
             </button>

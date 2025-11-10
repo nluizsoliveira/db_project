@@ -11,44 +11,25 @@
     <form method="post" action="" class="space-y-5 rounded-lg bg-white p-6 shadow">
         <div class="grid gap-4 sm:grid-cols-2">
             <label class="text-sm font-medium text-gray-700">Número de patrimônio
-                <input type="text" name="patrimonio" value="{{ form.patrimonio.data if form else equipamento.patrimonio }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
+                <input type="text" name="id_patrimonio" value="{{ form.id_patrimonio.data if form else equipamento.id_patrimonio }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
             </label>
-            <label class="text-sm font-medium text-gray-700">Categoria
-                <select name="categoria" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
-                    {% for option in categoria_options %}
+            <label class="text-sm font-medium text-gray-700">Nome do equipamento
+                <input type="text" name="nome" value="{{ form.nome.data if form else equipamento.nome }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
+            </label>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+            <label class="text-sm font-medium text-gray-700">Instalação local
+                <select name="id_instalacao_local" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
+                    {% for option in instalacao_options %}
                     <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
                     {% endfor %}
                 </select>
             </label>
-        </div>
-        <div>
-            <label class="text-sm font-medium text-gray-700">Descrição
-                <input type="text" name="descricao" value="{{ form.descricao.data if form else equipamento.descricao }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
-            </label>
-        </div>
-        <div class="grid gap-4 sm:grid-cols-2">
-            <label class="text-sm font-medium text-gray-700">Quantidade disponível
-                <input type="number" name="quantidade" min="0" value="{{ form.quantidade.data if form else equipamento.quantidade }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
-            </label>
-            <label class="text-sm font-medium text-gray-700">Situação atual
-                <select name="situacao" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
-                    {% for option in situacao_options %}
-                    <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-        </div>
-        <div class="grid gap-4 sm:grid-cols-2">
             <label class="text-sm font-medium text-gray-700">Data de aquisição
                 <input type="date" name="data_aquisicao" value="{{ form.data_aquisicao.data if form else equipamento.data_aquisicao }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
             </label>
             <label class="text-sm font-medium text-gray-700">Valor de aquisição
-                <input type="number" step="0.01" name="valor_aquisicao" value="{{ form.valor_aquisicao.data if form else equipamento.valor_aquisicao }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
-            </label>
-        </div>
-        <div>
-            <label class="text-sm font-medium text-gray-700">Origem / Doação
-                <textarea name="origem" rows="3" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">{{ form.origem.data if form else equipamento.origem }}</textarea>
+                <input type="number" step="0.01" name="preco_aquisicao" value="{{ form.preco_aquisicao.data if form else equipamento.preco_aquisicao }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
             </label>
         </div>
         <div class="flex items-center justify-end space-x-3">

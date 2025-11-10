@@ -10,41 +10,30 @@
 
     <form method="post" action="" class="space-y-5 rounded-lg bg-white p-6 shadow">
         <div class="grid gap-4 sm:grid-cols-2">
-            <label class="text-sm font-medium text-gray-700">Identificador
-                <input type="text" name="identificador" value="{{ form.identificador.data if form else aparelho.identificador }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
+            <label class="text-sm font-medium text-gray-700">Número de patrimônio
+                <input type="text" name="id_patrimonio" value="{{ form.id_patrimonio.data if form else aparelho.id_patrimonio }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
             </label>
-            <label class="text-sm font-medium text-gray-700">Nome do aparelho
+            <label class="text-sm font-medium text-gray-700">Nome do equipamento
                 <input type="text" name="nome" value="{{ form.nome.data if form else aparelho.nome }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
             </label>
         </div>
         <div class="grid gap-4 sm:grid-cols-2">
             <label class="text-sm font-medium text-gray-700">Instalação associada
-                <select name="instalacao_id" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
+                <select name="id_instalacao_local" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
                     {% for option in instalacao_options %}
                     <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
                     {% endfor %}
                 </select>
             </label>
-            <label class="text-sm font-medium text-gray-700">Estado
-                <select name="estado" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
-                    {% for option in estado_options %}
-                    <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
+            <label class="text-sm font-medium text-gray-700">Data de aquisição
+                <input type="date" name="data_aquisicao" value="{{ form.data_aquisicao.data if form else aparelho.data_aquisicao }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
             </label>
         </div>
         <div class="grid gap-4 sm:grid-cols-2">
-            <label class="text-sm font-medium text-gray-700">Última manutenção
-                <input type="date" name="ultima_manutencao" value="{{ form.ultima_manutencao.data if form else aparelho.ultima_manutencao }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
+            <label class="text-sm font-medium text-gray-700">Valor de aquisição
+                <input type="number" step="0.01" name="preco_aquisicao" value="{{ form.preco_aquisicao.data if form else aparelho.preco_aquisicao }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
             </label>
-            <label class="text-sm font-medium text-gray-700">Periodicidade (dias)
-                <input type="number" name="periodicidade" min="0" value="{{ form.periodicidade.data if form else aparelho.periodicidade }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
-            </label>
-        </div>
-        <div>
-            <label class="text-sm font-medium text-gray-700">Observações
-                <textarea name="observacoes" rows="3" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">{{ form.observacoes.data if form else aparelho.observacoes }}</textarea>
-            </label>
+            <div></div>
         </div>
         <div class="flex items-center justify-end space-x-3">
             <a href="{{ build_url('admin.aparelho_index') or '#' }}" class="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100">Cancelar</a>

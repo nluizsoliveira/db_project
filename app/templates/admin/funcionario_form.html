@@ -10,34 +10,15 @@
 
     <form method="post" action="" class="space-y-5 rounded-lg bg-white p-6 shadow">
         <div class="grid gap-4 sm:grid-cols-2">
-            <label class="text-sm font-medium text-gray-700">Nome completo
-                <input type="text" name="nome" value="{{ form.nome.data if form else funcionario.nome }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
+            <label class="text-sm font-medium text-gray-700">CPF do interno USP
+                <select name="cpf_interno" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required>
+                    {% for option in interno_options %}
+                    <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
             </label>
-            <label class="text-sm font-medium text-gray-700">Data de nascimento
-                <input type="date" name="data_nascimento" value="{{ form.data_nascimento.data if form else funcionario.data_nascimento }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
-            </label>
-        </div>
-        <div class="grid gap-4 sm:grid-cols-2">
             <label class="text-sm font-medium text-gray-700">Formação
                 <input type="text" name="formacao" value="{{ form.formacao.data if form else funcionario.formacao }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
-            </label>
-            <label class="text-sm font-medium text-gray-700">Registro funcional
-                <input type="text" name="registro" value="{{ form.registro.data if form else funcionario.registro }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
-            </label>
-        </div>
-        <div>
-            <label class="text-sm font-medium text-gray-700">Atribuições no CEFER
-                <textarea name="atribuicoes" rows="3" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">{{ form.atribuicoes.data if form else funcionario.atribuicoes }}</textarea>
-            </label>
-        </div>
-        <div>
-            <label class="text-sm font-medium text-gray-700">Atividades ministradas
-                <textarea name="atividades" rows="3" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" placeholder="Liste atividades ou vincule educadores.">{{ form.atividades.data if form else funcionario.atividades }}</textarea>
-            </label>
-        </div>
-        <div>
-            <label class="text-sm font-medium text-gray-700">Restrições físicas
-                <textarea name="restricoes" rows="2" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">{{ form.restricoes.data if form else funcionario.restricoes }}</textarea>
             </label>
         </div>
         <div class="flex items-center justify-end space-x-3">

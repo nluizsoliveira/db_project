@@ -13,37 +13,16 @@
             <label class="text-sm font-medium text-gray-700">Nome da atividade
                 <input type="text" name="nome" value="{{ form.nome.data if form else atividade.nome }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
             </label>
-            <label class="text-sm font-medium text-gray-700">Modalidade
-                <select name="modalidade" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
-                    {% for option in modalidade_options %}
-                    <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
+            <label class="text-sm font-medium text-gray-700">Vagas limite
+                <input type="number" name="vagas_limite" min="0" value="{{ form.vagas_limite.data if form else atividade.vagas_limite }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
             </label>
         </div>
         <div class="grid gap-4 sm:grid-cols-2">
-            <label class="text-sm font-medium text-gray-700">Educador responsável
-                <input type="text" name="educador" value="{{ form.educador.data if form else atividade.educador }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
+            <label class="text-sm font-medium text-gray-700">Data início do período
+                <input type="date" name="data_inicio_periodo" value="{{ form.data_inicio_periodo.data if form else atividade.data_inicio_periodo }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
             </label>
-            <label class="text-sm font-medium text-gray-700">Período
-                <input type="text" name="periodo" value="{{ form.periodo.data if form else atividade.periodo }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" placeholder="Ex.: Seg e Qua, 18h-19h" />
-            </label>
-        </div>
-        <div class="grid gap-4 sm:grid-cols-2">
-            <label class="text-sm font-medium text-gray-700">Vagas totais
-                <input type="number" name="vagas_totais" min="0" value="{{ form.vagas_totais.data if form else atividade.vagas_totais }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
-            </label>
-            <label class="text-sm font-medium text-gray-700">Status
-                <select name="status" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
-                    <option value="andamento">Em andamento</option>
-                    <option value="prevista">Prevista</option>
-                    <option value="concluida">Concluída</option>
-                </select>
-            </label>
-        </div>
-        <div>
-            <label class="text-sm font-medium text-gray-700">Descrição
-                <textarea name="descricao" rows="4" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">{{ form.descricao.data if form else atividade.descricao }}</textarea>
+            <label class="text-sm font-medium text-gray-700">Data fim do período
+                <input type="date" name="data_fim_periodo" value="{{ form.data_fim_periodo.data if form else atividade.data_fim_periodo }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
             </label>
         </div>
         <div class="flex items-center justify-end space-x-3">

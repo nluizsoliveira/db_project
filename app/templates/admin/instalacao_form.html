@@ -27,18 +27,13 @@
             </label>
         </div>
         <div class="grid gap-4 sm:grid-cols-2">
-            <label class="text-sm font-medium text-gray-700">Necessita reserva?
-                <select name="exige_reserva" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
-                    <option value="true" {% if exige_reserva %}selected{% endif %}>Sim</option>
-                    <option value="false" {% if exige_reserva is defined and not exige_reserva %}selected{% endif %}>Não</option>
+            <label class="text-sm font-medium text-gray-700">Reservável?
+                <select name="eh_reservavel" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
+                    <option value="S" {% if instalacao.eh_reservavel == 'S' %}selected{% endif %}>Sim</option>
+                    <option value="N" {% if instalacao.eh_reservavel == 'N' %}selected{% endif %}>Não</option>
                 </select>
             </label>
-            <label class="text-sm font-medium text-gray-700">Prioridade USP?
-                <select name="prioridade_usp" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
-                    <option value="true" {% if prioridade_usp %}selected{% endif %}>Sim</option>
-                    <option value="false" {% if prioridade_usp is defined and not prioridade_usp %}selected{% endif %}>Não</option>
-                </select>
-            </label>
+            <div></div>
         </div>
         <div>
             <label class="text-sm font-medium text-gray-700">Descrição e regras de uso

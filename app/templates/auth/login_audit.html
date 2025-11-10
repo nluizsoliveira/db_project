@@ -11,9 +11,9 @@
         <input type="text" name="q" placeholder="Pesquisar por usuário ou IP" class="w-64 rounded border border-gray-300 px-3 py-2 text-sm focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
         <select name="status" class="rounded border border-gray-300 px-3 py-2 text-sm focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
             <option value="">Todos status</option>
-            <option value="success">Sucesso</option>
-            <option value="failure">Falha</option>
-            <option value="locked">Conta bloqueada</option>
+            <option value="SUCCESS">Sucesso</option>
+            <option value="FAILURE">Falha</option>
+            <option value="LOCKED">Conta bloqueada</option>
         </select>
         <button type="submit" class="rounded bg-uspprimary px-4 py-2 text-sm font-semibold text-white hover:bg-uspsecondary hover:text-uspprimary">Filtrar</button>
     </form>
@@ -37,8 +37,8 @@
                 <td class="px-4 py-3 text-gray-700">{{ audit.user_email }}</td>
                 <td class="px-4 py-3 text-gray-700">{{ audit.ip_address }}</td>
                 <td class="px-4 py-3">
-                    <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {% if audit.status == 'success' %}bg-green-100 text-green-800{% elif audit.status == 'failure' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                        {{ audit.status|capitalize }}
+                    <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {% if audit.status == 'SUCCESS' %}bg-green-100 text-green-800{% elif audit.status == 'FAILURE' %}bg-red-100 text-red-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                        {{ audit.status|lower|capitalize }}
                     </span>
                 </td>
                 <td class="px-4 py-3 text-gray-700">

@@ -11,35 +11,50 @@
     <form method="post" action="" class="space-y-5 rounded-lg bg-white p-6 shadow">
         <div class="grid gap-4 sm:grid-cols-2">
             <label class="text-sm font-medium text-gray-700">Nome completo
-                <input type="text" name="nome" value="{{ form.nome.data if form else externo.nome }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
+                <input type="text" name="nome_convidado" value="{{ form.nome_convidado.data if form else externo.nome_convidado }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
             </label>
             <label class="text-sm font-medium text-gray-700">Documento de identificação
-                <input type="text" name="documento" value="{{ form.documento.data if form else externo.documento }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
+                <input type="text" name="documento_convidado" value="{{ form.documento_convidado.data if form else externo.documento_convidado }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
             </label>
         </div>
         <div class="grid gap-4 sm:grid-cols-2">
             <label class="text-sm font-medium text-gray-700">E-mail
-                <input type="email" name="email" value="{{ form.email.data if form else externo.email }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
+                <input type="email" name="email_convidado" value="{{ form.email_convidado.data if form else externo.email_convidado }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
             </label>
             <label class="text-sm font-medium text-gray-700">Telefone
-                <input type="tel" name="telefone" value="{{ form.telefone.data if form else externo.telefone }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
+                <input type="tel" name="telefone_convidado" value="{{ form.telefone_convidado.data if form else externo.telefone_convidado }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
             </label>
         </div>
         <div class="grid gap-4 sm:grid-cols-2">
-            <label class="text-sm font-medium text-gray-700">Convidado por (NUSP)
-                <input type="text" name="convidado_por" value="{{ form.convidado_por.data if form else externo.convidado_por }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
+            <label class="text-sm font-medium text-gray-700">CPF do interno responsável
+                <select name="cpf_convidante" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required>
+                    {% for option in interno_options %}
+                    <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
+                    {% endfor %}
+                </select>
             </label>
-            <label class="text-sm font-medium text-gray-700">Status do convite
-                <select name="status" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
-                    {% for option in status_options %}
+            <label class="text-sm font-medium text-gray-700">Atividade vinculada
+                <select name="id_atividade" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
+                    {% for option in atividade_options %}
                     <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
                     {% endfor %}
                 </select>
             </label>
         </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+            <label class="text-sm font-medium text-gray-700">Status do convite
+                <select name="status" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required>
+                    <option value="PENDENTE" {% if externo.status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
+                    <option value="ACEITO" {% if externo.status == 'ACEITO' %}selected{% endif %}>Aceito</option>
+                    <option value="RECUSADO" {% if externo.status == 'RECUSADO' %}selected{% endif %}>Recusado</option>
+                    <option value="CANCELADO" {% if externo.status == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+                </select>
+            </label>
+            <div></div>
+        </div>
         <div>
-            <label class="text-sm font-medium text-gray-700">Autorização da secretaria
-                <textarea name="autorizacao" rows="4" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">{{ form.autorizacao.data if form else externo.autorizacao }}</textarea>
+            <label class="text-sm font-medium text-gray-700">Observações
+                <textarea name="observacoes" rows="4" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">{{ form.observacoes.data if form else externo.observacoes }}</textarea>
             </label>
         </div>
         <div class="flex items-center justify-end space-x-3">

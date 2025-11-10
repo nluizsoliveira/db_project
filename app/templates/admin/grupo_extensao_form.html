@@ -15,31 +15,16 @@
             </label>
         </div>
         <div class="grid gap-4 sm:grid-cols-2">
-            <label class="text-sm font-medium text-gray-700">Modalidade principal
-                <select name="modalidade" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required>
-                    {% for option in modalidade_options %}
+            <label class="text-sm font-medium text-gray-700">CPF do responsável interno
+                <select name="cpf_responsavel_interno" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required>
+                    {% for option in interno_options %}
                     <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
                     {% endfor %}
                 </select>
-            </label>
-            <label class="text-sm font-medium text-gray-700">Status
-                <select name="status" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
-                    {% for option in status_options %}
-                    <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-        </div>
-        <div class="grid gap-4 sm:grid-cols-2">
-            <label class="text-sm font-medium text-gray-700">Responsável interno
-                <input type="text" name="responsavel_interno" value="{{ form.responsavel_interno.data if form else grupo.responsavel_interno }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
-            </label>
-            <label class="text-sm font-medium text-gray-700">Contato
-                <input type="text" name="contato" value="{{ form.contato.data if form else grupo.contato }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
             </label>
         </div>
         <div>
-            <label class="text-sm font-medium text-gray-700">Descrição e atividades
+            <label class="text-sm font-medium text-gray-700">Descrição
                 <textarea name="descricao" rows="4" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">{{ form.descricao.data if form else grupo.descricao }}</textarea>
             </label>
         </div>

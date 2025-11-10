@@ -11,34 +11,32 @@
     <form method="post" action="" class="space-y-5 rounded-lg bg-white p-6 shadow">
         <div class="grid gap-4 sm:grid-cols-2">
             <label class="text-sm font-medium text-gray-700">Instalação
-                <select name="instalacao" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
+                <select name="id_instalacao" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
                     {% for option in instalacao_options %}
                     <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
                     {% endfor %}
                 </select>
             </label>
-            <label class="text-sm font-medium text-gray-700">Responsável
-                <input type="text" name="responsavel" value="{{ form.responsavel.data if form else reserva.responsavel }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
-            </label>
-        </div>
-        <div class="grid gap-4 sm:grid-cols-2">
-            <label class="text-sm font-medium text-gray-700">Início
-                <input type="datetime-local" name="inicio" value="{{ form.inicio.data if form else reserva.inicio }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
-            </label>
-            <label class="text-sm font-medium text-gray-700">Fim
-                <input type="datetime-local" name="fim" value="{{ form.fim.data if form else reserva.fim }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
-            </label>
-        </div>
-        <div class="grid gap-4 sm:grid-cols-2">
-            <label class="text-sm font-medium text-gray-700">Status
-                <select name="status" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
-                    {% for option in status_options %}
+            <label class="text-sm font-medium text-gray-700">CPF do responsável interno
+                <select name="cpf_responsavel_interno" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary">
+                    {% for option in responsavel_options %}
                     <option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>
                     {% endfor %}
                 </select>
             </label>
-            <label class="text-sm font-medium text-gray-700">Observações
-                <input type="text" name="observacoes" value="{{ form.observacoes.data if form else reserva.observacoes }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+            <label class="text-sm font-medium text-gray-700">Data da reserva
+                <input type="date" name="data_reserva" value="{{ form.data_reserva.data if form else reserva.data_reserva }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
+            </label>
+            <div></div>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+            <label class="text-sm font-medium text-gray-700">Horário de início
+                <input type="time" name="horario_inicio" value="{{ form.horario_inicio.data if form else reserva.horario_inicio }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
+            </label>
+            <label class="text-sm font-medium text-gray-700">Horário de término
+                <input type="time" name="horario_fim" value="{{ form.horario_fim.data if form else reserva.horario_fim }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" required />
             </label>
         </div>
         <div class="flex items-center justify-end space-x-3">
