@@ -15,6 +15,7 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 COPY . /app
 
 ENV FLASK_APP=wsgi.py \
-    FLASK_ENV=development
+    FLASK_ENV=development \
+    FLASK_RUN_PORT=5050
 
-CMD ["flask", "run", "--host=0.0.0.0"]
+CMD ["flask", "run", "--host=0.0.0.0", "--port=5050"]

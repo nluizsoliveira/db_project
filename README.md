@@ -32,6 +32,8 @@ Na pasta do repositório clonado
 docker compose up -d
 ```
 
+O serviço Flask ficará acessível em `http://127.0.0.1:5050/` (porta configurada no Docker).
+
 ### (Opcional) Acessar psql
 
 ```bash
@@ -62,10 +64,10 @@ Crie as variáveis de ambiente, se necessário, e execute:
 ```
 export FLASK_APP=wsgi.py
 export FLASK_ENV=development
-flask run
+flask run --port 5050
 ```
 
-O servidor será iniciado em `http://127.0.0.1:5000/` e responderá com a data e hora atual do banco de dados.
+O servidor local (fora dos contêineres) e o contêiner expõem a aplicação em `http://127.0.0.1:5050/`.
 
 ### 7. Popular o banco de dados com dados fictícios (carga completa)
 
