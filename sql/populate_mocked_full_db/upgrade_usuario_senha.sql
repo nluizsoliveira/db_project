@@ -1,11 +1,11 @@
--- Insert test user with email brcls@usp.br
+-- Insert test user with email teste@usp.br
 -- This user should exist in PESSOA and INTERNO_USP tables
 -- CPF: 12345678901 (test CPF)
 -- Password: teste123 (will be hashed)
 
 -- First, ensure the test user exists in PESSOA
 INSERT INTO PESSOA (CPF, NOME, EMAIL, CELULAR, DATA_NASCIMENTO)
-VALUES ('12345678901', 'Test User Admin', 'brcls@usp.br', '(11) 99999-9999', '1990-01-01')
+VALUES ('12345678901', 'Test User Admin', 'teste@usp.br', '(11) 99999-9999', '1990-01-01')
 ON CONFLICT (CPF) DO UPDATE
 SET EMAIL = EXCLUDED.EMAIL,
     NOME = EXCLUDED.NOME;
