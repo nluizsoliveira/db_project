@@ -18,30 +18,106 @@ _schema_ready = False
 
 def ensure_schema_populated(db_session) -> None:
     global _schema_ready
-    if _schema_ready:
-        return
 
-    table_count = _count_tables()
-    if table_count == 0:
-        _apply_schema(db_session)
-        _apply_plpgsql_assets(db_session)
-        _apply_sample_data(db_session)
-    else:
-        _apply_plpgsql_assets(db_session)
+    current_app.logger.info("ensure_schema_populated chamado")
 
-    _schema_ready = True
+    # Sempre verificar se o schema existe, mesmo se _schema_ready for True
+    # Isso garante que se o banco foi limpo, o schema será recriado
+    try:
+        table_count = _count_tables(db_session)
+        current_app.logger.info(f"Contagem de tabelas: {table_count}")
+
+        # Verificar também se a tabela PESSOA existe especificamente
+        pessoa_exists = False
+        try:
+            with db_session.connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT COUNT(*)
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    AND table_name = 'pessoa'
+                """)
+                result = cursor.fetchone()
+                pessoa_exists = result and result[0] > 0
+        except Exception:
+            pessoa_exists = False
+
+        current_app.logger.info(f"Tabela PESSOA existe: {pessoa_exists}")
+
+        if table_count == 0 or not pessoa_exists:
+            current_app.logger.info("Nenhuma tabela encontrada ou PESSOA não existe. Criando schema...")
+            _schema_ready = False  # Resetar flag antes de tentar criar
+            _apply_schema(db_session)
+            # Verificar se o schema foi criado corretamente
+            table_count_after = _count_tables(db_session)
+            if table_count_after == 0:
+                current_app.logger.error("Falha ao criar schema. Tabelas não foram criadas.")
+                _schema_ready = False
+                raise Exception("Falha ao criar schema do banco de dados")
+            _apply_plpgsql_assets(db_session)
+            _apply_sample_data(db_session)
+            _schema_ready = True
+            current_app.logger.info("Schema criado e populado com sucesso")
+        else:
+            # Schema existe, apenas aplicar funções/triggers se necessário
+            current_app.logger.info("Schema já existe. Aplicando funções/triggers se necessário...")
+            if not _schema_ready:
+                _apply_plpgsql_assets(db_session)
+                _schema_ready = True
+    except Exception as e:
+        current_app.logger.error(f"Erro ao garantir schema populado: {e}", exc_info=True)
+        _schema_ready = False
+        # Re-raise para que o erro seja visível
+        raise
 
 
-def _count_tables() -> int:
-    result = sql_queries.fetch_one("queries/meta/table_count.sql")
-    if not result:
+def _count_tables(db_session) -> int:
+    try:
+        # Usar a conexão diretamente para evitar problemas com sql_queries
+        with db_session.connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+                AND table_type = 'BASE TABLE'
+            """)
+            result = cursor.fetchone()
+            if result:
+                return int(result[0])
         return 0
-    return int(result.get("table_count", 0))
+    except Exception as e:
+        current_app.logger.debug(f"Erro ao contar tabelas (assumindo 0): {e}")
+        # Se a query falhar (por exemplo, se não houver tabelas ou schema), retorna 0
+        return 0
 
 
 def _apply_schema(db_session) -> None:
     current_app.logger.info("Applying schema from %s", SCHEMA_FILE)
-    db_session.run_sql_file(str(SCHEMA_FILE))
+    try:
+        # Ler e executar o arquivo SQL diretamente para ter melhor controle de erros
+        with open(SCHEMA_FILE, 'r', encoding='utf-8') as file:
+            query = file.read()
+
+        with db_session.connection.cursor() as cursor:
+            cursor.execute(query)
+        db_session.connection.commit()
+
+        # Verificar se pelo menos a tabela PESSOA foi criada
+        with db_session.connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+                AND table_name = 'pessoa'
+            """)
+            result = cursor.fetchone()
+            if not result or result[0] == 0:
+                raise Exception("Schema não foi criado corretamente. Tabela PESSOA não existe.")
+        current_app.logger.info("Schema aplicado com sucesso")
+    except Exception as e:
+        db_session.connection.rollback()
+        current_app.logger.error(f"Erro ao aplicar schema: {e}", exc_info=True)
+        raise
 
 
 def _apply_sample_data(db_session) -> None:
@@ -54,9 +130,31 @@ def _apply_sample_data(db_session) -> None:
 
 
 def _apply_plpgsql_assets(db_session) -> None:
+    # Verificar se o schema está completo (tipo DIA_SEMANA deve existir)
+    try:
+        with db_session.connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT COUNT(*) as count
+                FROM pg_type
+                WHERE typname = 'dia_semana'
+            """)
+            result = cursor.fetchone()
+            if not result or result[0] == 0:
+                current_app.logger.warning("Schema não está completo (tipo DIA_SEMANA não existe). Pulando aplicação de funções/triggers.")
+                return
+    except Exception as e:
+        current_app.logger.warning(f"Erro ao verificar schema: {e}. Pulando aplicação de funções/triggers.")
+        return
+
     if FUNCTIONS_FILE.exists():
         current_app.logger.info("Applying functions from %s", FUNCTIONS_FILE)
-        db_session.run_sql_file(str(FUNCTIONS_FILE))
+        try:
+            db_session.run_sql_file(str(FUNCTIONS_FILE))
+        except Exception as e:
+            current_app.logger.error(f"Erro ao aplicar funções: {e}")
     if TRIGGERS_FILE.exists():
         current_app.logger.info("Applying triggers from %s", TRIGGERS_FILE)
-        db_session.run_sql_file(str(TRIGGERS_FILE))
+        try:
+            db_session.run_sql_file(str(TRIGGERS_FILE))
+        except Exception as e:
+            current_app.logger.error(f"Erro ao aplicar triggers: {e}")

@@ -18,4 +18,4 @@ ENV FLASK_APP=wsgi.py \
     FLASK_ENV=development \
     FLASK_RUN_PORT=5050
 
-CMD ["flask", "run", "--host=0.0.0.0", "--port=5050"]
+ENTRYPOINT ["python", "/app/docker_entrypoint.py"]

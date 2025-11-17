@@ -20,12 +20,18 @@ def _register_db_session(app: Flask) -> None:
                 user=app.config.get("DB_USER"),
                 password=app.config.get("DB_PASSWORD"),
             )
+            # Sempre garantir que o schema existe antes de processar a requisição
+            app.logger.info("Chamando ensure_schema_populated...")
             ensure_schema_populated(g.db_session)
+            app.logger.info("ensure_schema_populated concluído")
         except Exception as exc:  # pragma: no cover - database might be unavailable locally
             app.logger.error(
-                "Failed to create database session: %s", exc, exc_info=exc
+                "Failed to create database session or populate schema: %s", exc, exc_info=exc
             )
-            g.db_session = None
+            # Não remover db_session se já foi criado - apenas logar o erro
+            # Isso permite que a aplicação continue tentando criar o schema
+            if 'db_session' not in g:
+                g.db_session = None
 
     @app.teardown_appcontext
     def _teardown_db_session(_: Exception | None) -> None:
