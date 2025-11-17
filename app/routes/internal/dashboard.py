@@ -1,34 +1,40 @@
-from __future__ import annotations
-
-from typing import Any
-
-from flask import render_template
+from flask import render_template, request
 
 from app.routes.internal import internal_blueprint
+from app.services import sql_queries
 
 
 @internal_blueprint.get("/", endpoint="dashboard")
 def dashboard() -> str:
-    context: dict[str, Any] = {
-        "proximas_reservas": [
-            {"instalacao": "Ginásio Principal", "data": "08/07", "horario": "18:00"},
-            {"instalacao": "Piscina Olímpica", "data": "10/07", "horario": "07:30"},
-        ],
-        "atividades_inscritas": [
+    cpf = request.args.get("cpf") or ""
+    reservas = []
+    if cpf:
+        reservas = sql_queries.fetch_all(
+            "queries/internal/reservas_por_interno.sql",
+            {"cpf": cpf},
+        )
+
+    date_param = request.args.get("date") or None
+    start_param = request.args.get("start") or None
+    end_param = request.args.get("end") or None
+
+    available_installs: list[dict[str, str]] = []
+    if date_param and start_param and end_param:
+        available_installs = sql_queries.fetch_all(
+            "queries/internal/instalacoes_disponiveis.sql",
             {
-                "nome": "Musculação funcional",
-                "periodicidade": "Seg e Qua",
-                "educador": "Ana Souza",
+                "date": date_param,
+                "start": start_param,
+                "end": end_param,
             },
-            {
-                "nome": "Yoga restaurativa",
-                "periodicidade": "Sex",
-                "educador": "Bruno Lima",
-            },
-        ],
-        "convites_recentes": [
-            {"nome": "Carlos Pereira", "badge_color": "green", "status": "Aceito"},
-            {"nome": "Fernanda Dias", "badge_color": "yellow", "status": "Pendente"},
-        ],
+        )
+
+    context = {
+        "cpf": cpf,
+        "reservas": reservas,
+        "date_filter": date_param,
+        "start_filter": start_param,
+        "end_filter": end_param,
+        "available_installs": available_installs,
     }
     return render_template("internal/dashboard.html", **context)

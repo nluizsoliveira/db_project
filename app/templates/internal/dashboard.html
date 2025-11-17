@@ -1,62 +1,110 @@
-{% extends 'base.html' %}
-{% block title %}Painel Interno USP | CEFER{% endblock %}
+{% extends "base.html" %}
+
+{% block title %}Internal Member Workspace{% endblock %}
 
 {% block content %}
-<section class="space-y-8">
-    <header class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-            <h1 class="text-3xl font-semibold text-gray-900">Bem-vindo ao CEFER</h1>
-            <p class="mt-2 text-sm text-gray-500">Gerencie suas reservas, atividades e convites para convidados.</p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-            <a href="{{ url_for('internal.novo_convite_redirect') if url_for else '#' }}" class="rounded bg-uspprimary px-4 py-2 text-sm font-semibold text-white hover:bg-uspsecondary hover:text-uspprimary">Convidar externo</a>
-            <a href="{{ url_for('internal.reservar_instalacao') if url_for else '#' }}" class="rounded border border-uspprimary px-4 py-2 text-sm font-semibold text-uspprimary hover:bg-uspprimary hover:text-white">Reservar instalação</a>
-        </div>
+<section class="space-y-6">
+    <header>
+        <h1 class="text-2xl font-semibold text-gray-900">Internal member workspace</h1>
+        <p class="text-sm text-gray-600">Data fetched from the stored functions <code>get_reservas_interno</code> and <code>get_instalacoes_disponiveis_horario</code>.</p>
     </header>
 
-    <section class="grid gap-6 lg:grid-cols-3">
-        <article class="rounded-lg bg-white p-6 shadow">
-            <h2 class="text-sm font-semibold text-gray-700">Próximas reservas</h2>
-            <ul class="mt-3 space-y-2 text-sm text-gray-600">
-                {% for reserva in proximas_reservas %}
-                <li>
-                    <p class="font-semibold text-gray-800">{{ reserva.instalacao }}</p>
-                    <p class="text-xs text-gray-400">{{ reserva.data }} · {{ reserva.horario }}</p>
-                </li>
-                {% else %}
-                <li class="text-gray-400">Nenhuma reserva agendada.</li>
-                {% endfor %}
-            </ul>
-            <a href="{{ url_for('internal.reservas') if url_for else '#' }}" class="mt-4 inline-flex text-sm font-semibold text-uspprimary hover:text-uspyellow">Ver todas →</a>
-        </article>
-        <article class="rounded-lg bg-white p-6 shadow">
-            <h2 class="text-sm font-semibold text-gray-700">Atividades inscritas</h2>
-            <ul class="mt-3 space-y-2 text-sm text-gray-600">
-                {% for atividade in atividades_inscritas %}
-                <li>
-                    <p class="font-semibold text-gray-800">{{ atividade.nome }}</p>
-                    <p class="text-xs text-gray-400">{{ atividade.periodicidade }} · Educador {{ atividade.educador }}</p>
-                </li>
-                {% else %}
-                <li class="text-gray-400">Você ainda não está inscrito em atividades.</li>
-                {% endfor %}
-            </ul>
-            <a href="{{ url_for('internal.atividades') if url_for else '#' }}" class="mt-4 inline-flex text-sm font-semibold text-uspprimary hover:text-uspyellow">Explorar atividades →</a>
-        </article>
-        <article class="rounded-lg bg-white p-6 shadow">
-            <h2 class="text-sm font-semibold text-gray-700">Convites enviados</h2>
-            <ul class="mt-3 space-y-2 text-sm text-gray-600">
-                {% for convite in convites_recentes %}
-                <li class="flex items-center justify-between">
-                    <span>{{ convite.nome }}</span>
-                    <span class="rounded bg-{{ convite.badge_color }}-100 px-2 py-1 text-xs font-semibold text-{{ convite.badge_color }}-800">{{ convite.status }}</span>
-                </li>
-                {% else %}
-                <li class="text-gray-400">Nenhum convite recente.</li>
-                {% endfor %}
-            </ul>
-            <a href="{{ url_for('internal.convites') if url_for else '#' }}" class="mt-4 inline-flex text-sm font-semibold text-uspprimary hover:text-uspyellow">Gerenciar convites →</a>
-        </article>
-    </section>
+    <div class="grid gap-6 lg:grid-cols-2">
+        <form method="get" class="rounded-lg bg-white p-4 shadow">
+            <h2 class="text-lg font-semibold text-gray-900">Reservations by CPF</h2>
+            <label class="mt-4 block text-sm text-gray-600">
+                <span class="mb-1 block font-medium">CPF</span>
+                <input type="text" name="cpf" value="{{ cpf }}" placeholder="Only numbers" class="w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
+            </label>
+            <input type="hidden" name="date" value="{{ date_filter or '' }}" />
+            <input type="hidden" name="start" value="{{ start_filter or '' }}" />
+            <input type="hidden" name="end" value="{{ end_filter or '' }}" />
+            <div class="mt-4 flex justify-end gap-2">
+                <a href="{{ url_for('internal.dashboard') }}" class="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">Clear</a>
+                <button type="submit" class="rounded bg-uspprimary px-4 py-2 text-sm font-semibold text-white hover:bg-uspsecondary hover:text-uspprimary">Load data</button>
+            </div>
+        </form>
+
+        <form method="get" class="rounded-lg bg-white p-4 shadow">
+            <h2 class="text-lg font-semibold text-gray-900">Available installations</h2>
+            <input type="hidden" name="cpf" value="{{ cpf }}" />
+            <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                <label class="text-sm text-gray-600">
+                    <span class="mb-1 block font-medium">Date</span>
+                    <input type="date" name="date" value="{{ date_filter or '' }}" class="w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
+                </label>
+                <label class="text-sm text-gray-600">
+                    <span class="mb-1 block font-medium">Start</span>
+                    <input type="time" name="start" value="{{ start_filter or '' }}" class="w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
+                </label>
+                <label class="text-sm text-gray-600">
+                    <span class="mb-1 block font-medium">End</span>
+                    <input type="time" name="end" value="{{ end_filter or '' }}" class="w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
+                </label>
+            </div>
+            <div class="mt-4 flex justify-end gap-2">
+                <a href="{{ url_for('internal.dashboard') }}" class="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">Clear</a>
+                <button type="submit" class="rounded bg-uspprimary px-4 py-2 text-sm font-semibold text-white hover:bg-uspsecondary hover:text-uspprimary">Check availability</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+        <div class="rounded-lg bg-white p-4 shadow">
+            <h3 class="text-lg font-semibold text-gray-900">Registered reservations</h3>
+            <div class="mt-4 overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="border-b text-left text-gray-500">
+                        <tr>
+                            <th class="px-3 py-2">Installation</th>
+                            <th class="px-3 py-2">Date</th>
+                            <th class="px-3 py-2">Time</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        {% for reserva in reservas %}
+                        <tr>
+                            <td class="px-3 py-2 font-medium text-gray-900">{{ reserva.nome_instalacao }}</td>
+                            <td class="px-3 py-2">{{ reserva.data_reserva }}</td>
+                            <td class="px-3 py-2">{{ reserva.horario_inicio }} - {{ reserva.horario_fim }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="px-3 py-6 text-center text-gray-500">No reservations were returned for the informed CPF.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="rounded-lg bg-white p-4 shadow">
+            <h3 class="text-lg font-semibold text-gray-900">Available installations</h3>
+            <div class="mt-4 overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="border-b text-left text-gray-500">
+                        <tr>
+                            <th class="px-3 py-2">Installation</th>
+                            <th class="px-3 py-2">Type</th>
+                            <th class="px-3 py-2">Capacity</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                        {% for item in available_installs %}
+                        <tr>
+                            <td class="px-3 py-2 font-medium text-gray-900">{{ item.nome }}</td>
+                            <td class="px-3 py-2">{{ item.tipo }}</td>
+                            <td class="px-3 py-2">{{ item.capacidade }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="px-3 py-6 text-center text-gray-500">Select date and time to see availability.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </section>
 {% endblock %}

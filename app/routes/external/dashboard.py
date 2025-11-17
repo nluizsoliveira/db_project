@@ -1,28 +1,12 @@
-from __future__ import annotations
-
-from typing import Any
-
-from flask import flash, redirect, render_template, request, url_for
+from flask import render_template
 
 from app.routes.external import external_blueprint
+from app.services import sql_queries
 
 
 @external_blueprint.get("/", endpoint="dashboard")
 def dashboard() -> str:
-    context: dict[str, Any] = {
-        "atividades_confirmadas": [
-            {
-                "nome": "Musculação funcional",
-                "data": "08/07",
-                "horario": "18:00",
-                "local": "Sala Musculação",
-            }
-        ]
-    }
-    return render_template("external/dashboard.html", **context)
-
-
-@external_blueprint.post("/convite/validar", endpoint="validar_convite")
-def validar_convite() -> str:
-    flash("Convite validado com sucesso (simulação).", "success")
-    return redirect(url_for("external.dashboard"))
+    participations = sql_queries.fetch_all(
+        "queries/external/external_participations.sql"
+    )
+    return render_template("external/dashboard.html", participations=participations)

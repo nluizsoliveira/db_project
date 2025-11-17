@@ -1,7 +1,9 @@
 import os
+from typing import Any, Mapping
 
 import psycopg2
 from psycopg2 import sql
+from psycopg2.extras import RealDictCursor
 
 class DBSession:
     def __init__(
@@ -36,7 +38,7 @@ class DBSession:
             except Exception:
                 self.connection.rollback()
 
-    def run_sql_file(self, path):
+    def run_sql_file(self, path: str) -> None:
         try:
             with open(path, 'r') as file:
                 query = file.read()
@@ -46,6 +48,33 @@ class DBSession:
         except Exception as e:
             self.connection.rollback()
             print(f"Error executing query from file {path}: {e}")
+
+    def fetch_all(
+        self,
+        query: str,
+        params: Mapping[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(query, params or {})
+            return cursor.fetchall()
+
+    def fetch_one(
+        self,
+        query: str,
+        params: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(query, params or {})
+            return cursor.fetchone()
+
+    def execute(
+        self,
+        query: str,
+        params: Mapping[str, Any] | None = None,
+    ) -> None:
+        with self.connection.cursor() as cursor:
+            cursor.execute(query, params or {})
+        self.connection.commit()
 
     def close(self):
         self.connection.close()

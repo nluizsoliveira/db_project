@@ -1,6 +1,7 @@
 from flask import Flask, g
 
 from dbsession import DBSession
+from app.services.bootstrap import ensure_schema_populated
 
 
 def register_extensions(app: Flask) -> None:
@@ -19,6 +20,7 @@ def _register_db_session(app: Flask) -> None:
                 user=app.config.get("DB_USER"),
                 password=app.config.get("DB_PASSWORD"),
             )
+            ensure_schema_populated(g.db_session)
         except Exception as exc:  # pragma: no cover - database might be unavailable locally
             app.logger.error(
                 "Failed to create database session: %s", exc, exc_info=exc

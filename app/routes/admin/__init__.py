@@ -5,23 +5,7 @@ admin_blueprint = Blueprint("admin", __name__, url_prefix="/admin")
 
 def init_app() -> None:
     """
-    Importa módulos de rotas administrativas para garantir o registro
-    dos endpoints associados ao blueprint `admin`.
+    Import only the administrative routes that are active in the system.
     """
 
-    # Imports locais para evitar dependências circulares no carregamento.
-    from . import (  # noqa: F401
-        aparelhos,
-        atividades,
-        dashboard,
-        educadores,
-        equipamentos,
-        espacos,
-        externos,
-        funcionarios,
-        grupos_extensao,
-        instalacoes,
-        internos,
-        reservas,
-        revisoes,
-    )
+    from . import dashboard  # noqa: F401

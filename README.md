@@ -4,15 +4,27 @@ Ambiente de desenvolvimento: WSL Ubuntu.
 
 ## Rotas e navegação
 
-As páginas da aplicação foram organizadas em _blueprints_ modulares para facilitar manutenção e navegação:
+Os blueprints permanecem isolados, mas a navegação foi simplificada para um topo único. Cada item usa o helper `build_url`, então endpoints ausentes geram apenas um aviso no log sem quebrar a página.
 
-- `admin`: painel administrativo e cadastros (`/admin/...`)
-- `reports`: relatórios gerenciais (`/reports/...`)
-- `staff`: fluxo operacional para funcionários (`/staff/...`)
-- `internal`: portal de usuários internos USP (`/internal/...`)
-- `external`: portal de convidados externos (`/external/...`)
+- `admin`: painel operacional (`/admin`)
+- `reports`: relatórios consolidados (`/reports`)
+- `staff`: filtros de atividades para equipes internas (`/staff`)
+- `internal`: portal USP com consultas de reservas (`/internal`)
+- `external`: monitor de convites externos (`/external`)
 
-Cada item do _sidebar_ utiliza o helper `build_url`, que tenta resolver o endpoint informado e registra um aviso no log da aplicação (`app.logger.warning`) se o endpoint não existir. Ao adicionar novas páginas, basta criar o endpoint no blueprint correspondente e referenciá-lo no template com `build_url('nome_do_endpoint')`.
+Todos os templates recebem dados exclusivamente das consultas em `sql/queries` ou `sql/funcionalidades`. Não existe regra de negócio em Python: cada rota só carrega o arquivo SQL correspondente e repassa o resultado ao template.
+
+### Mapa de queries
+
+| Área/Endpoint | Fonte SQL |
+| --- | --- |
+| `admin.dashboard` | `sql/queries/admin/dashboard_stats.sql`, `.../upcoming_reservations.sql`, `.../activity_enrollment.sql` |
+| `reports.overview` | Arquivos em `sql/queries/reports/` (rollup, cube, grouping sets, ranking) |
+| `staff.dashboard` | `sql/queries/staff/activities.sql` (invoca `listar_atividades`) |
+| `internal.dashboard` | `sql/queries/internal/reservas_por_interno.sql`, `.../instalacoes_disponiveis.sql` |
+| `external.dashboard` | `sql/queries/external/external_participations.sql` |
+
+Para criar uma nova página, adicione primeiro o arquivo SQL em `sql/queries/<area>/` e aponte a rota correspondente via `app/services/sql_queries.py`.
 
 ## Como rodar
 
