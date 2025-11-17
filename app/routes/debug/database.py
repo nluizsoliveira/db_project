@@ -7,37 +7,7 @@ from flask import jsonify
 from app.routes.debug import debug_blueprint
 from dbsession import DBSession
 from migrations import PopulateMockedFullDbMigration, SchemaMigration
-
-
-def cleanup_csv_files(dados_ficticios_path: Path) -> tuple[int, str]:
-    """
-    Remove apenas arquivos CSV da pasta dados_ficticios.
-
-    Args:
-        dados_ficticios_path: Caminho para a pasta dados_ficticios
-
-    Returns:
-        Tupla com (quantidade_removida, mensagem)
-    """
-    try:
-        if not dados_ficticios_path.exists():
-            return (0, f"Pasta {dados_ficticios_path} não encontrada")
-
-        csv_files = list(dados_ficticios_path.glob("*.csv"))
-        count = 0
-
-        for csv_file in csv_files:
-            try:
-                csv_file.unlink()
-                count += 1
-            except Exception as e:
-                # Log erro individual mas continua tentando os outros
-                print(f"Aviso: Erro ao remover {csv_file.name}: {e}")
-
-        return (count, f"{count} arquivo(s) CSV removido(s) com sucesso")
-
-    except Exception as e:
-        return (0, f"Erro ao limpar CSVs: {str(e)}")
+from populate_db import populate_db
 
 
 @debug_blueprint.post("/populate-db")
@@ -71,20 +41,12 @@ def populate_database():
                 "message": f"Erro ao gerar dados: {error_msg}"
             }), 500
 
-        # Popular banco de dados
-        dbsession = DBSession()
-        migration = PopulateMockedFullDbMigration(dbsession=dbsession)
-        migration.upgrade_populated_db()
-        dbsession.close()
-
-        # Limpar arquivos CSV após população bem-sucedida
-        # (os CSVs são apenas intermediários e não são mais necessários)
-        count, cleanup_msg = cleanup_csv_files(dados_ficticios_path)
-        print(f"Limpeza de CSVs: {cleanup_msg}")
+        # Popular banco de dados (a função populate_db já remove os CSVs automaticamente)
+        populate_db()
 
         return jsonify({
             "success": True,
-            "message": "Banco de dados populado com sucesso!"
+            "message": "Banco de dados populado com sucesso! Arquivos CSV foram removidos automaticamente."
         })
 
     except subprocess.TimeoutExpired:

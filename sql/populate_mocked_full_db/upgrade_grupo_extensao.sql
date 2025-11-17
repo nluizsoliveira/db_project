@@ -1,4 +1,4 @@
-INSERT INTO GRUPO_EXTENSAO (NOME_GRUPO, DESCRICAO, CPF_RESPONSAVEL_INTERNO) VALUES ('Grupo de Estudos Tai Chi Chuan', 'Grupo de Estudos Tai Chi Chuan é um grupo de extensão promovido pelo CEFER.', '65680248133');
-INSERT INTO GRUPO_EXTENSAO (NOME_GRUPO, DESCRICAO, CPF_RESPONSAVEL_INTERNO) VALUES ('Equipe Kung Fu Garra de Águia', 'Equipe Kung Fu Garra de Águia é um grupo de extensão promovido pelo CEFER.', '63486099288');
-INSERT INTO GRUPO_EXTENSAO (NOME_GRUPO, DESCRICAO, CPF_RESPONSAVEL_INTERNO) VALUES ('Projeto Capoeira Angola', 'Projeto Capoeira Angola é um grupo de extensão promovido pelo CEFER.', '57262563100');
-INSERT INTO GRUPO_EXTENSAO (NOME_GRUPO, DESCRICAO, CPF_RESPONSAVEL_INTERNO) VALUES ('Grupo de Karatê Shotokan', 'Grupo de Karatê Shotokan é um grupo de extensão promovido pelo CEFER.', '64560484866');
+INSERT INTO GRUPO_EXTENSAO (NOME_GRUPO, DESCRICAO, CPF_RESPONSAVEL_INTERNO) VALUES ('Grupo de Karatê Shotokan', 'Grupo de Karatê Shotokan é um grupo de extensão promovido pelo CEFER.', '26606578311');
+INSERT INTO GRUPO_EXTENSAO (NOME_GRUPO, DESCRICAO, CPF_RESPONSAVEL_INTERNO) VALUES ('Projeto Capoeira Angola', 'Projeto Capoeira Angola é um grupo de extensão promovido pelo CEFER.', '81200707200');
+INSERT INTO GRUPO_EXTENSAO (NOME_GRUPO, DESCRICAO, CPF_RESPONSAVEL_INTERNO) VALUES ('Grupo de Estudos Tai Chi Chuan', 'Grupo de Estudos Tai Chi Chuan é um grupo de extensão promovido pelo CEFER.', '37516184733');
+INSERT INTO GRUPO_EXTENSAO (NOME_GRUPO, DESCRICAO, CPF_RESPONSAVEL_INTERNO) VALUES ('Equipe Kung Fu Garra de Águia', 'Equipe Kung Fu Garra de Águia é um grupo de extensão promovido pelo CEFER.', '50364979299');

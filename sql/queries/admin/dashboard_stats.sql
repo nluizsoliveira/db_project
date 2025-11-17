@@ -1,26 +1,26 @@
 WITH stats AS (
     SELECT
-        'People'::text AS label,
+        'Pessoas'::text AS label,
         COUNT(*)::int AS value,
-        'Registered people'::text AS description
+        'Pessoas registradas'::text AS description
     FROM pessoa
     UNION ALL
     SELECT
-        'Internal members'::text,
+        'Membros internos'::text,
         COUNT(*)::int,
-        'USP internal community'::text
+        'Comunidade interna USP'::text
     FROM interno_usp
     UNION ALL
     SELECT
-        'Reservations'::text,
+        'Reservas'::text,
         COUNT(*)::int,
-        'Scheduled reservations'::text
+        'Reservas agendadas'::text
     FROM reserva
     UNION ALL
     SELECT
-        'Activities'::text,
+        'Atividades'::text,
         COUNT(*)::int,
-        'Registered activities'::text
+        'Atividades registradas'::text
     FROM atividade
 )
 SELECT label, value, description

@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}Reports{% endblock %}
+{% block title %}Relatórios{% endblock %}
 
 {% block content %}
 <section class="space-y-6">
     <header>
-        <h1 class="text-2xl font-semibold text-gray-900">Operational reports</h1>
+        <h1 class="text-2xl font-semibold text-gray-900">Relatórios operacionais</h1>
     </header>
 
     <div class="grid gap-6 lg:grid-cols-2">
         <div class="rounded-lg bg-white p-4 shadow">
-            <h2 class="text-lg font-semibold text-gray-900">Reservations rollup</h2>
+            <h2 class="text-lg font-semibold text-gray-900">Consolidado de reservas</h2>
             <div class="mt-4 overflow-x-auto">
                 <table class="min-w-full text-sm">
                     <thead class="border-b text-left text-gray-500">
                         <tr>
-                            <th class="px-3 py-2">Installation</th>
-                            <th class="px-3 py-2">Month</th>
+                            <th class="px-3 py-2">Instalação</th>
+                            <th class="px-3 py-2">Mês</th>
                             <th class="px-3 py-2">Total</th>
                         </tr>
                     </thead>
@@ -29,7 +29,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="3" class="px-3 py-6 text-center text-gray-500">No reservation data available.</td>
+                            <td colspan="3" class="px-3 py-6 text-center text-gray-500">Nenhum dado de reserva disponível.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -38,26 +38,26 @@
         </div>
 
         <div class="rounded-lg bg-white p-4 shadow">
-            <h2 class="text-lg font-semibold text-gray-900">Activities per educator</h2>
+            <h2 class="text-lg font-semibold text-gray-900">Atividades por educador</h2>
             <div class="mt-4 overflow-x-auto">
                 <table class="min-w-full text-sm">
                     <thead class="border-b text-left text-gray-500">
                         <tr>
-                            <th class="px-3 py-2">Council</th>
-                            <th class="px-3 py-2">Category</th>
+                            <th class="px-3 py-2">Conselho</th>
+                            <th class="px-3 py-2">Categoria</th>
                             <th class="px-3 py-2">Total</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y">
                         {% for row in activities_cube %}
                         <tr>
-                            <td class="px-3 py-2">{{ row.council_number or 'All' }}</td>
-                            <td class="px-3 py-2">{{ row.category or 'All' }}</td>
+                            <td class="px-3 py-2">{{ row.council_number or 'Todos' }}</td>
+                            <td class="px-3 py-2">{{ row.category or 'Todos' }}</td>
                             <td class="px-3 py-2 font-semibold text-gray-900">{{ row.total_activities }}</td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="3" class="px-3 py-6 text-center text-gray-500">No activity data available.</td>
+                            <td colspan="3" class="px-3 py-6 text-center text-gray-500">Nenhum dado de atividade disponível.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -68,13 +68,13 @@
 
     <div class="grid gap-6 lg:grid-cols-2">
         <div class="rounded-lg bg-white p-4 shadow">
-            <h2 class="text-lg font-semibold text-gray-900">Participants per activity</h2>
+            <h2 class="text-lg font-semibold text-gray-900">Participantes por atividade</h2>
             <div class="mt-4 overflow-x-auto">
                 <table class="min-w-full text-sm">
                     <thead class="border-b text-left text-gray-500">
                         <tr>
-                            <th class="px-3 py-2">Activity</th>
-                            <th class="px-3 py-2">Participants</th>
+                            <th class="px-3 py-2">Atividade</th>
+                            <th class="px-3 py-2">Participantes</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y">
@@ -85,7 +85,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="2" class="px-3 py-6 text-center text-gray-500">No participant data available.</td>
+                            <td colspan="2" class="px-3 py-6 text-center text-gray-500">Nenhum dado de participante disponível.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -94,14 +94,14 @@
         </div>
 
         <div class="rounded-lg bg-white p-4 shadow">
-            <h2 class="text-lg font-semibold text-gray-900">Installation ranking</h2>
+            <h2 class="text-lg font-semibold text-gray-900">Ranking de instalações</h2>
             <div class="mt-4 overflow-x-auto">
                 <table class="min-w-full text-sm">
                     <thead class="border-b text-left text-gray-500">
                         <tr>
-                            <th class="px-3 py-2">Position</th>
-                            <th class="px-3 py-2">Installation</th>
-                            <th class="px-3 py-2">Reservations</th>
+                            <th class="px-3 py-2">Posição</th>
+                            <th class="px-3 py-2">Instalação</th>
+                            <th class="px-3 py-2">Reservas</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y">
@@ -113,7 +113,7 @@
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="3" class="px-3 py-6 text-center text-gray-500">No ranking available.</td>
+                            <td colspan="3" class="px-3 py-6 text-center text-gray-500">Nenhum ranking disponível.</td>
                         </tr>
                         {% endfor %}
                     </tbody>

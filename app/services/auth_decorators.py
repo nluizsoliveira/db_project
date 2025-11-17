@@ -9,7 +9,7 @@ def require_auth(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get("user_id"):
-            flash("Authentication required", "error")
+            flash("Autenticação necessária", "error")
             return redirect(url_for("auth.login"))
         return f(*args, **kwargs)
 
@@ -27,14 +27,14 @@ def require_role(*allowed_roles):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not session.get("user_id"):
-                flash("Authentication required", "error")
+                flash("Autenticação necessária", "error")
                 return redirect(url_for("auth.login"))
 
             profile_access = session.get("profile_access", {})
             has_role = any(profile_access.get(role) for role in allowed_roles)
 
             if not has_role:
-                flash("Insufficient permissions", "error")
+                flash("Permissões insuficientes", "error")
                 return redirect(url_for("home.index"))
 
             return f(*args, **kwargs)

@@ -1,29 +1,29 @@
 {% extends "base.html" %}
 
-{% block title %}Staff Activity Board{% endblock %}
+{% block title %}Painel de Atividades da Equipe{% endblock %}
 
 {% block content %}
 <section class="space-y-6">
     <header>
-        <h1 class="text-2xl font-semibold text-gray-900">Staff Activity Board</h1>
+        <h1 class="text-2xl font-semibold text-gray-900">Painel de Atividades da Equipe</h1>
     </header>
 
     <form method="get" class="grid gap-4 rounded-lg bg-white p-4 shadow sm:grid-cols-3">
         <label class="text-sm text-gray-600">
-            <span class="mb-1 block font-medium">Weekday</span>
-            <input type="text" name="weekday" value="{{ filters.weekday or '' }}" placeholder="e.g. MONDAY" class="w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
+            <span class="mb-1 block font-medium">Dia da semana</span>
+            <input type="text" name="weekday" value="{{ filters.weekday or '' }}" placeholder="ex: SEGUNDA" class="w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
         </label>
         <label class="text-sm text-gray-600">
-            <span class="mb-1 block font-medium">Extension group</span>
-            <input type="text" name="group" value="{{ filters.group_name or '' }}" placeholder="Group name" class="w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
+            <span class="mb-1 block font-medium">Grupo de extensão</span>
+            <input type="text" name="group" value="{{ filters.group_name or '' }}" placeholder="Nome do grupo" class="w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
         </label>
         <label class="text-sm text-gray-600">
-            <span class="mb-1 block font-medium">Modality</span>
-            <input type="text" name="modality" value="{{ filters.modality or '' }}" placeholder="Activity name" class="w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
+            <span class="mb-1 block font-medium">Modalidade</span>
+            <input type="text" name="modality" value="{{ filters.modality or '' }}" placeholder="Nome da atividade" class="w-full rounded border border-gray-300 px-3 py-2 focus:border-uspprimary focus:outline-none focus:ring-1 focus:ring-uspprimary" />
         </label>
         <div class="sm:col-span-3 flex justify-end gap-2">
-            <a href="{{ url_for('staff.dashboard') }}" class="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">Clear</a>
-            <button type="submit" class="rounded bg-uspprimary px-4 py-2 text-sm font-semibold text-white hover:bg-uspsecondary hover:text-uspprimary">Apply filters</button>
+            <a href="{{ url_for('staff.dashboard') }}" class="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">Limpar</a>
+            <button type="submit" class="rounded bg-uspprimary px-4 py-2 text-sm font-semibold text-white hover:bg-uspsecondary hover:text-uspprimary">Aplicar filtros</button>
         </div>
     </form>
 
@@ -31,11 +31,11 @@
         <table class="min-w-full text-sm">
             <thead class="border-b text-left text-gray-500">
                 <tr>
-                    <th class="px-4 py-3">Activity</th>
-                    <th class="px-4 py-3">Group</th>
-                    <th class="px-4 py-3">Weekday</th>
-                    <th class="px-4 py-3">Schedule</th>
-                    <th class="px-4 py-3">Enrollment</th>
+                    <th class="px-4 py-3">Atividade</th>
+                    <th class="px-4 py-3">Grupo</th>
+                    <th class="px-4 py-3">Dia da semana</th>
+                    <th class="px-4 py-3">Horário</th>
+                    <th class="px-4 py-3">Inscrições</th>
                 </tr>
             </thead>
             <tbody class="divide-y">
@@ -49,7 +49,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="5" class="px-4 py-6 text-center text-gray-500">No activities matched the selected filters.</td>
+                    <td colspan="5" class="px-4 py-6 text-center text-gray-500">Nenhuma atividade corresponde aos filtros selecionados.</td>
                 </tr>
                 {% endfor %}
             </tbody>

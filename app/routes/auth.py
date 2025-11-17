@@ -20,7 +20,7 @@ def login_post():
     ip_origin = request.remote_addr
 
     if not email or not password:
-        flash("Email and password are required", "error")
+        flash("E-mail e senha são obrigatórios", "error")
         return render_template("auth/login.html"), 400
 
     result = sql_queries.fetch_one(
@@ -33,13 +33,13 @@ def login_post():
     )
 
     if not result or not result.get("result"):
-        flash("Invalid credentials", "error")
+        flash("Credenciais inválidas", "error")
         return render_template("auth/login.html"), 401
 
     auth_data = result["result"]
 
     if not auth_data.get("success"):
-        flash(auth_data.get("message", "Invalid credentials"), "error")
+        flash(auth_data.get("message", "Credenciais inválidas"), "error")
         return render_template("auth/login.html"), 401
 
     # Store user data in session
@@ -67,11 +67,11 @@ def register_post():
     password_confirm = request.form.get("password_confirm", "").strip()
 
     if not all([cpf, nusp, email, password, password_confirm]):
-        flash("All fields are required", "error")
+        flash("Todos os campos são obrigatórios", "error")
         return render_template("auth/register.html"), 400
 
     if password != password_confirm:
-        flash("Passwords do not match", "error")
+        flash("As senhas não coincidem", "error")
         return render_template("auth/register.html"), 400
 
     result = sql_queries.fetch_one(
@@ -85,29 +85,29 @@ def register_post():
     )
 
     if not result or not result.get("result"):
-        flash("Error processing registration request", "error")
+        flash("Erro ao processar solicitação de cadastro", "error")
         return render_template("auth/register.html"), 500
 
     registration_data = result["result"]
 
     if not registration_data.get("success"):
-        flash(registration_data.get("message", "Error processing request"), "error")
+        flash(registration_data.get("message", "Erro ao processar solicitação"), "error")
         return render_template("auth/register.html"), 400
 
-    flash(registration_data.get("message", "Registration request created successfully"), "success")
+    flash(registration_data.get("message", "Solicitação de cadastro criada com sucesso"), "success")
     return redirect(url_for("auth.login"))
 
 
 @auth_blueprint.route("/pending-registrations", methods=["GET"])
 def pending_registrations():
     if not session.get("user_id"):
-        flash("Authentication required", "error")
+        flash("Autenticação necessária", "error")
         return redirect(url_for("auth.login"))
 
     # Check if user is admin (simple check via session)
     profile_access = session.get("profile_access", {})
     if not profile_access.get("admin"):
-        flash("Admin access required", "error")
+        flash("Acesso de administrador necessário", "error")
         return redirect(url_for("home.index"))
 
     registrations = sql_queries.fetch_all("queries/auth/list_pending_registrations.sql")
@@ -118,17 +118,17 @@ def pending_registrations():
 @auth_blueprint.route("/approve-registration", methods=["POST"])
 def approve_registration():
     if not session.get("user_id"):
-        flash("Authentication required", "error")
+        flash("Autenticação necessária", "error")
         return redirect(url_for("auth.login"))
 
     profile_access = session.get("profile_access", {})
     if not profile_access.get("admin"):
-        flash("Admin access required", "error")
+        flash("Acesso de administrador necessário", "error")
         return redirect(url_for("home.index"))
 
     id_solicitacao = request.form.get("id_solicitacao")
     if not id_solicitacao:
-        flash("Invalid request", "error")
+        flash("Solicitação inválida", "error")
         return redirect(url_for("auth.pending_registrations"))
 
     result = sql_queries.fetch_one(
@@ -140,9 +140,9 @@ def approve_registration():
     )
 
     if result and result.get("result") and result["result"].get("success"):
-        flash("Registration approved successfully", "success")
+        flash("Cadastro aprovado com sucesso", "success")
     else:
-        message = result.get("result", {}).get("message", "Error approving registration") if result else "Error processing request"
+        message = result.get("result", {}).get("message", "Erro ao aprovar cadastro") if result else "Erro ao processar solicitação"
         flash(message, "error")
 
     return redirect(url_for("auth.pending_registrations"))
@@ -151,19 +151,19 @@ def approve_registration():
 @auth_blueprint.route("/reject-registration", methods=["POST"])
 def reject_registration():
     if not session.get("user_id"):
-        flash("Authentication required", "error")
+        flash("Autenticação necessária", "error")
         return redirect(url_for("auth.login"))
 
     profile_access = session.get("profile_access", {})
     if not profile_access.get("admin"):
-        flash("Admin access required", "error")
+        flash("Acesso de administrador necessário", "error")
         return redirect(url_for("home.index"))
 
     id_solicitacao = request.form.get("id_solicitacao")
     observacoes = request.form.get("observacoes", "").strip()
 
     if not id_solicitacao:
-        flash("Invalid request", "error")
+        flash("Solicitação inválida", "error")
         return redirect(url_for("auth.pending_registrations"))
 
     result = sql_queries.fetch_one(
@@ -176,9 +176,9 @@ def reject_registration():
     )
 
     if result and result.get("result") and result["result"].get("success"):
-        flash("Registration rejected", "success")
+        flash("Cadastro rejeitado", "success")
     else:
-        message = result.get("result", {}).get("message", "Error rejecting registration") if result else "Error processing request"
+        message = result.get("result", {}).get("message", "Erro ao rejeitar cadastro") if result else "Erro ao processar solicitação"
         flash(message, "error")
 
     return redirect(url_for("auth.pending_registrations"))
