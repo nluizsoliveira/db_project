@@ -1,17 +1,17 @@
 ID_ATIVIDADE,NOME,VAGAS_LIMITE,DATA_INICIO_PERIODO,DATA_FIM_PERIODO
-1,Natação Adulto Iniciante,15,2025-10-13,2025-11-12
-2,Karatê (Extensão),25,2025-09-28,2025-12-26
-3,Natação Adulto Avançado,10,2025-07-15,2026-01-05
-4,Iniciação à Corrida,18,2025-08-11,2026-01-28
-5,Kung Fu (Extensão),11,2025-03-12,2025-04-13
-6,Fortalecimento Muscular,8,2025-07-12,2026-01-05
-7,Ginástica Localizada,11,2025-07-08,2025-11-17
-8,Capoeira (Extensão),10,2025-10-12,2026-01-23
-9,Futebol Society Amistoso,24,2024-11-26,2025-04-06
-10,Yoga e Alongamento,5,2025-08-28,2025-09-27
-11,Hidroginástica,28,2025-10-01,2026-01-30
-12,Condicionamento Físico,5,2025-04-05,2025-08-08
-13,Treinamento Funcional,12,2025-09-20,2025-11-19
-14,Ritmos Dançantes,16,2025-11-07,2026-02-03
-15,Tai Chi Chuan (Extensão),25,2025-05-14,2025-10-09
-16,Vôlei Recreativo,14,2025-03-30,2025-08-21
+1,Hidroginástica,15,2025-01-04,2025-03-28
+2,Kung Fu (Extensão),18,2025-02-04,2025-07-21
+3,Iniciação à Corrida,23,2025-06-01,2025-08-04
+4,Futebol Society Amistoso,15,2025-01-20,2025-04-08
+5,Ritmos Dançantes,7,2024-12-06,2025-03-05
+6,Vôlei Recreativo,25,2025-07-28,2025-11-01
+7,Karatê (Extensão),11,2025-10-02,2026-03-09
+8,Natação Adulto Iniciante,24,2025-07-29,2025-12-20
+9,Tai Chi Chuan (Extensão),9,2025-10-06,2026-01-04
+10,Natação Adulto Avançado,23,2025-01-13,2025-02-17
+11,Ginástica Localizada,21,2025-11-14,2026-04-03
+12,Condicionamento Físico,16,2025-07-20,2025-11-04
+13,Treinamento Funcional,16,2025-07-20,2025-12-11
+14,Yoga e Alongamento,27,2025-07-01,2025-08-07
+15,Fortalecimento Muscular,28,2025-09-24,2026-02-03
+16,Capoeira (Extensão),13,2025-06-20,2025-10-04
