@@ -1,0 +1,21 @@
+ID_INSTALACAO,NOME,TIPO,CAPACIDADE,EH_RESERVAVEL
+1,Campo de Futebol Principal,Campo,174,N
+2,Quadra de Areia Vôlei,Quadra,102,S
+3,Quadra de Peteca,Quadra,147,N
+4,Sala de Dança,Sala,193,N
+5,Vestiário Feminino A,Vestiário,90,N
+6,Piscina Recreativa,Piscina,15,N
+7,Vestiário Masculino B,Vestiário,183,N
+8,Salão de Eventos,Sala,77,N
+9,Quadra de Areia Beach Tennis,Quadra,102,N
+10,Sala de Alongamento,Sala,21,S
+11,Vestiário Feminino B,Vestiário,76,N
+12,Quadra de Tênis 2,Quadra,194,S
+13,Espaço Multifuncional Musculação,Academia,124,N
+14,Quadra Poliesportiva A,Quadra,100,N
+15,Quadra Poliesportiva B,Quadra,66,N
+16,Vestiário Masculino A,Vestiário,26,N
+17,Sala de Ginástica,Sala,101,S
+18,Piscina Olímpica,Piscina,124,N
+19,Academia Principal,Academia,60,S
+20,Quadra de Tênis 1,Quadra,18,N

@@ -8,6 +8,11 @@ from flask import Flask, session
 
 PROFILE_DEFINITIONS: list[dict[str, str]] = [
     {
+        "key": "admin",
+        "endpoint": "admin.dashboard",
+        "label": "Administrador",
+    },
+    {
         "key": "staff",
         "endpoint": "staff.dashboard",
         "label": "Funcionário CEFER",
@@ -31,7 +36,7 @@ PROFILE_KEY_INDEX: set[str] = {
 
 def register_context_processors(app: Flask) -> None:
     @app.context_processor
-    def inject_profile_navigation() -> dict[str, list[dict[str, str]]]:
+    def inject_profile_navigation() -> dict[str, Any]:
         allowed_profile_keys = _resolve_allowed_profiles(session.get("profile_access"))
         allowed_profile_keys_set = set(allowed_profile_keys)
 
@@ -41,7 +46,19 @@ def register_context_processors(app: Flask) -> None:
             if profile_definition["key"] in allowed_profile_keys_set
         ]
 
-        return {"profile_navigation": profile_navigation}
+        # Add current user information
+        current_user = None
+        if session.get("user_id"):
+            current_user = {
+                "user_id": session.get("user_id"),
+                "email": session.get("user_email"),
+                "nome": session.get("user_nome"),
+            }
+
+        return {
+            "profile_navigation": profile_navigation,
+            "current_user": current_user,
+        }
 
 
 def _build_profile_payload(profile_definition: dict[str, str]) -> dict[str, str]:

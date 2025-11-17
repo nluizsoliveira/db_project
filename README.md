@@ -23,8 +23,54 @@ Todos os templates recebem dados exclusivamente das consultas em `sql/queries` o
 | `staff.dashboard`    | `sql/queries/staff/activities.sql` (invoca `listar_atividades`)                                         |
 | `internal.dashboard` | `sql/queries/internal/reservas_por_interno.sql`, `.../instalacoes_disponiveis.sql`                      |
 | `external.dashboard` | `sql/queries/external/external_participations.sql`                                                      |
+| `auth.login`         | `sql/queries/auth/login_user.sql` (invoca `authenticate_user`)                                          |
+| `auth.register`      | `sql/queries/auth/request_registration.sql` (invoca `request_registration`)                             |
+| `auth.pending_registrations` | `sql/queries/auth/list_pending_registrations.sql`                                                |
 
 Para criar uma nova página, adicione primeiro o arquivo SQL em `sql/queries/<area>/` e aponte a rota correspondente via `app/services/sql_queries.py`.
+
+## Autenticação
+
+O sistema implementa autenticação completa com todas as regras de negócio em SQL. A lógica de autenticação está implementada em funções PL/pgSQL em `sql/funcionalidades/auth_functions.sql`.
+
+### Funções de Autenticação
+
+- `hash_password(plain_password TEXT)`: Gera hash bcrypt para senhas
+- `verify_password(plain_password TEXT, hashed_password TEXT)`: Verifica se senha corresponde ao hash
+- `authenticate_user(email_or_cpf VARCHAR, plain_password TEXT, ip_origin VARCHAR)`: Autentica usuário e retorna roles
+- `get_user_roles(cpf_pessoa VARCHAR)`: Retorna array de roles do usuário (admin, staff, internal, external)
+- `request_registration(cpf_pessoa VARCHAR, nusp VARCHAR, email VARCHAR, plain_password TEXT)`: Cria solicitação de cadastro
+- `approve_registration(id_solicitacao INT, cpf_admin VARCHAR)`: Aprova solicitação e cria conta
+- `reject_registration(id_solicitacao INT, cpf_admin VARCHAR, observacoes TEXT)`: Rejeita solicitação
+
+### Roles e Permissões
+
+Os roles são determinados automaticamente baseado nas relações no banco:
+
+- **admin**: Usuário com atribuição contendo 'Administrador' em `FUNCIONARIO_ATRIBUICAO`
+- **staff**: Usuário existente em `FUNCIONARIO` (funcionário CEFER)
+- **internal**: Usuário existente em `INTERNO_USP`
+- **external**: Usuário em `PESSOA` que não está em `INTERNO_USP` e tem registro em `CONVITE_EXTERNO`
+
+### Fluxo de Cadastro
+
+1. Interno USP acessa `/auth/register` e preenche CPF, NUSP, email e senha
+2. Sistema valida que CPF existe em `INTERNO_USP` com NUSP correspondente
+3. Cria registro em `SOLICITACAO_CADASTRO` com status 'PENDENTE'
+4. Admin acessa `/auth/pending-registrations` para aprovar/rejeitar
+5. Ao aprovar, sistema cria conta em `USUARIO_SENHA` com senha hasheada
+
+### Usuário de Teste
+
+O sistema inclui um usuário de teste para desenvolvimento:
+
+- **Email**: `brcls@usp.br`
+- **Senha**: `teste123`
+- **CPF**: `12345678901`
+- **NUSP**: `1234567890`
+- **Role**: Admin (com atribuição 'Administrador CEFER')
+
+Este usuário é criado automaticamente ao executar `populate_db.py`.
 
 ## Como rodar
 

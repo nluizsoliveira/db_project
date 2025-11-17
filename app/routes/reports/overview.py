@@ -2,9 +2,11 @@ from flask import render_template
 
 from app.routes.reports import reports_blueprint
 from app.services import sql_queries
+from app.services.auth_decorators import require_auth
 
 
 @reports_blueprint.get("/", endpoint="overview")
+@require_auth
 def overview() -> str:
     reservation_rollup = sql_queries.fetch_all(
         "queries/reports/reservations_rollup.sql"

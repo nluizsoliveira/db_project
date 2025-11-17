@@ -33,7 +33,7 @@ class BasePopulateMigration(BaseMigration, ABC):
         'funcionario_restricao', 'educador_fisico', 'instalacao', 'equipamento',
         'doacao', 'atividade', 'ocorrencia_semanal', 'reserva', 'conduz_atividade',
         'participacao_atividade', 'evento', 'supervisao_evento', 'grupo_extensao',
-        'atividade_grupo_extensao'
+        'atividade_grupo_extensao', 'usuario_senha'
     ]
 
     @property
