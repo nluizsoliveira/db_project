@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from faker import Faker
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from dbsession import DBSession
 
 fake = Faker('pt_BR')

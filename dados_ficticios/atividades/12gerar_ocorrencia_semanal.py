@@ -3,7 +3,7 @@ import sys
 from datetime import time, timedelta, datetime
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from dbsession import DBSession
 
 # Função para gerar um horário aleatório de início

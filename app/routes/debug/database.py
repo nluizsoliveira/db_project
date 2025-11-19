@@ -41,12 +41,12 @@ def populate_database():
                 "message": f"Erro ao gerar dados: {error_msg}"
             }), 500
 
-        # Popular banco de dados (a função populate_db já remove os CSVs automaticamente)
+        # Popular banco de dados
         populate_db()
 
         return jsonify({
             "success": True,
-            "message": "Banco de dados populado com sucesso! Arquivos CSV foram removidos automaticamente."
+            "message": "Banco de dados populado com sucesso!"
         })
 
     except subprocess.TimeoutExpired:

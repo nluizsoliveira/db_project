@@ -2,26 +2,38 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Lista de scripts geradores (na ordem de dependência)
+# Lista de scripts geradores organizados por domínio (na ordem de dependência)
 scripts = [
-    "01gerar_pessoas.py",
-    "02gerar_interno_usp.py",
-    "03gerar_funcionario.py",
-    "04gerar_atribuicoes.py",
-    "05gerar_restricao.py",
-    "06gerar_educador_fisico.py",
-    "07gerar_instalacao.py",
-    "08gerar_equipamento.py",
-    "09gerar_doacao_equipamento.py",
-    "10gerar_reservas.py",
-    "11gerar_atividade.py",
-    "12gerar_ocorrencia_semanal.py",
-    "13gerar_conduz_atividade.py",
-    "14gerar_participacao_atividade.py",
-    "15gerar_evento.py",
-    "16gerar_supervisores_eventos.py",
-    "17gerar_grupo_extensao.py",
-    "18gerar_atividade_grupo_extensao.py"
+    # Domínio: Pessoas
+    "pessoas/01gerar_pessoas.py",
+    "pessoas/02gerar_interno_usp.py",
+    "pessoas/03gerar_funcionario.py",
+    "pessoas/04gerar_atribuicoes.py",
+    "pessoas/05gerar_restricao.py",
+    "pessoas/06gerar_educador_fisico.py",
+
+    # Domínio: Infraestrutura
+    "infraestrutura/07gerar_instalacao.py",
+    "infraestrutura/08gerar_equipamento.py",
+    "infraestrutura/09gerar_doacao_equipamento.py",
+
+    # Domínio: Reservas
+    "reservas/10gerar_reservas.py",
+    "reservas/19gerar_reserva_equipamento.py",
+
+    # Domínio: Atividades
+    "atividades/11gerar_atividade.py",
+    "atividades/12gerar_ocorrencia_semanal.py",
+    "atividades/13gerar_conduz_atividade.py",
+    "atividades/14gerar_participacao_atividade.py",
+
+    # Domínio: Eventos
+    "eventos/15gerar_evento.py",
+    "eventos/16gerar_supervisores_eventos.py",
+
+    # Domínio: Grupos
+    "grupos/17gerar_grupo_extensao.py",
+    "grupos/18gerar_atividade_grupo_extensao.py"
 ]
 
 try:
