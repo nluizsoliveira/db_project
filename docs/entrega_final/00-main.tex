@@ -1,0 +1,107 @@
+\documentclass[11pt,oneside,a4paper,article,brazil,chapter=title]{abntex2}
+\usepackage[top=2cm,bottom=2cm,left=3cm,right=3cm,marginparwidth=1.75cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{times}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{float}
+\usepackage{csquotes}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+\usepackage{indentfirst}
+\usepackage{url}
+\usepackage[alf,num]{abntex2cite}
+\usepackage{pdflscape}
+\usepackage{caption}
+
+\usepackage{hyperref}
+\hypersetup{
+colorlinks=true,
+linkcolor=magenta,
+citecolor=magenta,
+urlcolor=magenta
+}
+
+\renewcommand\brazilhyphenmins{22} 
+
+\titulo{Relatório Final: Sistema CEFER}
+\author{
+  Breno Rodrigues - 11734142 \\
+  Erick Barcelos - 11345562\\
+  Gabriel Henrique dos Santos - 13783972 \\
+  Lourençco Roselino - 11796805\\
+  Nelson Luiz - 9793502\\
+}
+\data{11/2025}
+\instituicao{Universidade de São Paulo - USP}
+\newcommand{\departamento}{Departamento de Computação}
+\newcommand{\edc}{Instituto De Ciências Matemáticas e de Computação - ICMC}
+\local{São Carlos - SP}
+\newcommand{\tipo}{SCC0641 - Laboratório de Bases de Dados}
+
+
+\renewcommand{\imprimircapa}{
+    \begin{center}
+    
+    {\ABNTEXchapterfont\LARGE\MakeUppercase\imprimirinstituicao} \par
+    {\ABNTEXchapterfont\large\uppercase{\edc}}
+    
+    {\noindent\rule{\textwidth}{0.1pt}}
+  
+	\begin{flushright}
+		Profa. Mirela Teixeira Cazzolato
+	\end{flushright}
+
+    
+    \vspace*{\fill}
+    {\ABNTEXchapterfont\bfseries\LARGE\imprimirtitulo}
+    \vspace*{\fill}
+    
+    \vspace*{\fill}
+    {\ABNTEXchapterfont\LARGE\tipo}
+    \vspace*{\fill}
+
+    \begin{flushright}
+  Breno Rodrigues - 11734142 \\
+  Erick Barcelos - 11345562\\
+  Gabriel Henrique dos Santos - 13783972 \\
+  Lourençco Roselino - 11796805\\
+  Nelson Luiz - 9793502\\
+    \end{flushright}
+    
+    \vspace*{\fill}
+    {\large\imprimirlocal} \par
+    {\large\imprimirdata}
+    \vspace*{1cm}
+
+    \end{center}
+}
+
+\begin{document}
+
+\selectlanguage{brazil}
+
+\imprimircapa
+\clearpage
+
+\pdfbookmark[0]{\contentsname}{toc}
+
+\tableofcontents*
+\cleardoublepage
+
+\textual
+
+\input{01-mudancas.tex}
+
+\input{02-arquitetura.tex}
+
+\input{03-funcionalidades.tex}
+
+\input{04-implementacao.tex}
+
+\input{05-conclusao.tex}
+
+\postextual
+
+\end{document}
