@@ -4,7 +4,7 @@ Ponto de entrada único para popular o banco de dados.
 Este script cria o schema e popula o banco com dados sintéticos completos.
 """
 from pathlib import Path
-from dbsession import DBSession
+from app.database import DBSession
 from data_generators.data_generator import populate_database
 
 def _database_has_data(dbsession):
@@ -18,7 +18,11 @@ def _database_has_data(dbsession):
 
 def _apply_schema_safe(dbsession):
     """Aplica o schema de forma segura, usando IF NOT EXISTS."""
+    # Caminho relativo a partir da raiz do projeto, assumindo que o script é executado como módulo ou da raiz
     schema_file = Path('./sql/upgrade_schema.sql')
+    if not schema_file.exists():
+        # Tentar caminho relativo ao arquivo se executado de dentro da pasta
+        schema_file = Path('../../sql/upgrade_schema.sql')
 
     try:
         # Ler o arquivo SQL
