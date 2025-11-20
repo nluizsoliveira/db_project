@@ -10,10 +10,11 @@ from app.database import DBSession
 SENHA_PADRAO = "senha123"
 EMAIL_TESTE = "teste@usp.br"
 
+
 def gerar_usuario_senha(dbsession):
     """
     Gera senhas para todos os internos USP (pessoas que podem fazer login).
-    Usa a função hash_password() do PostgreSQL para gerar hashes bcrypt.
+    Usa a função hash_password()  para gerar hashes bcrypt.
     """
     # Buscar todos os internos USP
     internos_result = dbsession.fetch_all("SELECT CPF_PESSOA FROM INTERNO_USP")
@@ -28,7 +29,7 @@ def gerar_usuario_senha(dbsession):
     """)
 
     if pessoa_teste_result:
-        cpf_teste = pessoa_teste_result['cpf']
+        cpf_teste = pessoa_teste_result["cpf"]
         print(f"   📧 Usuário de teste encontrado: {EMAIL_TESTE} (CPF: {cpf_teste})")
 
     if not cpfs_internos:
@@ -70,14 +71,16 @@ def gerar_usuario_senha(dbsession):
 
         # Usar função PostgreSQL hash_password() para gerar o hash
         # A senha padrão será "senha123" para facilitar testes
-        usuarios_data.append((
-            cpf_pessoa,
-            data_criacao,
-            data_ultima_alteracao,
-            bloqueado,
-            tentativas_login,
-            data_ultimo_login
-        ))
+        usuarios_data.append(
+            (
+                cpf_pessoa,
+                data_criacao,
+                data_ultima_alteracao,
+                bloqueado,
+                tentativas_login,
+                data_ultimo_login,
+            )
+        )
 
     # Inserir usando função PostgreSQL para hash da senha
     query = """
@@ -113,6 +116,7 @@ def gerar_usuario_senha(dbsession):
     print(f"✅ {len(usuarios_data)} usuários com senhas inseridos com sucesso!")
     print(f"   Senha padrão para testes: '{SENHA_PADRAO}'")
     print(f"   📧 Email para login: '{EMAIL_TESTE}'")
+
 
 if __name__ == "__main__":
     dbsession = DBSession()

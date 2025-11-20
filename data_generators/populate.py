@@ -3,15 +3,17 @@ Ponto de entrada único para popular o banco de dados.
 
 Este script cria o schema e popula o banco com dados sintéticos completos.
 """
+
 from pathlib import Path
 from app.database import DBSession
 from data_generators.data_generator import populate_database
 
+
 def _database_has_data(dbsession):
     """Verifica se o banco já tem dados populados."""
     try:
-        result = dbsession.fetch_one('SELECT COUNT(*) as count FROM pessoa;')
-        return result and result['count'] > 0
+        result = dbsession.fetch_one("SELECT COUNT(*) as count FROM pessoa;")
+        return result and result["count"] > 0
     except Exception:
         return False
 
@@ -19,14 +21,14 @@ def _database_has_data(dbsession):
 def _apply_schema_safe(dbsession):
     """Aplica o schema de forma segura, usando IF NOT EXISTS."""
     # Caminho relativo a partir da raiz do projeto, assumindo que o script é executado como módulo ou da raiz
-    schema_file = Path('./sql/upgrade_schema.sql')
+    schema_file = Path("./sql/upgrade_schema.sql")
     if not schema_file.exists():
         # Tentar caminho relativo ao arquivo se executado de dentro da pasta
-        schema_file = Path('../../sql/upgrade_schema.sql')
+        schema_file = Path("../../sql/upgrade_schema.sql")
 
     try:
         # Ler o arquivo SQL
-        with open(schema_file, 'r', encoding='utf-8') as file:
+        with open(schema_file, "r", encoding="utf-8") as file:
             query = file.read()
 
         # Verificar se o tipo DIA_SEMANA já existe antes de criar
@@ -40,26 +42,26 @@ def _apply_schema_safe(dbsession):
             dia_semana_exists = result and result[0] > 0
 
         # Modificar o SQL para usar CREATE TABLE IF NOT EXISTS
-        modified_query = query.replace('CREATE TABLE ', 'CREATE TABLE IF NOT EXISTS ')
+        modified_query = query.replace("CREATE TABLE ", "CREATE TABLE IF NOT EXISTS ")
 
         # Para CREATE TYPE, remover a linha se o tipo já existir
         # PostgreSQL não suporta CREATE TYPE IF NOT EXISTS
         if dia_semana_exists:
             # Remover a criação do tipo DIA_SEMANA se já existir
-            lines = modified_query.split('\n')
+            lines = modified_query.split("\n")
             new_lines = []
             skip_type_creation = False
             for line in lines:
-                if 'CREATE TYPE DIA_SEMANA' in line.upper():
+                if "CREATE TYPE DIA_SEMANA" in line.upper():
                     skip_type_creation = True
                     continue
                 if skip_type_creation:
                     # Continuar pulando até encontrar o fechamento do enum
-                    if line.strip() == ');':
+                    if line.strip() == ");":
                         skip_type_creation = False
                     continue
                 new_lines.append(line)
-            modified_query = '\n'.join(new_lines)
+            modified_query = "\n".join(new_lines)
 
         # Executar o SQL modificado
         with dbsession.connection.cursor() as cursor:
@@ -115,7 +117,9 @@ def populate_db():
             # Com IF NOT EXISTS, erros devem ser raros, mas se ocorrerem, vamos continuar
             # pois pode ser que algumas tabelas já existam e outras não
             print(f"⚠️  Aviso ao aplicar schema: {e}")
-            print("Continuando mesmo assim (schema pode estar parcialmente criado)...\n")
+            print(
+                "Continuando mesmo assim (schema pode estar parcialmente criado)...\n"
+            )
 
         # Verificar se dados já existem
         if _database_has_data(dbsession):
