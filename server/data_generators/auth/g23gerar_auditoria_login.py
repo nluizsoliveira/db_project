@@ -29,91 +29,26 @@ def gerar_mensagem(status, email):
 
 def gerar_auditoria_login(dbsession):
     """
-    Gera logs históricos de tentativas de login.
-    Mistura SUCCESS, FAILURE e LOCKED com timestamps distribuídos.
+    Gera um log de login bem-sucedido para o usuário de teste.
     """
-    # Buscar emails de pessoas existentes
-    pessoas_result = dbsession.fetch_all("SELECT EMAIL FROM PESSOA ORDER BY EMAIL")
-    emails = [row['email'] for row in pessoas_result]
+    EMAIL_TESTE = "teste@usp.br"
 
-    if not emails:
-        print("⚠️  Nenhuma pessoa encontrada. Pulando geração de auditoria de login.")
-        return
-
-    # Buscar emails de pessoas com senha (mais prováveis de ter tentativas de login)
-    usuarios_result = dbsession.fetch_all("""
+    # Verificar se o usuário de teste existe
+    pessoa_teste_result = dbsession.fetch_one(f"""
         SELECT P.EMAIL
         FROM PESSOA P
-        INNER JOIN USUARIO_SENHA U ON P.CPF = U.CPF_PESSOA
-        ORDER BY P.EMAIL
+        WHERE P.EMAIL = '{EMAIL_TESTE}'
     """)
-    emails_com_senha = [row['email'] for row in usuarios_result]
 
-    # Usar 70% de emails com senha e 30% de outros emails
-    emails_prioritarios = emails_com_senha if emails_com_senha else emails
-    outros_emails = [e for e in emails if e not in emails_com_senha]
+    if not pessoa_teste_result:
+        print("⚠️  Usuário de teste não encontrado. Pulando geração de auditoria de login.")
+        return
 
-    # Gerar logs: 3-10 logs por email com senha, 1-3 por outros emails
-    auditoria_data = []
-
-    # Data base para logs (últimos 6 meses)
-    data_base = datetime.now() - timedelta(days=180)
-
-    # Logs para emails com senha
-    for email in emails_prioritarios:
-        num_logs = random.randint(3, 10)
-
-        for _ in range(num_logs):
-            # Timestamp aleatório nos últimos 6 meses
-            dias_aleatorios = random.randint(0, 180)
-            horas_aleatorias = random.randint(0, 23)
-            minutos_aleatorios = random.randint(0, 59)
-            segundos_aleatorios = random.randint(0, 59)
-
-            timestamp = data_base + timedelta(
-                days=dias_aleatorios,
-                hours=horas_aleatorias,
-                minutes=minutos_aleatorios,
-                seconds=segundos_aleatorios
-            )
-
-            # Status: mais SUCCESS, menos LOCKED
-            pesos_status = [0.7, 0.25, 0.05]  # SUCCESS, FAILURE, LOCKED
-            status = random.choices(STATUS_AUDITORIA, weights=pesos_status)[0]
-
-            ip_origem = gerar_ip_aleatorio()
-            mensagem = gerar_mensagem(status, email)
-
-            auditoria_data.append((timestamp, email, ip_origem, status, mensagem))
-
-    # Logs para outros emails (menos frequentes)
-    for email in random.sample(outros_emails, min(len(outros_emails), len(emails_prioritarios) // 3)):
-        num_logs = random.randint(1, 3)
-
-        for _ in range(num_logs):
-            dias_aleatorios = random.randint(0, 180)
-            horas_aleatorias = random.randint(0, 23)
-            minutos_aleatorios = random.randint(0, 59)
-            segundos_aleatorios = random.randint(0, 59)
-
-            timestamp = data_base + timedelta(
-                days=dias_aleatorios,
-                hours=horas_aleatorias,
-                minutes=minutos_aleatorios,
-                seconds=segundos_aleatorios
-            )
-
-            # Para emails sem senha, mais FAILURE
-            pesos_status = [0.2, 0.75, 0.05]  # SUCCESS, FAILURE, LOCKED
-            status = random.choices(STATUS_AUDITORIA, weights=pesos_status)[0]
-
-            ip_origem = gerar_ip_aleatorio()
-            mensagem = gerar_mensagem(status, email)
-
-            auditoria_data.append((timestamp, email, ip_origem, status, mensagem))
-
-    # Ordenar por timestamp para manter ordem cronológica
-    auditoria_data.sort(key=lambda x: x[0])
+    # Criar apenas um log de login bem-sucedido para o usuário de teste
+    timestamp = datetime.now() - timedelta(hours=1)  # Login há 1 hora
+    status = 'SUCCESS'
+    ip_origem = gerar_ip_aleatorio()
+    mensagem = gerar_mensagem(status, EMAIL_TESTE)
 
     # Inserir diretamente no banco
     query = """
@@ -127,9 +62,11 @@ def gerar_auditoria_login(dbsession):
         VALUES (%s, %s, %s, %s, %s)
     """
 
-    print(f"Inserindo {len(auditoria_data)} logs de auditoria no banco...")
+    auditoria_data = [(timestamp, EMAIL_TESTE, ip_origem, status, mensagem)]
+
+    print(f"Inserindo 1 log de auditoria de login para {EMAIL_TESTE}...")
     dbsession.executemany(query, auditoria_data)
-    print(f"✅ {len(auditoria_data)} logs de auditoria inseridos com sucesso!")
+    print(f"✅ 1 log de auditoria de login inserido com sucesso!")
 
 if __name__ == "__main__":
     dbsession = DBSession()

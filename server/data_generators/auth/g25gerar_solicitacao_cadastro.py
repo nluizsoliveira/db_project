@@ -84,7 +84,11 @@ def gerar_solicitacao_cadastro(dbsession):
         if status in ['APROVADA', 'REJEITADA']:
             cpf_admin_aprovador = random.choice(cpfs_admins)
             # Data de aprovação/rejeição (1-30 dias após solicitação)
-            dias_aprovacao = random.randint(1, min(30, dias_aleatorios))
+            # Se dias_aleatorios é 0, a aprovação é no mesmo dia (0 dias)
+            if dias_aleatorios == 0:
+                dias_aprovacao = 0
+            else:
+                dias_aprovacao = random.randint(1, min(30, dias_aleatorios))
             data_aprovacao = data_solicitacao + timedelta(days=dias_aprovacao)
 
         # Observações (40% de chance)
