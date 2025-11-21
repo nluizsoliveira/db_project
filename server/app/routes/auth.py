@@ -15,8 +15,14 @@ def login():
 
 @auth_blueprint.route("/login", methods=["POST"])
 def login_post():
-    email = request.form.get("email") or request.json.get("email", "").strip() if request.is_json else ""
-    password = request.form.get("password") or request.json.get("password", "").strip() if request.is_json else ""
+    if request.is_json:
+        data = request.json
+        email = data.get("email", "").strip()
+        password = data.get("password", "").strip()
+    else:
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "").strip()
+
     ip_origin = request.remote_addr
 
     if not email or not password:

@@ -18,24 +18,37 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append('email', email);
-      formData.append('password', password);
-
-      const response = await fetch('http://localhost:5050/auth/login', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
+      const data = await apiPost<{
+        success: boolean;
+        message?: string;
+        redirect?: string;
+      }>('/auth/login', {
+        email,
+        password,
       });
 
-      if (response.ok) {
-        router.push('/admin/dashboard');
+      if (data.success) {
+        if (data.redirect) {
+          router.push(data.redirect);
+        } else {
+          router.push('/admin/dashboard');
+        }
       } else {
-        const data = await response.json().catch(() => ({ message: 'Credenciais inválidas' }));
         setError(data.message || 'Credenciais inválidas');
       }
-    } catch (err) {
-      setError('Erro ao fazer login. Tente novamente.');
+    } catch (err: unknown) {
+      let errorMessage = 'Erro ao fazer login. Tente novamente.';
+
+      if (err instanceof Error) {
+        try {
+          const errorData = JSON.parse(err.message);
+          errorMessage = errorData.message || errorData.error || err.message;
+        } catch {
+          errorMessage = err.message;
+        }
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
+import { apiGet } from '@/lib/api';
 
 interface Participation {
   participant_name: string;
@@ -21,17 +22,17 @@ export default function ExternalDashboardPage() {
 
   const loadParticipations = async () => {
     try {
-      const response = await fetch('http://localhost:5050/external/dashboard', {
-        credentials: 'include',
-      });
+      const data = await apiGet<{
+        success: boolean;
+        participations: Participation[];
+      }>('/external/');
 
-      if (response.ok) {
-        const html = await response.text();
-        // Parse HTML ou fazer chamada API JSON se disponível
-        setParticipations([]);
+      if (data.success) {
+        setParticipations(data.participations || []);
       }
     } catch (err) {
       console.error('Erro ao carregar participações:', err);
+      setParticipations([]);
     } finally {
       setLoading(false);
     }

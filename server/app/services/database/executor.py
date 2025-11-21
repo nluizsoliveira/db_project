@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date, datetime, time
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -12,6 +13,17 @@ DEFAULT_SQL_ROOT = Path(__file__).resolve().parents[3] / "sql"
 
 class SQLExecutionError(RuntimeError):
     """Raised when a SQL asset cannot be executed."""
+
+
+def _make_json_serializable(obj: Any) -> Any:
+    """Convert non-JSON-serializable objects to strings."""
+    if isinstance(obj, (time, date, datetime)):
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        return {k: _make_json_serializable(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_make_json_serializable(item) for item in obj]
+    return obj
 
 
 def _get_sql_root() -> Path:
@@ -48,7 +60,9 @@ def fetch_all(
     query = _load_sql(relative_path)
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute(query, params or {})
-        return cursor.fetchall()
+        results = cursor.fetchall()
+        # Convert to list of dicts and make JSON serializable
+        return [_make_json_serializable(dict(row)) for row in results]
 
 
 def fetch_one(
@@ -62,7 +76,11 @@ def fetch_one(
     query = _load_sql(relative_path)
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         cursor.execute(query, params or {})
-        return cursor.fetchone()
+        result = cursor.fetchone()
+        if result is None:
+            return None
+        # Convert to dict and make JSON serializable
+        return _make_json_serializable(dict(result))
 
 
 def execute_statement(

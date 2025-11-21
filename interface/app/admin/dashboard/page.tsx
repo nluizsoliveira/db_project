@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
+import { apiGet } from '@/lib/api';
 
 interface Stat {
   label: string;
@@ -40,23 +41,23 @@ export default function AdminDashboardPage() {
 
   const loadDashboardData = async () => {
     try {
-      const response = await fetch('http://localhost:5050/admin/dashboard', {
-        credentials: 'include',
-      });
+      const data = await apiGet<{
+        success: boolean;
+        stats: Array<{ label: string; value: string | number; description: string }>;
+        upcoming_reservations: Reservation[];
+        activity_enrollment: Activity[];
+      }>('/admin/');
 
-      if (response.ok) {
-        const html = await response.text();
-        // Parse HTML ou fazer chamada API JSON se disponível
-        // Por enquanto, vamos usar dados mockados
-        setStats([
-          { label: 'Total de Usuários', value: '0', description: 'Usuários cadastrados' },
-          { label: 'Reservas Ativas', value: '0', description: 'Reservas em andamento' },
-          { label: 'Atividades', value: '0', description: 'Atividades cadastradas' },
-          { label: 'Instalações', value: '0', description: 'Instalações disponíveis' },
-        ]);
+      if (data.success) {
+        setStats(data.stats || []);
+        setUpcomingReservations(data.upcoming_reservations || []);
+        setActivityEnrollment(data.activity_enrollment || []);
       }
     } catch (err) {
       console.error('Erro ao carregar dados:', err);
+      setStats([]);
+      setUpcomingReservations([]);
+      setActivityEnrollment([]);
     } finally {
       setLoading(false);
     }

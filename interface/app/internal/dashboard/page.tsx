@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
+import { apiGet } from '@/lib/api';
 
 interface Reservation {
   nome_instalacao: string;
@@ -30,9 +31,7 @@ function InternalDashboardContent() {
   });
   const [loading, setLoading] = useState(false);
 
-  const loadReservations = async () => {
-    if (!filters.cpf) return;
-
+  const loadDashboardData = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -41,55 +40,27 @@ function InternalDashboardContent() {
       if (filters.start) params.append('start', filters.start);
       if (filters.end) params.append('end', filters.end);
 
-      const response = await fetch(`http://localhost:5050/internal/dashboard?${params.toString()}`, {
-        credentials: 'include',
-      });
+      const data = await apiGet<{
+        success: boolean;
+        reservas: Reservation[];
+        available_installs: AvailableInstallation[];
+      }>(`/internal/?${params.toString()}`);
 
-      if (response.ok) {
-        const html = await response.text();
-        // Parse HTML ou fazer chamada API JSON se disponível
-        setReservas([]);
+      if (data.success) {
+        setReservas(data.reservas || []);
+        setAvailableInstalls(data.available_installs || []);
       }
     } catch (err) {
-      console.error('Erro ao carregar reservas:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadAvailableInstallations = async () => {
-    if (!filters.date || !filters.start || !filters.end) return;
-
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (filters.date) params.append('date', filters.date);
-      if (filters.start) params.append('start', filters.start);
-      if (filters.end) params.append('end', filters.end);
-
-      const response = await fetch(`http://localhost:5050/internal/dashboard?${params.toString()}`, {
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const html = await response.text();
-        // Parse HTML ou fazer chamada API JSON se disponível
-        setAvailableInstalls([]);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar instalações:', err);
+      console.error('Erro ao carregar dados:', err);
+      setReservas([]);
+      setAvailableInstalls([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (filters.cpf) {
-      loadReservations();
-    }
-    if (filters.date && filters.start && filters.end) {
-      loadAvailableInstallations();
-    }
+    loadDashboardData();
   }, [searchParams]);
 
   const handleCpfSubmit = (e: FormEvent) => {
@@ -237,8 +208,8 @@ function InternalDashboardContent() {
                     ))
                   ) : (
                     <tr>
-                      <td className="px-3 py-6 text-center text-gray-500" colSpan={3}>
-                        Nenhuma reserva foi retornada para o CPF informado.
+                      <td className="px-3 py-4 text-gray-500" colSpan={3}>
+                        {filters.cpf ? 'Nenhuma reserva foi retornada para o CPF informado.' : 'Nenhuma reserva agendada.'}
                       </td>
                     </tr>
                   )}
@@ -269,9 +240,9 @@ function InternalDashboardContent() {
                     ))
                   ) : (
                     <tr>
-                      <td className="px-3 py-6 text-center text-gray-500" colSpan={3}>
-                      Selecione data e horário para ver disponibilidade.
-                    </td>
+                      <td className="px-3 py-4 text-gray-500" colSpan={3}>
+                        {filters.date && filters.start && filters.end ? 'Nenhuma instalação disponível no período selecionado.' : 'Selecione data e horário para ver disponibilidade.'}
+                      </td>
                     </tr>
                   )}
                 </tbody>

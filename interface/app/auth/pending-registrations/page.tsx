@@ -27,8 +27,16 @@ export default function PendingRegistrationsPage() {
 
   const loadRegistrations = async () => {
     try {
-      const data = await apiGet<Registration[]>('http://localhost:5050/auth/pending-registrations');
-      setRegistrations(Array.isArray(data) ? data : []);
+      const data = await apiGet<{
+        success: boolean;
+        registrations: Registration[];
+      }>('/auth/pending-registrations');
+
+      if (data.success && Array.isArray(data.registrations)) {
+        setRegistrations(data.registrations);
+      } else {
+        setRegistrations([]);
+      }
     } catch (err) {
       console.error('Erro ao carregar registrations:', err);
       setRegistrations([]);
@@ -39,23 +47,27 @@ export default function PendingRegistrationsPage() {
 
   const handleApprove = async (id: number) => {
     try {
-      const formData = new FormData();
-      formData.append('id_solicitacao', id.toString());
-
-      const response = await fetch(`http://localhost:5050/auth/approve-registration`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
+      const data = await apiPost<{
+        success: boolean;
+        message?: string;
+      }>('/auth/approve-registration', {
+        id_solicitacao: id,
       });
 
-      if (response.ok) {
-        setMessage({ category: 'success', text: 'Cadastro aprovado com sucesso' });
+      if (data.success) {
+        setMessage({ category: 'success', text: data.message || 'Cadastro aprovado com sucesso' });
         loadRegistrations();
       } else {
-        setMessage({ category: 'error', text: 'Erro ao aprovar cadastro' });
+        setMessage({ category: 'error', text: data.message || 'Erro ao aprovar cadastro' });
       }
     } catch (err) {
-      setMessage({ category: 'error', text: 'Erro ao processar solicitação' });
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao processar solicitação';
+      try {
+        const errorData = JSON.parse(errorMessage);
+        setMessage({ category: 'error', text: errorData.message || 'Erro ao aprovar cadastro' });
+      } catch {
+        setMessage({ category: 'error', text: errorMessage });
+      }
     }
   };
 
@@ -65,24 +77,28 @@ export default function PendingRegistrationsPage() {
     }
 
     try {
-      const formData = new FormData();
-      formData.append('id_solicitacao', id.toString());
-      formData.append('observacoes', '');
-
-      const response = await fetch(`http://localhost:5050/auth/reject-registration`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
+      const data = await apiPost<{
+        success: boolean;
+        message?: string;
+      }>('/auth/reject-registration', {
+        id_solicitacao: id,
+        observacoes: '',
       });
 
-      if (response.ok) {
-        setMessage({ category: 'success', text: 'Cadastro rejeitado' });
+      if (data.success) {
+        setMessage({ category: 'success', text: data.message || 'Cadastro rejeitado' });
         loadRegistrations();
       } else {
-        setMessage({ category: 'error', text: 'Erro ao rejeitar cadastro' });
+        setMessage({ category: 'error', text: data.message || 'Erro ao rejeitar cadastro' });
       }
     } catch (err) {
-      setMessage({ category: 'error', text: 'Erro ao processar solicitação' });
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao processar solicitação';
+      try {
+        const errorData = JSON.parse(errorMessage);
+        setMessage({ category: 'error', text: errorData.message || 'Erro ao rejeitar cadastro' });
+      } catch {
+        setMessage({ category: 'error', text: errorMessage });
+      }
     }
   };
 

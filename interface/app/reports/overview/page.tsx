@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
+import { apiGet } from '@/lib/api';
 
 interface ReservationRollup {
   installation_name: string | null;
@@ -39,20 +40,26 @@ export default function ReportsOverviewPage() {
 
   const loadReports = async () => {
     try {
-      const response = await fetch('http://localhost:5050/reports/overview', {
-        credentials: 'include',
-      });
+      const data = await apiGet<{
+        success: boolean;
+        reservation_rollup: ReservationRollup[];
+        activities_cube: ActivitiesCube[];
+        participants_totals: ParticipantsTotal[];
+        installation_ranking: InstallationRanking[];
+      }>('/reports/');
 
-      if (response.ok) {
-        const html = await response.text();
-        // Parse HTML ou fazer chamada API JSON se disponível
-        setReservationRollup([]);
-        setActivitiesCube([]);
-        setParticipantsTotals([]);
-        setInstallationRanking([]);
+      if (data.success) {
+        setReservationRollup(data.reservation_rollup || []);
+        setActivitiesCube(data.activities_cube || []);
+        setParticipantsTotals(data.participants_totals || []);
+        setInstallationRanking(data.installation_ranking || []);
       }
     } catch (err) {
       console.error('Erro ao carregar relatórios:', err);
+      setReservationRollup([]);
+      setActivitiesCube([]);
+      setParticipantsTotals([]);
+      setInstallationRanking([]);
     } finally {
       setLoading(false);
     }

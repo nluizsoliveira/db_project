@@ -6,7 +6,23 @@ from app.services.database.bootstrap import ensure_schema_populated
 
 
 def register_extensions(app: Flask) -> None:
-    CORS(app, supports_credentials=True, origins=['http://localhost:3000', 'http://nextjs_app:3000'])
+    # Permitir todas as origens em desenvolvimento para facilitar o desenvolvimento
+    # Em produção, especificar origens específicas
+    import os
+    debug_mode = app.config.get("DEBUG", False) or os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+
+    if debug_mode:
+        # Em desenvolvimento, permitir todas as origens locais
+        CORS(app, supports_credentials=True, origins=[
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://127.0.0.1:3000',
+            'http://127.0.0.1:3001',
+            'http://nextjs_app:3000',
+        ])
+    else:
+        # Em produção, apenas origens específicas
+        CORS(app, supports_credentials=True, origins=['http://localhost:3000', 'http://nextjs_app:3000'])
     _register_db_session(app)
 
 

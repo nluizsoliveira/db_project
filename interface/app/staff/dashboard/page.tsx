@@ -3,6 +3,7 @@
 import { useState, useEffect, FormEvent, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
+import { apiGet } from '@/lib/api';
 
 interface Activity {
   nome_atividade: string;
@@ -36,17 +37,17 @@ function StaffDashboardContent() {
       if (filters.group) params.append('group', filters.group);
       if (filters.modality) params.append('modality', filters.modality);
 
-      const response = await fetch(`http://localhost:5050/staff/dashboard?${params.toString()}`, {
-        credentials: 'include',
-      });
+      const data = await apiGet<{
+        success: boolean;
+        activities: Activity[];
+      }>(`/staff/?${params.toString()}`);
 
-      if (response.ok) {
-        const html = await response.text();
-        // Parse HTML ou fazer chamada API JSON se disponível
-        setActivities([]);
+      if (data.success) {
+        setActivities(data.activities || []);
       }
     } catch (err) {
       console.error('Erro ao carregar atividades:', err);
+      setActivities([]);
     } finally {
       setLoading(false);
     }
