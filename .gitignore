@@ -209,3 +209,4 @@ __marimo__/
 # Ignore Postgres local data directory used by docker-compose
 pgdata/
 .DS_Store
+node_modules/
