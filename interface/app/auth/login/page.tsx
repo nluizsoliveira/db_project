@@ -111,10 +111,16 @@ export default function LoginPage() {
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
-        <div className="mt-6 text-center">
+        <div className="mt-6 space-y-3 text-center">
+          <Link
+            href="/auth/register"
+            className="block text-sm text-[#1094ab] hover:underline"
+          >
+            Solicitar cadastro no sistema CEFER →
+          </Link>
           <Link
             href="/auth/login/external"
-            className="text-sm text-[#1094ab] hover:underline"
+            className="block text-sm text-[#1094ab] hover:underline"
           >
             Acessar como usuário externo →
           </Link>

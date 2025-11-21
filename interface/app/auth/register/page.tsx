@@ -109,12 +109,12 @@ export default function RegisterPage() {
               name="nusp"
               type="text"
               required
-              pattern="[0-9]{10}"
-              maxLength={10}
+              pattern="[0-9]{5,8}"
+              maxLength={8}
               value={formData.nusp}
               onChange={(e) => setFormData({ ...formData, nusp: e.target.value })}
               className="w-full rounded border border-gray-300 px-4 py-2 text-sm shadow-sm focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
-              placeholder="0000000000"
+              placeholder="00000"
             />
           </div>
           <div>

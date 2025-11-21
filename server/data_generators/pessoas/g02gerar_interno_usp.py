@@ -5,9 +5,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from app.database import DBSession
 
-# Função para gerar um NUSP aleatório (exemplo)
+# Função para gerar um NUSP aleatório (5 a 8 dígitos)
 def gerar_nusp():
-    return f"{random.randint(1000000000, 9999999999)}"
+    return f"{random.randint(10000, 99999999)}"
 
 # Função para gerar uma categoria aleatória
 def gerar_categoria():
@@ -17,7 +17,7 @@ def gerar_categoria():
 # Função para dividir os dados em 90% para internos e 10% para pessoas restantes
 def gerar_interno_usp(dbsession):
     # Emails fixos para garantir que sejam internos
-    EMAILS_TESTE = ["admin@usp.br", "interno@usp.br", "funcionario@usp.br"]
+    EMAILS_TESTE = ["admin@usp.br", "interno@usp.br", "funcionario@usp.br", "cadastro@usp.br"]
 
     # Buscar todas as pessoas do banco
     pessoas_result = dbsession.fetch_all("SELECT CPF, EMAIL FROM PESSOA ORDER BY CPF")

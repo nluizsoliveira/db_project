@@ -13,8 +13,8 @@ fake = Faker('pt_BR')
 STATUS_SOLICITACAO = ['PENDENTE', 'APROVADA', 'REJEITADA']
 
 def gerar_nusp():
-    """Gera um NUSP aleatório."""
-    return f"{random.randint(1000000000, 9999999999)}"
+    """Gera um NUSP aleatório (5 a 8 dígitos)."""
+    return f"{random.randint(10000, 99999999)}"
 
 def gerar_solicitacao_cadastro(dbsession):
     """

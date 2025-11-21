@@ -33,6 +33,7 @@ fake = Faker("pt_BR")
 EMAIL_ADMIN = "admin@usp.br"
 EMAIL_INTERNO = "interno@usp.br"
 EMAIL_FUNCIONARIO = "funcionario@usp.br"
+EMAIL_TESTE_CADASTRO = "cadastro@usp.br"
 
 
 def gerar_pessoas(dbsession, quantidade):
@@ -43,17 +44,21 @@ def gerar_pessoas(dbsession, quantidade):
 
     print(f"Gerando {quantidade} pessoas...")
 
-    # Criar três usuários de teste no início
+    # Criar usuários de teste no início
     usuarios_teste = [
-        ("admin@usp.br", "Administrador Teste"),
-        ("interno@usp.br", "Interno Teste"),
-        ("funcionario@usp.br", "Funcionário Teste"),
+        ("admin@usp.br", "Administrador Teste", None),
+        ("interno@usp.br", "Interno Teste", None),
+        ("funcionario@usp.br", "Funcionário Teste", None),
+        ("cadastro@usp.br", "Teste Cadastro", "01995923222"),
     ]
 
-    for email_teste, nome_teste in usuarios_teste:
-        cpf_teste = gerar_cpf()
-        while cpf_teste in cpfs_gerados:
+    for email_teste, nome_teste, cpf_fixo in usuarios_teste:
+        if cpf_fixo:
+            cpf_teste = cpf_fixo
+        else:
             cpf_teste = gerar_cpf()
+            while cpf_teste in cpfs_gerados:
+                cpf_teste = gerar_cpf()
         cpfs_gerados.add(cpf_teste)
 
         celular_teste = (
