@@ -150,6 +150,44 @@ def gerar_convite_externo(dbsession):
     if sem_obs:
         dbsession.executemany(query_sem_obs, sem_obs)
 
+    # Adicionar convite de teste com token SUPER fácil de digitar
+    # Token curto e simples: "teste123" - fácil de digitar!
+    token_teste = "teste123"
+
+    # Buscar primeira atividade e primeiro interno para o convite de teste
+    if ids_atividades and cpfs_internos:
+        # Verificar se o token de teste já existe
+        token_exists_result = dbsession.fetch_one(
+            "SELECT COUNT(*) as count FROM CONVITE_EXTERNO WHERE TOKEN = %(token)s",
+            {"token": token_teste}
+        )
+
+        if not token_exists_result or token_exists_result.get('count', 0) == 0:
+            # Criar convite de teste com status PENDENTE
+            convite_teste = (
+                cpfs_internos[0],  # Primeiro interno como convidante
+                "12345678901",  # CPF válido de 11 dígitos para teste
+                "Usuário Externo de Teste",
+                "teste@externo.com",
+                "(11) 99999-9999",
+                ids_atividades[0],  # Primeira atividade
+                "PENDENTE",
+                token_teste,
+                datetime.now(),  # Data atual
+                None,  # Sem resposta ainda
+                "Convite de teste para desenvolvimento"
+            )
+
+            # Execute usando tupla (psycopg2 aceita tuplas com %s)
+            with dbsession.connection.cursor() as cursor:
+                cursor.execute(query_com_obs, convite_teste)
+            dbsession.connection.commit()
+            print(f"✅ Convite de teste criado!")
+            print(f"   Token: {token_teste}")
+            print(f"   Use este token para testar o login externo!")
+        else:
+            print(f"ℹ️  Convite de teste já existe no banco (token: {token_teste})")
+
     print(f"✅ {len(convites_data)} convites externos inseridos com sucesso!")
 
 if __name__ == "__main__":

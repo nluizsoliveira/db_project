@@ -7,6 +7,25 @@ from app.database import DBSession
 from app.services.migrations import SchemaMigration
 from data_generators.populate import populate_db
 from app.services.database.downgrade import downgrade_database
+from data_generators.check_populated import is_db_populated
+
+
+@debug_blueprint.get("/check-db-status")
+def check_database_status():
+    """Verifica se o banco de dados está populado ou vazio."""
+    try:
+        populated = is_db_populated()
+        return jsonify({
+            "populated": populated
+        })
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Erro ao verificar estado do banco: {error_details}")
+        return jsonify({
+            "populated": False,
+            "error": str(e)
+        }), 500
 
 
 @debug_blueprint.post("/populate-db")

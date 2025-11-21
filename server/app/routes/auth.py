@@ -1,6 +1,9 @@
 from flask import Blueprint, jsonify, request, session
+import logging
 
 from app.services.database import executor as sql_queries
+
+logger = logging.getLogger(__name__)
 
 
 auth_blueprint = Blueprint("auth", __name__, url_prefix="/auth")
@@ -234,27 +237,70 @@ def get_current_user():
 @auth_blueprint.route("/login/external", methods=["POST"])
 def login_external():
     """Login endpoint for external users using token."""
+    logger.info("=== LOGIN EXTERNO INICIADO ===")
+
     if request.is_json:
         data = request.json
         token = data.get("token", "").strip()
+        logger.info(f"Token recebido (JSON): '{token}' (tamanho: {len(token)})")
     else:
         token = request.form.get("token", "").strip()
+        logger.info(f"Token recebido (FORM): '{token}' (tamanho: {len(token)})")
 
     if not token:
+        logger.warning("Token vazio recebido")
         return jsonify({"success": False, "message": "Token é obrigatório"}), 400
 
-    result = sql_queries.fetch_one(
-        "queries/auth/login_external_by_token.sql",
-        {"token": token},
-    )
+    logger.info(f"Buscando convite com token: '{token}'")
 
-    if not result or not result.get("result"):
-        return jsonify({"success": False, "message": "Erro ao processar autenticação"}), 500
+    # Debug: verificar se o token existe no banco usando conexão direta
+    try:
+        from flask import g
+        if hasattr(g, 'db_session') and g.db_session:
+            with g.db_session.connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT TOKEN, STATUS, ID_CONVITE, NOME_CONVIDADO FROM CONVITE_EXTERNO WHERE TOKEN = %s",
+                    (token,)
+                )
+                debug_result = cursor.fetchone()
+                logger.info(f"DEBUG - Token encontrado no banco: {debug_result}")
+
+                # Verificar todos os tokens que começam com "teste"
+                cursor.execute(
+                    "SELECT TOKEN, STATUS, ID_CONVITE, NOME_CONVIDADO FROM CONVITE_EXTERNO WHERE TOKEN LIKE 'teste%' LIMIT 5"
+                )
+                all_test_tokens = cursor.fetchall()
+                logger.info(f"DEBUG - Tokens que começam com 'teste': {all_test_tokens}")
+    except Exception as e:
+        logger.warning(f"Erro ao fazer debug query: {str(e)}")
+
+    try:
+        result = sql_queries.fetch_one(
+            "queries/auth/login_external_by_token.sql",
+            {"token": token},
+        )
+        logger.info(f"Resultado da query: {result}")
+    except Exception as e:
+        logger.error(f"Erro ao executar query: {type(e).__name__}: {str(e)}", exc_info=True)
+        return jsonify({"success": False, "message": f"Erro ao processar autenticação: {str(e)}"}), 500
+
+    if not result:
+        logger.warning("Query retornou None")
+        return jsonify({"success": False, "message": "Erro ao processar autenticação: resultado vazio"}), 500
+
+    if not result.get("result"):
+        logger.warning(f"Query retornou sem campo 'result': {result}")
+        return jsonify({"success": False, "message": "Erro ao processar autenticação: sem resultado"}), 500
 
     auth_data = result["result"]
+    logger.info(f"Dados de autenticação: {auth_data}")
 
     if not auth_data.get("success"):
-        return jsonify({"success": False, "message": auth_data.get("message", "Token inválido")}), 401
+        error_message = auth_data.get("message", "Token inválido")
+        logger.warning(f"Autenticação falhou: {error_message}")
+        return jsonify({"success": False, "message": error_message}), 401
+
+    logger.info("Autenticação bem-sucedida!")
 
     # Store external user data in session
     session["external_token"] = token

@@ -483,9 +483,9 @@ BEGIN
                 json_build_object(
                     'id_atividade', activity_record.id_atividade,
                     'nome', activity_record.nome,
-                    'descricao', activity_record.descricao,
-                    'data_inicio', activity_record.data_inicio,
-                    'data_fim', activity_record.data_fim
+                    'vagas_limite', activity_record.vagas_limite,
+                    'data_inicio_periodo', activity_record.data_inicio_periodo,
+                    'data_fim_periodo', activity_record.data_fim_periodo
                 )
             ELSE NULL
         END
