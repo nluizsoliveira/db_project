@@ -1,3 +1,49 @@
+\lstset{upquote=true}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{codepurple},
+    numberstyle=\numberstyle,
+    stringstyle=\color{codepurple},
+    basicstyle=\footnotesize\ttfamily,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=10pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+}
+\lstset{style=mystyle}
+
+\newcommand\numberstyle[1]{%
+    \footnotesize
+    \color{codegray}%
+    \ttfamily
+    \ifnum#1<10 0\fi#1 |%
+}
+
 \section{Sistema Proposto}
 
 Descrição de tudo que foi implementado em SQL abraço
+
+\begin{lstlisting}[ language=SQL,
+                    morekeywords={clustered},
+                    framesep=8pt,
+                    xleftmargin=40pt,
+                    framexleftmargin=40pt,
+                    frame=tb,
+                    framerule=0pt ]
+CREATE OR REPLACE FUNCTION hash_password(plain_password TEXT)
+RETURNS TEXT
+AS $$
+BEGIN
+    RETURN crypt(plain_password, gen_salt('bf', 10));
+END;
+$$ LANGUAGE plpgsql;
+\end{lstlisting}
+
+
