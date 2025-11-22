@@ -39,9 +39,17 @@ const NavbarLinks = memo(function NavbarLinks({ user }: NavbarLinksProps) {
   return (
     <nav className="flex flex-wrap items-center gap-4 text-sm font-medium">
       {visibility.showAdmin && (
-        <Link href="/admin/dashboard" className={getLinkClassName('/admin/dashboard')}>
-          Administração
-        </Link>
+        <>
+          <Link href="/admin/dashboard" className={getLinkClassName('/admin/dashboard')}>
+            Administração
+          </Link>
+          <Link href="/auth/pending-registrations" className={getLinkClassName('/auth/pending-registrations')}>
+            Cadastros Pendentes
+          </Link>
+          <Link href="/admin/extension-groups" className={getLinkClassName('/admin/extension-groups')}>
+            Grupos de Extensão
+          </Link>
+        </>
       )}
       {visibility.showReports && (
         <Link href="/reports/overview" className={getLinkClassName('/reports/overview')}>
