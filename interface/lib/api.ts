@@ -4,40 +4,74 @@ const API_BASE_URL =
     : "http://flask_app:5050";
 
 export async function apiGet<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(
-      errorData.message || `HTTP error! status: ${response.status}`
-    );
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch {
+        // Se não conseguir parsear JSON, usar a mensagem padrão
+      }
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    // Tratar erros de rede (Failed to fetch)
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      throw new Error(
+        `Não foi possível conectar ao servidor. Verifique se o servidor está rodando em ${API_BASE_URL}`
+      );
+    }
+    // Re-lançar outros erros
+    throw error;
   }
-  return await response.json();
 }
 
 export async function apiPost<T>(
   path: string,
   data: Record<string, unknown>
 ): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(
-      errorData.message || `HTTP error! status: ${response.status}`
-    );
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      let errorMessage = `HTTP error! status: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch {
+        // Se não conseguir parsear JSON, usar a mensagem padrão
+      }
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    // Tratar erros de rede (Failed to fetch)
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      throw new Error(
+        `Não foi possível conectar ao servidor. Verifique se o servidor está rodando em ${API_BASE_URL}`
+      );
+    }
+    // Re-lançar outros erros
+    throw error;
   }
-  return await response.json();
 }
 
 export interface UpdatePasswordRequest {

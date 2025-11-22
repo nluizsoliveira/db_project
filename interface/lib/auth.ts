@@ -1,5 +1,10 @@
 import { apiGet } from "@/lib/api";
 
+const API_BASE_URL =
+  typeof window !== "undefined"
+    ? process.env.NEXT_PUBLIC_API_URL || "http://localhost:5050"
+    : "http://flask_app:5050";
+
 export interface User {
   user_id: string;
   email: string;
@@ -39,13 +44,34 @@ export async function getCurrentUser(): Promise<User | null> {
   // Fetch user data
   userCachePromise = (async () => {
     try {
-      const response = await apiGet<AuthResponse>("/auth/me");
-      if (response.success && response.user) {
-        currentUserCache = response.user;
-        return response.user;
+      // Use direct fetch to avoid throwing errors for authentication failures
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      // If not authenticated, silently return null (no error)
+      if (!response.ok) {
+        // 401/403 means user is not authenticated - this is expected
+        if (response.status === 401 || response.status === 403) {
+          return null;
+        }
+        // Other errors should be logged
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Error fetching current user:", errorData.message || `HTTP error! status: ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json() as AuthResponse;
+      if (data.success && data.user) {
+        currentUserCache = data.user;
+        return data.user;
       }
       return null;
     } catch (error) {
+      // Network errors or other unexpected errors
       console.error("Error fetching current user:", error);
       return null;
     } finally {

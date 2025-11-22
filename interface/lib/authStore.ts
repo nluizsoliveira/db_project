@@ -32,7 +32,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = await getCurrentUser();
       set({ user, loading: false, initialized: true });
     } catch (error) {
-      console.error("Error loading user:", error);
+      // getCurrentUser should not throw errors for auth failures anymore,
+      // but if it does for unexpected reasons, handle it gracefully
+      console.error("Unexpected error loading user:", error);
       set({ user: null, loading: false, initialized: true });
     }
   },
@@ -50,7 +52,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = await getCurrentUser();
       set({ user, loading: false, initialized: true });
     } catch (error) {
-      console.error("Error refreshing user:", error);
+      // getCurrentUser should not throw errors for auth failures anymore,
+      // but if it does for unexpected reasons, handle it gracefully
+      console.error("Unexpected error refreshing user:", error);
       set({ user: null, loading: false, initialized: true });
     }
   },

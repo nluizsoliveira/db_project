@@ -1,23 +1,24 @@
-'use client';
+"use client";
 
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import Layout from '@/components/Layout';
-import { apiPost } from '@/lib/api';
-import { useAuthStore } from '@/lib/authStore';
+import { useState, FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import Layout from "@/components/Layout";
+import { apiPost } from "@/lib/api";
+import { useAuthStore } from "@/lib/authStore";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const refreshUser = useAuthStore((state) => state.refreshUser);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
@@ -25,7 +26,7 @@ export default function LoginPage() {
         success: boolean;
         message?: string;
         redirect?: string;
-      }>('/auth/login', {
+      }>("/auth/login", {
         email,
         password,
       });
@@ -34,16 +35,19 @@ export default function LoginPage() {
         // Recarrega o usuário após login bem-sucedido
         await refreshUser();
 
-        if (data.redirect) {
-          router.push(data.redirect);
+        // Check for redirect parameter from middleware or use backend redirect
+        const redirectUrl = searchParams.get("redirect") || data.redirect;
+
+        if (redirectUrl) {
+          router.push(redirectUrl);
         } else {
-          router.push('/admin/dashboard');
+          router.push("/admin/dashboard");
         }
       } else {
-        setError(data.message || 'Credenciais inválidas');
+        setError(data.message || "Credenciais inválidas");
       }
     } catch (err: unknown) {
-      let errorMessage = 'Erro ao fazer login. Tente novamente.';
+      let errorMessage = "Erro ao fazer login. Tente novamente.";
 
       if (err instanceof Error) {
         try {
@@ -61,13 +65,20 @@ export default function LoginPage() {
   };
 
   return (
-    <Layout hideNavbar hideFooter hideDebugButtons mainClass="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#1094ab] to-[#64c4d2] p-6">
+    <Layout
+      hideNavbar
+      hideFooter
+      hideDebugButtons
+      mainClass="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#1094ab] to-[#64c4d2] p-6"
+    >
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-xl">
         <div className="mb-6 text-center">
           <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#1094ab] text-xl font-bold text-white">
             CE
           </span>
-          <h1 className="mt-4 text-2xl font-bold text-gray-900">Acesse o Sistema CEFER</h1>
+          <h1 className="mt-4 text-2xl font-bold text-gray-900">
+            Acesse o Sistema CEFER
+          </h1>
           <p className="mt-2 text-sm text-gray-500">
             Login para membros internos da USP e funcionários.
           </p>
@@ -79,7 +90,10 @@ export default function LoginPage() {
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="email"
+              className="mb-1 block text-sm font-medium text-gray-700"
+            >
               E-mail institucional
             </label>
             <input
@@ -94,7 +108,10 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="password"
+              className="mb-1 block text-sm font-medium text-gray-700"
+            >
               Senha
             </label>
             <input
@@ -113,7 +130,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded bg-[#1094ab] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#64c4d2] hover:text-[#1094ab] disabled:opacity-50"
           >
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
         <div className="mt-6 space-y-3 text-center">

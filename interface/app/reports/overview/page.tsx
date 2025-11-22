@@ -51,6 +51,7 @@ export default function ReportsOverviewPage() {
   const [activityOccurrences, setActivityOccurrences] = useState<ActivityOccurrence[]>([]);
   const [installationsMostReserved, setInstallationsMostReserved] = useState<InstallationMostReserved[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadReports();
@@ -58,6 +59,7 @@ export default function ReportsOverviewPage() {
 
   const loadReports = async () => {
     try {
+      setError(null);
       const data = await apiGet<{
         success: boolean;
         reservation_rollup: ReservationRollup[];
@@ -78,6 +80,8 @@ export default function ReportsOverviewPage() {
       }
     } catch (err) {
       console.error('Erro ao carregar relatórios:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao carregar relatórios';
+      setError(errorMessage);
       setReservationRollup([]);
       setActivitiesCube([]);
       setParticipantsTotals([]);
@@ -88,6 +92,43 @@ export default function ReportsOverviewPage() {
       setLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <section className="space-y-6">
+          <header>
+            <h1 className="text-2xl font-semibold text-gray-900">Relatórios operacionais</h1>
+          </header>
+          <div className="rounded-lg bg-white p-4 shadow">
+            <p className="text-gray-600">Carregando relatórios...</p>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <section className="space-y-6">
+          <header>
+            <h1 className="text-2xl font-semibold text-gray-900">Relatórios operacionais</h1>
+          </header>
+          <div className="rounded-lg bg-red-50 border border-red-200 p-4 shadow">
+            <h2 className="text-lg font-semibold text-red-900 mb-2">Erro ao carregar relatórios</h2>
+            <p className="text-red-700">{error}</p>
+            <button
+              onClick={loadReports}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
