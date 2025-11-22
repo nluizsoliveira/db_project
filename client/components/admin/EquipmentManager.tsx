@@ -1,6 +1,40 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, useMemo } from 'react';
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 
 interface Equipment {
@@ -34,6 +68,12 @@ export default function EquipmentManager() {
     eh_reservavel: 'N',
   });
   const [submitting, setSubmitting] = useState(false);
+
+  // TanStack Table states
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = useState({});
 
   const loadEquipment = async () => {
     setLoading(true);
@@ -191,16 +231,179 @@ export default function EquipmentManager() {
     }
   };
 
+  // Define columns
+  const columns: ColumnDef<Equipment>[] = useMemo(
+    () => [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && 'indeterminate')
+            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Selecionar todos"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Selecionar linha"
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
+      {
+        accessorKey: 'id_patrimonio',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              ID Patrimônio
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div className="font-medium">{row.getValue('id_patrimonio')}</div>,
+      },
+      {
+        accessorKey: 'nome',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Nome
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue('nome')}</div>,
+      },
+      {
+        accessorKey: 'nome_instalacao',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Instalação
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue('nome_instalacao') || '—'}</div>,
+      },
+      {
+        id: 'preco',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Preço
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => {
+          const preco = row.original.preco_aquisicao;
+          return <div>{preco ? `R$ ${preco.toFixed(2)}` : '—'}</div>;
+        },
+        sortingFn: (rowA, rowB) => {
+          const a = rowA.original.preco_aquisicao || 0;
+          const b = rowB.original.preco_aquisicao || 0;
+          return a - b;
+        },
+      },
+      {
+        accessorKey: 'eh_reservavel',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Reservável
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue('eh_reservavel') === 'S' ? 'Sim' : 'Não'}</div>,
+      },
+      {
+        id: 'actions',
+        enableHiding: false,
+        cell: ({ row }) => {
+          const equipment = row.original;
+
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Abrir menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => handleEdit(equipment.id_patrimonio)}>
+                  Editar
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => handleDelete(equipment.id_patrimonio)}
+                  className="text-destructive"
+                >
+                  Deletar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: equipment,
+    columns,
+    getRowId: (row) => row.id_patrimonio,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+    },
+  });
+
   return (
     <div className="rounded-lg bg-white p-6 shadow">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">Gerenciar Equipamentos</h2>
-        <button
+        <Button
           onClick={handleCreate}
-          className="rounded bg-[#1094ab] px-4 py-2 text-sm font-semibold text-white hover:bg-[#64c4d2] hover:text-[#1094ab]"
+          className="bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab]"
         >
           Novo Equipamento
-        </button>
+        </Button>
       </div>
 
       {showForm && (
@@ -285,23 +488,23 @@ export default function EquipmentManager() {
             </div>
             {error && <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">{error}</div>}
             <div className="flex justify-end gap-2">
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => {
                   setShowForm(false);
                   setError('');
                 }}
-                className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={submitting}
-                className="rounded bg-[#1094ab] px-4 py-2 text-sm font-semibold text-white hover:bg-[#64c4d2] hover:text-[#1094ab] disabled:opacity-50"
+                className="bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab] disabled:opacity-50"
               >
                 {submitting ? 'Salvando...' : editingEquipment ? 'Atualizar' : 'Criar'}
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -314,56 +517,112 @@ export default function EquipmentManager() {
       {loading ? (
         <div className="py-8 text-center text-gray-500">Carregando equipamentos...</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="border-b text-left text-gray-500">
-              <tr>
-                <th className="px-3 py-2">ID Patrimônio</th>
-                <th className="px-3 py-2">Nome</th>
-                <th className="px-3 py-2">Instalação</th>
-                <th className="px-3 py-2">Preço</th>
-                <th className="px-3 py-2">Reservável</th>
-                <th className="px-3 py-2">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {equipment.length > 0 ? (
-                equipment.map((eq) => (
-                  <tr key={eq.id_patrimonio}>
-                    <td className="px-3 py-2 font-medium text-gray-900">{eq.id_patrimonio}</td>
-                    <td className="px-3 py-2">{eq.nome}</td>
-                    <td className="px-3 py-2">{eq.nome_instalacao || '—'}</td>
-                    <td className="px-3 py-2">
-                      {eq.preco_aquisicao ? `R$ ${eq.preco_aquisicao.toFixed(2)}` : '—'}
-                    </td>
-                    <td className="px-3 py-2">{eq.eh_reservavel === 'S' ? 'Sim' : 'Não'}</td>
-                    <td className="px-3 py-2">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEdit(eq.id_patrimonio)}
-                          className="rounded bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => handleDelete(eq.id_patrimonio)}
-                          className="rounded bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700"
-                        >
-                          Deletar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td className="px-3 py-4 text-gray-500" colSpan={6}>
-                    Nenhum equipamento encontrado.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div className="w-full space-y-4">
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Filtrar por nome..."
+              value={(table.getColumn('nome')?.getFilterValue() as string) ?? ''}
+              onChange={(event) => table.getColumn('nome')?.setFilterValue(event.target.value)}
+              className="max-w-sm"
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Colunas <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                      >
+                        {column.id === 'id_patrimonio'
+                          ? 'ID Patrimônio'
+                          : column.id === 'nome_instalacao'
+                          ? 'Instalação'
+                          : column.id === 'eh_reservavel'
+                          ? 'Reservável'
+                          : column.id === 'preco'
+                          ? 'Preço'
+                          : column.id}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && 'selected'}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                      Nenhum equipamento encontrado.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex items-center justify-end space-x-2">
+            <div className="flex-1 text-sm text-muted-foreground">
+              {table.getFilteredSelectedRowModel().rows.length} de{' '}
+              {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
+            </div>
+            <div className="space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                Próxima
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

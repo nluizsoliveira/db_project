@@ -1,6 +1,40 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, useMemo } from 'react';
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 
 interface Event {
@@ -35,6 +69,12 @@ export default function EventsManager() {
     id_reserva: '',
   });
   const [submitting, setSubmitting] = useState(false);
+
+  // TanStack Table states
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = useState({});
 
   const loadEvents = async () => {
     setLoading(true);
@@ -178,16 +218,155 @@ export default function EventsManager() {
     }
   };
 
+  // Define columns
+  const columns: ColumnDef<Event>[] = useMemo(
+    () => [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && 'indeterminate')
+            }
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Selecionar todos"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Selecionar linha"
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
+      {
+        accessorKey: 'nome',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Nome
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div className="font-medium">{row.getValue('nome')}</div>,
+      },
+      {
+        accessorKey: 'descricao',
+        header: 'Descrição',
+        cell: ({ row }) => <div>{row.getValue('descricao') || '—'}</div>,
+      },
+      {
+        accessorKey: 'nome_instalacao',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Instalação
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue('nome_instalacao') || '—'}</div>,
+      },
+      {
+        accessorKey: 'data_reserva',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Data
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue('data_reserva') || '—'}</div>,
+      },
+      {
+        id: 'horario',
+        header: 'Horário',
+        cell: ({ row }) => {
+          const inicio = row.original.horario_inicio;
+          const fim = row.original.horario_fim;
+          return <div>{inicio && fim ? `${inicio} - ${fim}` : '—'}</div>;
+        },
+      },
+      {
+        id: 'actions',
+        enableHiding: false,
+        cell: ({ row }) => {
+          const event = row.original;
+
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Abrir menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => handleEdit(event.id_evento)}>
+                  Editar
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => handleDelete(event.id_evento)}
+                  className="text-destructive"
+                >
+                  Deletar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: events,
+    columns,
+    getRowId: (row) => row.id_evento.toString(),
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+    },
+  });
+
   return (
     <div className="rounded-lg bg-white p-6 shadow">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">Gerenciar Eventos</h2>
-        <button
+        <Button
           onClick={handleCreate}
-          className="rounded bg-[#1094ab] px-4 py-2 text-sm font-semibold text-white hover:bg-[#64c4d2] hover:text-[#1094ab]"
+          className="bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab]"
         >
           Novo Evento
-        </button>
+        </Button>
       </div>
 
       {showForm && (
@@ -237,23 +416,23 @@ export default function EventsManager() {
             </label>
             {error && <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">{error}</div>}
             <div className="flex justify-end gap-2">
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => {
                   setShowForm(false);
                   setError('');
                 }}
-                className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={submitting}
-                className="rounded bg-[#1094ab] px-4 py-2 text-sm font-semibold text-white hover:bg-[#64c4d2] hover:text-[#1094ab] disabled:opacity-50"
+                className="bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab] disabled:opacity-50"
               >
                 {submitting ? 'Salvando...' : editingEvent ? 'Atualizar' : 'Criar'}
-              </button>
+              </Button>
             </div>
           </form>
         </div>
@@ -266,58 +445,110 @@ export default function EventsManager() {
       {loading ? (
         <div className="py-8 text-center text-gray-500">Carregando eventos...</div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="border-b text-left text-gray-500">
-              <tr>
-                <th className="px-3 py-2">Nome</th>
-                <th className="px-3 py-2">Descrição</th>
-                <th className="px-3 py-2">Instalação</th>
-                <th className="px-3 py-2">Data</th>
-                <th className="px-3 py-2">Horário</th>
-                <th className="px-3 py-2">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {events.length > 0 ? (
-                events.map((event) => (
-                  <tr key={event.id_evento}>
-                    <td className="px-3 py-2 font-medium text-gray-900">{event.nome}</td>
-                    <td className="px-3 py-2">{event.descricao || '—'}</td>
-                    <td className="px-3 py-2">{event.nome_instalacao || '—'}</td>
-                    <td className="px-3 py-2">{event.data_reserva || '—'}</td>
-                    <td className="px-3 py-2">
-                      {event.horario_inicio && event.horario_fim
-                        ? `${event.horario_inicio} - ${event.horario_fim}`
-                        : '—'}
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEdit(event.id_evento)}
-                          className="rounded bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => handleDelete(event.id_evento)}
-                          className="rounded bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700"
-                        >
-                          Deletar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td className="px-3 py-4 text-gray-500" colSpan={6}>
-                    Nenhum evento encontrado.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div className="w-full space-y-4">
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Filtrar por nome..."
+              value={(table.getColumn('nome')?.getFilterValue() as string) ?? ''}
+              onChange={(event) => table.getColumn('nome')?.setFilterValue(event.target.value)}
+              className="max-w-sm"
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Colunas <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                      >
+                        {column.id === 'nome_instalacao'
+                          ? 'Instalação'
+                          : column.id === 'data_reserva'
+                          ? 'Data'
+                          : column.id === 'horario'
+                          ? 'Horário'
+                          : column.id}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && 'selected'}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                      Nenhum evento encontrado.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex items-center justify-end space-x-2">
+            <div className="flex-1 text-sm text-muted-foreground">
+              {table.getFilteredSelectedRowModel().rows.length} de{' '}
+              {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
+            </div>
+            <div className="space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                Próxima
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
