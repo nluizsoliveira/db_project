@@ -32,15 +32,60 @@ cleanup() {
 # Trap para limpar ao receber SIGINT ou SIGTERM
 trap cleanup SIGINT SIGTERM
 
-# Verificar se o PostgreSQL está rodando
-echo -e "${BLUE}Verificando PostgreSQL...${NC}"
-if ! pg_isready -h localhost -p 5432 -U postgres > /dev/null 2>&1; then
-    echo -e "${YELLOW}PostgreSQL não está rodando. Iniciando com Docker...${NC}"
-    cd "$PROJECT_ROOT"
-    docker compose up -d postgres
+# Função para verificar se Docker está rodando
+check_docker() {
+    if ! command -v docker &> /dev/null; then
+        echo -e "${RED}Erro: Docker não está instalado${NC}"
+        exit 1
+    fi
+
+    if ! docker info > /dev/null 2>&1; then
+        echo -e "${RED}Erro: Docker não está rodando. Por favor, inicie o Docker Desktop${NC}"
+        exit 1
+    fi
+}
+
+# Função para verificar e iniciar PostgreSQL
+setup_postgres() {
+    echo -e "${BLUE}Verificando PostgreSQL...${NC}"
+
+    # Verificar se o container já está rodando
+    if docker ps --format '{{.Names}}' | grep -q "^postgres17$"; then
+        echo -e "${GREEN}Container PostgreSQL já está rodando${NC}"
+    elif docker ps -a --format '{{.Names}}' | grep -q "^postgres17$"; then
+        echo -e "${YELLOW}Container PostgreSQL existe mas está parado. Iniciando...${NC}"
+        cd "$PROJECT_ROOT"
+        docker compose start postgres
+    else
+        echo -e "${YELLOW}Container PostgreSQL não encontrado. Criando e iniciando...${NC}"
+        cd "$PROJECT_ROOT"
+        docker compose up -d postgres
+    fi
+
+    # Aguardar PostgreSQL estar pronto usando healthcheck
     echo -e "${BLUE}Aguardando PostgreSQL estar pronto...${NC}"
-    sleep 5
-fi
+    local max_attempts=30
+    local attempt=0
+
+    while [ $attempt -lt $max_attempts ]; do
+        if docker exec postgres17 pg_isready -U postgres > /dev/null 2>&1; then
+            echo -e "${GREEN}PostgreSQL está pronto!${NC}"
+            return 0
+        fi
+        attempt=$((attempt + 1))
+        echo -n "."
+        sleep 1
+    done
+
+    echo -e "\n${RED}Erro: PostgreSQL não ficou pronto após $max_attempts segundos${NC}"
+    exit 1
+}
+
+# Verificar Docker
+check_docker
+
+# Configurar PostgreSQL
+setup_postgres
 
 # Verificar se as dependências Python estão instaladas
 if [ ! -d "$SERVER_DIR/venv" ] && [ ! -d "$SERVER_DIR/env" ]; then
