@@ -24,12 +24,15 @@ const ListItem = ({
   href,
   ...props
 }: React.ComponentPropsWithoutRef<'li'> & { href: string }) => {
+  const pathname = usePathname();
+  const isActive = pathname === href || pathname.startsWith(href + '/');
+
   return (
     <li {...props}>
-      <NavigationMenuLink asChild>
+      <NavigationMenuLink asChild data-active={isActive ? 'true' : 'false'}>
         <Link href={href}>
           <div className="text-sm leading-none font-medium">{title}</div>
-          <p className="text-muted-foreground line-clamp-2 text-sm leading-snug">
+          <p className={isActive ? "text-white/90 line-clamp-2 text-sm leading-snug" : "text-muted-foreground line-clamp-2 text-sm leading-snug"}>
             {children}
           </p>
         </Link>
@@ -74,7 +77,7 @@ const Navbar = memo(function Navbar() {
                     <NavigationMenuLink
                       asChild
                       className={navigationMenuTriggerStyle()}
-                      data-active={isActiveRoute('/admin/dashboard')}
+                      data-active={isActiveRoute('/admin/dashboard') ? 'true' : 'false'}
                     >
                       <Link href="/admin/dashboard">Administração</Link>
                     </NavigationMenuLink>
@@ -83,7 +86,7 @@ const Navbar = memo(function Navbar() {
                     <NavigationMenuLink
                       asChild
                       className={navigationMenuTriggerStyle()}
-                      data-active={isActiveRoute('/auth/pending-registrations')}
+                      data-active={isActiveRoute('/auth/pending-registrations') ? 'true' : 'false'}
                     >
                       <Link href="/auth/pending-registrations">Cadastros Pendentes</Link>
                     </NavigationMenuLink>
@@ -92,7 +95,7 @@ const Navbar = memo(function Navbar() {
                     <NavigationMenuLink
                       asChild
                       className={navigationMenuTriggerStyle()}
-                      data-active={isActiveRoute('/admin/extension-groups')}
+                      data-active={isActiveRoute('/admin/extension-groups') ? 'true' : 'false'}
                     >
                       <Link href="/admin/extension-groups">Grupos de Extensão</Link>
                     </NavigationMenuLink>
@@ -104,7 +107,7 @@ const Navbar = memo(function Navbar() {
                   <NavigationMenuLink
                     asChild
                     className={navigationMenuTriggerStyle()}
-                    data-active={isActiveRoute('/reports/overview')}
+                    data-active={isActiveRoute('/reports/overview') ? 'true' : 'false'}
                   >
                     <Link href="/reports/overview">Relatórios</Link>
                   </NavigationMenuLink>
@@ -112,7 +115,18 @@ const Navbar = memo(function Navbar() {
               )}
               {visibility.showStaff && (
                 <NavigationMenuItem>
-                  <NavigationMenuTrigger>Equipe</NavigationMenuTrigger>
+                  <NavigationMenuTrigger
+                    data-active={
+                      isActiveRoute('/staff/activities') ||
+                      isActiveRoute('/staff/participants') ||
+                      isActiveRoute('/staff/installations') ||
+                      isActiveRoute('/staff/equipment')
+                        ? 'true'
+                        : 'false'
+                    }
+                  >
+                    Equipe
+                  </NavigationMenuTrigger>
                   <NavigationMenuContent className="!left-0 !right-auto max-w-[calc(100vw-3rem)]">
                     <ul className="grid gap-2 w-[280px] sm:w-[350px] md:w-[450px] md:grid-cols-2">
                       <ListItem href="/staff/activities" title="Atividades">
@@ -133,7 +147,18 @@ const Navbar = memo(function Navbar() {
               )}
               {visibility.showInternal && (
                 <NavigationMenuItem>
-                  <NavigationMenuTrigger>Interno</NavigationMenuTrigger>
+                  <NavigationMenuTrigger
+                    data-active={
+                      isActiveRoute('/internal/reservations') ||
+                      isActiveRoute('/internal/activities') ||
+                      isActiveRoute('/internal/new-reservation') ||
+                      isActiveRoute('/internal/invites')
+                        ? 'true'
+                        : 'false'
+                    }
+                  >
+                    Interno
+                  </NavigationMenuTrigger>
                   <NavigationMenuContent className="!left-0 !right-auto max-w-[calc(100vw-3rem)]">
                     <ul className="grid gap-2 w-[280px] sm:w-[350px] md:w-[450px] md:grid-cols-2">
                       <ListItem href="/internal/reservations" title="Minhas Reservas">
@@ -157,7 +182,7 @@ const Navbar = memo(function Navbar() {
                   <NavigationMenuLink
                     asChild
                     className={navigationMenuTriggerStyle()}
-                    data-active={isActiveRoute('/external/dashboard')}
+                    data-active={isActiveRoute('/external/dashboard') ? 'true' : 'false'}
                   >
                     <Link href="/external/dashboard">Externo</Link>
                   </NavigationMenuLink>

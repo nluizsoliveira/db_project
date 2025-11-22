@@ -1,7 +1,12 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
-import { apiGet, apiPost } from '@/lib/api';
+import { useState, FormEvent } from 'react';
+import {
+  useAvailableInstallations,
+  useCreateInstallationReservation,
+  useCreateEquipmentReservation,
+  useReservationFormData,
+} from '@/hooks/useReservations';
 
 interface Installation {
   id_instalacao: number;
@@ -23,10 +28,6 @@ interface ReservationFormProps {
 
 export default function ReservationForm({ onSuccess }: ReservationFormProps) {
   const [type, setType] = useState<'installation' | 'equipment'>('installation');
-  const [installations, setInstallations] = useState<Installation[]>([]);
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     id_instalacao: '',
@@ -39,146 +40,85 @@ export default function ReservationForm({ onSuccess }: ReservationFormProps) {
     end: '',
   });
 
-  const loadAvailableInstallations = async () => {
-    if (!formData.date || !formData.start || !formData.end) {
-      setInstallations([]);
-      return;
-    }
+  const { data: installations = [], isLoading: loadingInstallations } = useAvailableInstallations(
+    formData.date,
+    formData.start,
+    formData.end
+  );
+  const { equipment: equipmentData, installations: allInstallations } = useReservationFormData();
+  const equipment = equipmentData.data || [];
+  const createInstallationMutation = useCreateInstallationReservation();
+  const createEquipmentMutation = useCreateEquipmentReservation();
 
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      params.append('date', formData.date);
-      params.append('start', formData.start);
-      params.append('end', formData.end);
-
-      const data = await apiGet<{
-        success: boolean;
-        available_installs: Installation[];
-      }>(`/internal/?${params.toString()}`);
-
-      if (data.success) {
-        setInstallations(data.available_installs || []);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar instalações:', err);
-      setInstallations([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadEquipment = async () => {
-    setLoading(true);
-    try {
-      const data = await apiGet<{
-        success: boolean;
-        equipment: Equipment[];
-      }>('/internal/equipment');
-
-      if (data.success) {
-        setEquipment(data.equipment || []);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar equipamentos:', err);
-      setEquipment([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (type === 'installation') {
-      loadAvailableInstallations();
-    } else {
-      loadEquipment();
-    }
-  }, [type, formData.date, formData.start, formData.end]);
+  const loading = type === 'installation' ? loadingInstallations : equipmentData.isLoading;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    setSubmitting(true);
 
     try {
       if (type === 'installation') {
         if (!formData.id_instalacao || !formData.data || !formData.hora_inicio || !formData.hora_fim) {
           setError('Todos os campos são obrigatórios');
-          setSubmitting(false);
           return;
         }
 
-        const data = await apiPost<{
-          success: boolean;
-          message?: string;
-        }>('/internal/reservations/installation', {
+        const data = await createInstallationMutation.mutateAsync({
           id_instalacao: parseInt(formData.id_instalacao),
           data: formData.data,
           hora_inicio: formData.hora_inicio,
           hora_fim: formData.hora_fim,
         });
 
-        if (data.success) {
-          alert(data.message || 'Reserva realizada com sucesso!');
-          if (onSuccess) {
-            onSuccess();
-          }
-          setFormData({
-            id_instalacao: '',
-            id_equipamento: '',
-            data: '',
-            hora_inicio: '',
-            hora_fim: '',
-            date: '',
-            start: '',
-            end: '',
-          });
-        } else {
-          setError(data.message || 'Erro ao realizar reserva');
+        alert(data.message || 'Reserva realizada com sucesso!');
+        if (onSuccess) {
+          onSuccess();
         }
+        setFormData({
+          id_instalacao: '',
+          id_equipamento: '',
+          data: '',
+          hora_inicio: '',
+          hora_fim: '',
+          date: '',
+          start: '',
+          end: '',
+        });
       } else {
         if (!formData.id_equipamento || !formData.data || !formData.hora_inicio || !formData.hora_fim) {
           setError('Todos os campos são obrigatórios');
-          setSubmitting(false);
           return;
         }
 
-        const data = await apiPost<{
-          success: boolean;
-          message?: string;
-        }>('/internal/reservations/equipment', {
+        const data = await createEquipmentMutation.mutateAsync({
           id_equipamento: formData.id_equipamento,
           data: formData.data,
           hora_inicio: formData.hora_inicio,
           hora_fim: formData.hora_fim,
         });
 
-        if (data.success) {
-          alert(data.message || 'Reserva de equipamento realizada com sucesso!');
-          if (onSuccess) {
-            onSuccess();
-          }
-          setFormData({
-            id_instalacao: '',
-            id_equipamento: '',
-            data: '',
-            hora_inicio: '',
-            hora_fim: '',
-            date: '',
-            start: '',
-            end: '',
-          });
-        } else {
-          setError(data.message || 'Erro ao realizar reserva');
+        alert(data.message || 'Reserva de equipamento realizada com sucesso!');
+        if (onSuccess) {
+          onSuccess();
         }
+        setFormData({
+          id_instalacao: '',
+          id_equipamento: '',
+          data: '',
+          hora_inicio: '',
+          hora_fim: '',
+          date: '',
+          start: '',
+          end: '',
+        });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao realizar reserva:', err);
-      setError('Erro ao realizar reserva');
-    } finally {
-      setSubmitting(false);
+      setError(err.message || 'Erro ao realizar reserva');
     }
   };
+
+  const submitting = createInstallationMutation.isPending || createEquipmentMutation.isPending;
 
   return (
     <div className="rounded-lg bg-white p-6 shadow">

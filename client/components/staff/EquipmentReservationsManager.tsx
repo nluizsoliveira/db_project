@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
-import { apiGet, apiDelete } from '@/lib/api';
+import { useState, FormEvent } from 'react';
+import { useEquipmentReservations, useDeleteEquipmentReservation } from '@/hooks/useReservations';
 
 interface EquipmentReservation {
   id_reserva_equip: number;

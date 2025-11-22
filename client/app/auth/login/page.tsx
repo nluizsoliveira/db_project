@@ -5,72 +5,46 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import Layout from "@/components/Layout";
-import { apiPost } from "@/lib/api";
+import { useLogin, useCurrentUser } from "@/hooks/useAuth";
 import { useAuthStore } from "@/lib/authStore";
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const refreshUser = useAuthStore((state) => state.refreshUser);
+  const { refetch: refetchUser } = useCurrentUser();
+  const loginMutation = useLogin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
     try {
-      const data = await apiPost<{
-        success: boolean;
-        message?: string;
-        redirect?: string;
-      }>("/auth/login", {
+      const data = await loginMutation.mutateAsync({
         email,
         password,
       });
 
-      if (data.success) {
-        // Recarrega o usuário após login bem-sucedido
-        await refreshUser();
+      // Recarrega o usuário após login bem-sucedido
+      await refetchUser();
 
-        // Check for redirect parameter or use backend redirect
-        const redirectUrl = searchParams.get("redirect") || data.redirect;
+      // Check for redirect parameter or use backend redirect
+      const redirectUrl = searchParams.get("redirect") || (data as any).redirect;
 
-        if (redirectUrl) {
-          router.push(redirectUrl);
-        } else {
-          router.push("/admin/dashboard");
-        }
+      if (redirectUrl) {
+        router.push(redirectUrl);
       } else {
-        setError(data.message || "Credenciais inválidas");
+        router.push("/admin/dashboard");
       }
-    } catch (err: unknown) {
-      let errorMessage = "Erro ao fazer login. Tente novamente.";
-
-      if (err instanceof Error) {
-        // Se a mensagem parece ser JSON, tenta parsear
-        if (err.message.startsWith("{") || err.message.startsWith("[")) {
-          try {
-            const errorData = JSON.parse(err.message);
-            errorMessage = errorData.message || errorData.error || err.message;
-          } catch {
-            errorMessage = err.message;
-          }
-        } else {
-          // Caso contrário, usa a mensagem diretamente
-          errorMessage = err.message;
-        }
-      }
-
+    } catch (err: any) {
       console.error("Login error:", err);
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
+      setError(err.message || "Erro ao fazer login. Tente novamente.");
     }
   };
+
+  const loading = loginMutation.isPending;
 
   return (
     <Layout

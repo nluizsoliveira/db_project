@@ -1,91 +1,41 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
-import { apiGet, apiPost } from '@/lib/api';
-
-interface Activity {
-  id_atividade: number;
-  nome_atividade: string;
-  grupo_extensao: string | null;
-  weekday: string | null;
-  horario_inicio: string;
-  horario_fim: string;
-  vagas_ocupadas: number;
-  vagas_limite: number;
-}
+import { useState, FormEvent } from 'react';
+import { useInternalActivities, useEnrollActivity, type Activity } from '@/hooks/useActivities';
 
 interface ActivitiesListProps {
   onEnroll?: (activityId: number) => void;
 }
 
 export default function ActivitiesList({ onEnroll }: ActivitiesListProps) {
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [filters, setFilters] = useState({
     weekday: '',
     group_name: '',
     modality: '',
   });
 
-  const loadActivities = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const params = new URLSearchParams();
-      if (filters.weekday) params.append('weekday', filters.weekday);
-      if (filters.group_name) params.append('group_name', filters.group_name);
-      if (filters.modality) params.append('modality', filters.modality);
-
-      const data = await apiGet<{
-        success: boolean;
-        activities: Activity[];
-      }>(`/internal/activities?${params.toString()}`);
-
-      if (data.success) {
-        setActivities(data.activities || []);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar atividades:', err);
-      setError('Erro ao carregar atividades');
-      setActivities([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadActivities();
-  }, []);
+  const { data: activities = [], isLoading: loading, error: queryError } = useInternalActivities(filters);
+  const enrollMutation = useEnrollActivity();
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    loadActivities();
+    // Query will automatically refetch when filters change
   };
 
   const handleEnroll = async (activityId: number) => {
     try {
-      const data = await apiPost<{
-        success: boolean;
-        message?: string;
-      }>('/internal/activities/enroll', {
-        id_atividade: activityId,
-      });
-
-      if (data.success) {
-        alert(data.message || 'Inscrição realizada com sucesso!');
-        if (onEnroll) {
-          onEnroll(activityId);
-        }
-        loadActivities();
-      } else {
-        alert(data.message || 'Erro ao inscrever na atividade');
+      const data = await enrollMutation.mutateAsync(activityId);
+      alert(data.message || 'Inscrição realizada com sucesso!');
+      if (onEnroll) {
+        onEnroll(activityId);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao inscrever:', err);
-      alert('Erro ao inscrever na atividade');
+      alert(err.message || 'Erro ao inscrever na atividade');
     }
   };
+
+  const error = queryError?.message || '';
 
   const diasSemana = [
     { value: '', label: 'Todos' },
@@ -145,7 +95,6 @@ export default function ActivitiesList({ onEnroll }: ActivitiesListProps) {
             type="button"
             onClick={() => {
               setFilters({ weekday: '', group_name: '', modality: '' });
-              loadActivities();
             }}
             className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
           >

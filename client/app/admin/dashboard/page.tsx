@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { apiGet } from '@/lib/api';
+import { useAdminDashboard } from '@/hooks/useDashboard';
 
 interface Stat {
   label: string;
@@ -31,38 +30,10 @@ interface Activity {
 }
 
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState<Stat[]>([]);
-  const [upcomingReservations, setUpcomingReservations] = useState<Reservation[]>([]);
-  const [activityEnrollment, setActivityEnrollment] = useState<Activity[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
-    try {
-      const data = await apiGet<{
-        success: boolean;
-        stats: Array<{ label: string; value: string | number; description: string }>;
-        upcoming_reservations: Reservation[];
-        activity_enrollment: Activity[];
-      }>('/admin/');
-
-      if (data.success) {
-        setStats(data.stats || []);
-        setUpcomingReservations(data.upcoming_reservations || []);
-        setActivityEnrollment(data.activity_enrollment || []);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar dados:', err);
-      setStats([]);
-      setUpcomingReservations([]);
-      setActivityEnrollment([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, isLoading: loading, error } = useAdminDashboard();
+  const stats = data?.stats || [];
+  const upcomingReservations = data?.upcomingReservations || [];
+  const activityEnrollment = data?.activityEnrollment || [];
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>
