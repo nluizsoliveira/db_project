@@ -1,0 +1,23 @@
+FROM node:20-alpine
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+WORKDIR /app
+
+# Copy package files first for better caching
+COPY package.json pnpm-lock.yaml* ./
+
+# Install dependencies
+RUN pnpm install
+
+# Set environment variables
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_API_URL=http://localhost:5050
+
+EXPOSE 3000
+
+# Run Next.js in development mode with hot reload
+# Note: Source code is mounted as volume, so we don't COPY it here
+CMD ["pnpm", "dev"]

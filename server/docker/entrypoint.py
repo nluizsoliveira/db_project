@@ -88,8 +88,8 @@ def main():
     # Iniciar a aplicação Flask
     print("=== Iniciando aplicação Flask ===")
 
-    # Executar Flask
-    os.execvp("flask", ["flask", "run", "--host=0.0.0.0", "--port=5050"])
+    # Executar Flask com hot reload
+    os.execvp("flask", ["flask", "run", "--host=0.0.0.0", "--port=5050", "--reload"])
 
 if __name__ == "__main__":
     main()
