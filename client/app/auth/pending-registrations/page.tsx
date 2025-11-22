@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import Layout from "@/components/Layout";
 import { apiGet, apiPost } from "@/lib/api";
 
@@ -130,18 +129,15 @@ export default function PendingRegistrationsPage() {
   };
 
   return (
-    <Layout messages={message ? [message] : undefined}>
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6 flex items-center justify-between">
+    <Layout
+      messages={message ? [message] : undefined}
+      mainClass="w-full max-w-full p-0 flex-1"
+    >
+      <div className="w-full px-4 py-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">
             Solicitações de Cadastro Pendentes
           </h1>
-          <Link
-            href="/admin/dashboard"
-            className="rounded bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300"
-          >
-            Voltar
-          </Link>
         </div>
 
         {loading ? (

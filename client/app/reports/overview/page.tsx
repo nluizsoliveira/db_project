@@ -169,9 +169,9 @@ export default function ReportsOverviewPage() {
               Consolidado de reservas
             </h2>
             <ReservationRollupChart data={reservationRollup} />
-            <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
+            <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto border border-gray-200 rounded-lg shadow-md">
               <table className="min-w-full text-sm">
-                <thead className="border-b text-left text-gray-500">
+                <thead className="sticky top-0 bg-white border-b text-left text-gray-500 z-10">
                   <tr>
                     <th className="px-3 py-2">Instalação</th>
                     <th className="px-3 py-2">Mês</th>
@@ -211,9 +211,9 @@ export default function ReportsOverviewPage() {
               Atividades por educador
             </h2>
             <ActivitiesCubeChart data={activitiesCube} />
-            <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
+            <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto border border-gray-200 rounded-lg shadow-md">
               <table className="min-w-full text-sm">
-                <thead className="border-b text-left text-gray-500">
+                <thead className="sticky top-0 bg-white border-b text-left text-gray-500 z-10">
                   <tr>
                     <th className="px-3 py-2">Conselho</th>
                     <th className="px-3 py-2">Categoria</th>
@@ -253,9 +253,9 @@ export default function ReportsOverviewPage() {
               Participantes por atividade
             </h2>
             <ParticipantsTotalsChart data={participantsTotals} />
-            <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
+            <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto border border-gray-200 rounded-lg shadow-md">
               <table className="min-w-full text-sm">
-                <thead className="border-b text-left text-gray-500">
+                <thead className="sticky top-0 bg-white border-b text-left text-gray-500 z-10">
                   <tr>
                     <th className="px-3 py-2">Atividade</th>
                     <th className="px-3 py-2">Participantes</th>
@@ -293,9 +293,9 @@ export default function ReportsOverviewPage() {
               Ranking de instalações
             </h2>
             <InstallationRankingChart data={installationRanking} />
-            <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
+            <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto border border-gray-200 rounded-lg shadow-md">
               <table className="min-w-full text-sm">
-                <thead className="border-b text-left text-gray-500">
+                <thead className="sticky top-0 bg-white border-b text-left text-gray-500 z-10">
                   <tr>
                     <th className="px-3 py-2">Posição</th>
                     <th className="px-3 py-2">Instalação</th>
@@ -334,9 +334,9 @@ export default function ReportsOverviewPage() {
             <h2 className="text-lg font-semibold text-gray-900">
               Ocorrências Semanais de Atividades
             </h2>
-            <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
+            <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto border border-gray-200 rounded-lg shadow-md">
               <table className="min-w-full text-sm">
-                <thead className="border-b text-left text-gray-500">
+                <thead className="sticky top-0 bg-white border-b text-left text-gray-500 z-10">
                   <tr>
                     <th className="px-3 py-2">Atividade</th>
                     <th className="px-3 py-2">Local</th>
@@ -392,9 +392,9 @@ export default function ReportsOverviewPage() {
               Instalações Mais Reservadas
             </h2>
             <InstallationsMostReservedChart data={installationsMostReserved} />
-            <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
+            <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto border border-gray-200 rounded-lg shadow-md">
               <table className="min-w-full text-sm">
-                <thead className="border-b text-left text-gray-500">
+                <thead className="sticky top-0 bg-white border-b text-left text-gray-500 z-10">
                   <tr>
                     <th className="px-3 py-2">Instalação</th>
                     <th className="px-3 py-2">Tipo</th>
