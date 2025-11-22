@@ -1,10 +1,8 @@
-const API_BASE_URL =
-  typeof window !== "undefined"
-    ? process.env.NEXT_PUBLIC_API_URL || "http://localhost:5050"
-    : "http://flask_app:5050";
+import { getApiBaseUrl } from "./utils";
 
 export async function apiGet<T>(path: string): Promise<T> {
   try {
+    const API_BASE_URL = getApiBaseUrl();
     const response = await fetch(`${API_BASE_URL}${path}`, {
       credentials: "include",
       headers: {
@@ -27,6 +25,7 @@ export async function apiGet<T>(path: string): Promise<T> {
   } catch (error) {
     // Tratar erros de rede (Failed to fetch)
     if (error instanceof TypeError && error.message === "Failed to fetch") {
+      const API_BASE_URL = getApiBaseUrl();
       throw new Error(
         `Não foi possível conectar ao servidor. Verifique se o servidor está rodando em ${API_BASE_URL}`
       );
@@ -41,6 +40,7 @@ export async function apiPost<T>(
   data: Record<string, unknown>
 ): Promise<T> {
   try {
+    const API_BASE_URL = getApiBaseUrl();
     const response = await fetch(`${API_BASE_URL}${path}`, {
       method: "POST",
       credentials: "include",
@@ -65,6 +65,7 @@ export async function apiPost<T>(
   } catch (error) {
     // Tratar erros de rede (Failed to fetch)
     if (error instanceof TypeError && error.message === "Failed to fetch") {
+      const API_BASE_URL = getApiBaseUrl();
       throw new Error(
         `Não foi possível conectar ao servidor. Verifique se o servidor está rodando em ${API_BASE_URL}`
       );

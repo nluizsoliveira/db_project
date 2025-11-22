@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   useAuthUser,
   useAuthLoading,
@@ -22,6 +22,7 @@ export default function ProtectedRoute({
   redirectTo,
 }: ProtectedRouteProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const user = useAuthUser();
   const loading = useAuthLoading();
   const initialized = useAuthInitialized();
@@ -46,11 +47,11 @@ export default function ProtectedRoute({
     }
 
     if (!user) {
-      // Not authenticated, redirect to appropriate login
+      // Not authenticated, redirect to appropriate login with current path as redirect
       if (allowedRoles.includes("external")) {
-        router.push("/auth/login/external");
+        router.push(`/auth/login/external?redirect=${encodeURIComponent(pathname)}`);
       } else {
-        router.push("/auth/login");
+        router.push(`/auth/login?redirect=${encodeURIComponent(pathname)}`);
       }
       return;
     }

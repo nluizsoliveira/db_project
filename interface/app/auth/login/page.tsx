@@ -35,7 +35,7 @@ export default function LoginPage() {
         // Recarrega o usuário após login bem-sucedido
         await refreshUser();
 
-        // Check for redirect parameter from middleware or use backend redirect
+        // Check for redirect parameter or use backend redirect
         const redirectUrl = searchParams.get("redirect") || data.redirect;
 
         if (redirectUrl) {
@@ -50,14 +50,21 @@ export default function LoginPage() {
       let errorMessage = "Erro ao fazer login. Tente novamente.";
 
       if (err instanceof Error) {
-        try {
-          const errorData = JSON.parse(err.message);
-          errorMessage = errorData.message || errorData.error || err.message;
-        } catch {
+        // Se a mensagem parece ser JSON, tenta parsear
+        if (err.message.startsWith("{") || err.message.startsWith("[")) {
+          try {
+            const errorData = JSON.parse(err.message);
+            errorMessage = errorData.message || errorData.error || err.message;
+          } catch {
+            errorMessage = err.message;
+          }
+        } else {
+          // Caso contrário, usa a mensagem diretamente
           errorMessage = err.message;
         }
       }
 
+      console.error("Login error:", err);
       setError(errorMessage);
     } finally {
       setLoading(false);

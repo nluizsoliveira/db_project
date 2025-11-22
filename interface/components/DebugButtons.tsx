@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getApiBaseUrl } from "@/lib/utils";
+
+const API_BASE_URL = getApiBaseUrl();
 
 export default function DebugButtons() {
   const [loading, setLoading] = useState(false);
@@ -30,7 +33,7 @@ export default function DebugButtons() {
   const checkDatabaseStatus = async () => {
     try {
       const response = await fetch(
-        "http://localhost:5050/debug/check-db-status",
+        `${API_BASE_URL}/debug/check-db-status`,
         {
           method: "GET",
           headers: {
@@ -64,7 +67,7 @@ export default function DebugButtons() {
     showLoading("Gerando dados sintéticos e populando banco...");
 
     try {
-      const response = await fetch("http://localhost:5050/debug/populate-db", {
+      const response = await fetch(`${API_BASE_URL}/debug/populate-db`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -114,7 +117,7 @@ export default function DebugButtons() {
     showLoading("Limpando banco de dados...");
 
     try {
-      const response = await fetch("http://localhost:5050/debug/clear-db", {
+      const response = await fetch(`${API_BASE_URL}/debug/clear-db`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

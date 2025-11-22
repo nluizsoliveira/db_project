@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, FormEvent, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Layout from '@/components/Layout';
 import { apiPost } from '@/lib/api';
 import { useAuthStore } from '@/lib/authStore';
 
-export default function ExternalLoginPage() {
+function ExternalLoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const refreshUser = useAuthStore((state) => state.refreshUser);
   const [token, setToken] = useState('');
   const [error, setError] = useState('');
@@ -32,8 +33,11 @@ export default function ExternalLoginPage() {
         // Recarrega o usuário após login bem-sucedido
         await refreshUser();
 
-        if (data.redirect) {
-          router.push(data.redirect);
+        // Check for redirect parameter from URL or use backend redirect
+        const redirectUrl = searchParams.get("redirect") || data.redirect;
+
+        if (redirectUrl) {
+          router.push(redirectUrl);
         } else {
           router.push('/external/dashboard');
         }
@@ -120,5 +124,20 @@ export default function ExternalLoginPage() {
         </div>
       </div>
     </Layout>
+  );
+}
+
+export default function ExternalLoginPage() {
+  return (
+    <Suspense fallback={
+      <Layout hideNavbar hideFooter hideDebugButtons mainClass="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#1094ab] to-[#64c4d2] p-6">
+        <div className="text-center">
+          <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-white border-r-transparent"></div>
+          <p className="text-sm text-white">Carregando...</p>
+        </div>
+      </Layout>
+    }>
+      <ExternalLoginContent />
+    </Suspense>
   );
 }

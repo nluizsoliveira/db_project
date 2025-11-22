@@ -4,11 +4,9 @@ import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Layout from '@/components/Layout';
+import { getApiBaseUrl } from '@/lib/utils';
 
-const API_BASE_URL =
-  typeof window !== "undefined"
-    ? process.env.NEXT_PUBLIC_API_URL || "http://localhost:5050"
-    : "http://flask_app:5050";
+const API_BASE_URL = getApiBaseUrl();
 
 export default function RegisterPage() {
   const router = useRouter();

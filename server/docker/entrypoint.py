@@ -88,8 +88,12 @@ def main():
     # Iniciar a aplicação Flask
     print("=== Iniciando aplicação Flask ===")
 
+    # Ler configurações do ambiente
+    flask_host = os.environ.get("FLASK_RUN_HOST", "0.0.0.0")
+    flask_port = os.environ.get("FLASK_RUN_PORT", "5050")
+
     # Executar Flask com hot reload
-    os.execvp("flask", ["flask", "run", "--host=0.0.0.0", "--port=5050", "--reload"])
+    os.execvp("flask", ["flask", "run", f"--host={flask_host}", f"--port={flask_port}", "--reload"])
 
 if __name__ == "__main__":
     main()

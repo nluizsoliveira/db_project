@@ -1,9 +1,7 @@
 import { apiGet } from "@/lib/api";
+import { getApiBaseUrl } from "./utils";
 
-const API_BASE_URL =
-  typeof window !== "undefined"
-    ? process.env.NEXT_PUBLIC_API_URL || "http://localhost:5050"
-    : "http://flask_app:5050";
+const API_BASE_URL = getApiBaseUrl();
 
 export interface User {
   user_id: string;
