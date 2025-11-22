@@ -9,24 +9,10 @@ def register_extensions(app: Flask) -> None:
     # Permitir todas as origens em desenvolvimento para facilitar o desenvolvimento
     # Em produção, especificar origens específicas
     import os
-    from flask_cors import CORS
-
     debug_mode = app.config.get("DEBUG", False) or os.environ.get("FLASK_DEBUG", "false").lower() == "true"
 
-    # Permitir todas as origens em desenvolvimento para facilitar testes
-    allow_all_origins = os.environ.get("CORS_ALLOW_ALL", "false").lower() == "true"
-
-    if debug_mode or allow_all_origins:
-        # Em desenvolvimento, usar função para validar origem dinamicamente
-        # Isso permite qualquer origem HTTP em desenvolvimento
-        def allow_all_http_origins(origin):
-            if origin and origin.startswith('http://'):
-                return True
-            return False
-
-        CORS(app, supports_credentials=True, origins=allow_all_http_origins)
-    else:
-        # Em produção, apenas origens específicas
+    if debug_mode:
+        # Em desenvolvimento, permitir todas as origens locais
         CORS(app, supports_credentials=True, origins=[
             'http://localhost:3000',
             'http://localhost:3001',
@@ -34,6 +20,9 @@ def register_extensions(app: Flask) -> None:
             'http://127.0.0.1:3001',
             'http://nextjs_app:3000',
         ])
+    else:
+        # Em produção, apenas origens específicas
+        CORS(app, supports_credentials=True, origins=['http://localhost:3000', 'http://nextjs_app:3000'])
     _register_db_session(app)
 
 

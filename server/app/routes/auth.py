@@ -49,7 +49,6 @@ def login_post():
         return jsonify({"success": False, "message": auth_data.get("message", "Credenciais inválidas")}), 401
 
     # Store user data in session
-    session.permanent = True
     session["user_id"] = auth_data["user_id"]
     session["user_email"] = auth_data["email"]
     session["user_nome"] = auth_data["nome"]
