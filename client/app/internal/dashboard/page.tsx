@@ -5,6 +5,10 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { apiGet } from '@/lib/api';
+import ActivitiesList from '@/components/internal/ActivitiesList';
+import ReservationForm from '@/components/internal/ReservationForm';
+import InvitesList from '@/components/internal/InvitesList';
+import InviteForm from '@/components/internal/InviteForm';
 
 interface Reservation {
   nome_instalacao: string;
@@ -31,6 +35,11 @@ function InternalDashboardContent() {
     end: searchParams.get('end') || '',
   });
   const [loading, setLoading] = useState(false);
+  const [refreshInvites, setRefreshInvites] = useState(0);
+
+  const handleInviteCreated = () => {
+    setRefreshInvites((prev) => prev + 1);
+  };
 
   const loadDashboardData = async () => {
     setLoading(true);
@@ -250,6 +259,15 @@ function InternalDashboardContent() {
               </table>
             </div>
           </div>
+        </div>
+
+        <ActivitiesList />
+
+        <ReservationForm onSuccess={loadDashboardData} />
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <InviteForm onSuccess={handleInviteCreated} />
+          <InvitesList refreshTrigger={refreshInvites} />
         </div>
       </section>
     </Layout>

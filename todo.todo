@@ -1,5 +1,63 @@
 - ajustar cadastro de interno usp
-- verificar todas as funcionalidades de interno, funcionario e externo (comecando por externo)
 - revisar triggers e functions em sql, reduzir ao maximo responsibilidade do flask
 - adicionar mais ferramentas da linguagem SQL
 - organizar todo o codigo, organizar chamada de sql e rotas
+
+## Funcionalidades por Tipo de Usuário
+
+### Externo USP
+- ✅ aceitar convite (Externo USP)
+  - Implementado: Interface em `/external/dashboard` com endpoints `/accept` e `/reject`. Usuário externo pode aceitar ou recusar convites pendentes.
+
+### Interno USP
+- ✅ ver e se inscrever em atividades (Interno USP)
+  - Implementado: Interface em `/internal/dashboard` com componente `ActivitiesList` que lista atividades disponíveis com filtros (dia da semana, grupo de extensão, modalidade). Endpoint `GET /internal/activities` e `POST /internal/activities/enroll`. Usa função SQL `listar_atividades` e procedure `inscrever_participante_atividade`.
+- ✅ listar instalações disponíveis em um determinado período de tempo (Interno USP)
+  - Implementado: Interface em `/internal/dashboard` com filtros de data, horário início e fim. Query `instalacoes_disponiveis.sql`.
+- ✅ ver as próprias reservas (Interno USP)
+  - Implementado: Interface em `/internal/dashboard` com filtro por CPF. Query `reservas_por_interno.sql`.
+- ✅ reserva item da infraestrutura (Interno USP)
+  - Implementado: Interface em `/internal/dashboard` com componente `ReservationForm` para criar reservas de instalações e equipamentos. Endpoints `POST /internal/reservations/installation` e `POST /internal/reservations/equipment`. Usa procedures SQL `reservar_instalacao` e `reservar_equipamento`. Listagem de equipamentos disponíveis em `GET /internal/equipment`.
+- ✅ listar convites passados e seus status (Interno USP)
+  - Implementado: Interface em `/internal/dashboard` com componente `InvitesList` que lista convites criados pelo interno. Endpoint `GET /internal/invites`. Query `convites_por_interno.sql`. Mostra status, dados do convidado, atividade relacionada e permite copiar token.
+- ✅ convidar usuário externo para atividade (Interno USP)
+  - Implementado: Interface em `/internal/dashboard` com componente `InviteForm` para criar convites externos. Endpoint `POST /internal/invites`. Query `criar_convite_externo.sql`. Gera token único automaticamente e permite associar a uma atividade específica.
+
+### Funcionário Cefer
+- ❌ gerenciar a participação de Usuários internos em atividades (Funcionário Cefer)
+  - Faltante: Interface e endpoints para gerenciar (inscrever/remover) participantes em atividades. Existem procedures SQL mas não há interface/rotas.
+- ❌ gerenciar a utilização dos equipamentos (Funcionário Cefer)
+  - Faltante: Interface e endpoints para visualizar e gerenciar reservas/empréstimos de equipamentos. Existem procedures SQL mas não há interface.
+- ❌ gerenciar a utilização das instalações (Funcionário Cefer)
+  - Faltante: Interface e endpoints para visualizar e gerenciar reservas de instalações. Existem procedures SQL mas não há interface.
+- ❌ gerenciar as atividades oferecidas (Funcionário Cefer)
+  - Faltante: Interface e endpoints CRUD para criar, editar, deletar atividades. Apenas visualização existe em `/staff/dashboard`, não há CRUD.
+
+### Administrador
+- ❌ gerenciar as atividades oferecidas (Administrador)
+  - Faltante: Interface e endpoints CRUD para criar, editar, deletar atividades. Apenas visualização existe, não há CRUD.
+- ❌ CRUD de infraestrutura por parte do administrador (Administrador)
+  - Faltante: Interface e endpoints CRUD para instalações e equipamentos. Existem procedures SQL (`criar_instalacao`, `atualizar_instalacao`, `deletar_instalacao`, `criar_equipamento`, `atualizar_equipamento`, `deletar_equipamento`) em `admin_functions.sql`, mas não há rotas/interface.
+- ⚠️ CRUD de grupos de extensão e eventos por parte do administrador (Administrador)
+  - Grupos de extensão: ✅ Implementado em `/admin/extension-groups` com CRUD completo (create, update, delete).
+  - Eventos: ❌ Faltante: Não há nenhuma implementação relacionada a eventos (CRUD de eventos).
+- ❌ CRUD de usuários por parte do administrador (Administrador)
+  - Faltante: Interface e endpoints para gerenciar usuários (criar, editar, deletar, listar). Apenas aprovação/rejeição de cadastros existe em `/auth/pending-registrations`, não há CRUD completo.
+
+### Relatórios
+- ✅ identificar espaços mais utilizados, frequência e duração de uso (Administrador, Funcionário Cefer, Relatório)
+  - Implementado: Relatórios em `/reports/overview` com `installation_ranking.sql` e `installations_most_reserved.sql`.
+- ✅ total de participantes por atividade e total geral (Administrador, Funcionário Cefer, Relatório)
+  - Implementado: Relatório em `/reports/overview` com `participants_totals.sql`.
+- ✅ mostrar total de atividades conduzidas por educador e categoria (Administrador, Funcionário Cefer, Relatório)
+  - Implementado: Relatório em `/reports/overview` com `activities_cube.sql` e `activity_occurrences.sql`.
+- ✅ contar reservas por instalação, mês e total geral (Administrador, Funcionário Cefer, Relatório)
+  - Implementado: Relatório em `/reports/overview` com `reservations_rollup.sql`.
+
+### Geral
+- ✅ implementação do login (Geral)
+  - Implementado: Sistema de autenticação completo com login para diferentes tipos de usuários em `/auth/login`.
+- ✅ dockerizar o projeto (Geral)
+  - Implementado: `docker-compose.yml` configurado com PostgreSQL e serviços.
+- ❌ relatório final (documentation, Geral)
+  - Faltante: Documentação final do projeto ainda não concluída.
