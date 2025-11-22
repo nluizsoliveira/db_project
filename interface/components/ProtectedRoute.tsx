@@ -6,6 +6,7 @@ import {
   useAuthUser,
   useAuthLoading,
   useAuthInitialized,
+  useAuthStore,
 } from "@/lib/authStore";
 import { hasAnyRole } from "@/lib/auth";
 
@@ -24,6 +25,7 @@ export default function ProtectedRoute({
   const user = useAuthUser();
   const loading = useAuthLoading();
   const initialized = useAuthInitialized();
+  const loadUser = useAuthStore((state) => state.loadUser);
 
   const authorized = useMemo(() => {
     if (!initialized || loading || !user) {
@@ -33,6 +35,12 @@ export default function ProtectedRoute({
   }, [user, loading, initialized, allowedRoles]);
 
   useEffect(() => {
+    // Tenta carregar o usuário se ainda não foi inicializado
+    if (!initialized && !loading) {
+      loadUser();
+      return;
+    }
+
     if (!initialized || loading) {
       return;
     }
@@ -69,6 +77,7 @@ export default function ProtectedRoute({
     loading,
     initialized,
     authorized,
+    loadUser,
   ]);
 
   if (!initialized || loading) {

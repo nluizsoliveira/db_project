@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Layout from '@/components/Layout';
 
+const API_BASE_URL =
+  typeof window !== "undefined"
+    ? process.env.NEXT_PUBLIC_API_URL || "http://localhost:5050"
+    : "http://flask_app:5050";
+
 export default function RegisterPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -38,7 +43,7 @@ export default function RegisterPage() {
       data.append('password', formData.password);
       data.append('password_confirm', formData.password_confirm);
 
-      const response = await fetch('http://localhost:5050/auth/register', {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         body: data,
         credentials: 'include',
@@ -51,7 +56,18 @@ export default function RegisterPage() {
         }, 2000);
       } else {
         const result = await response.json().catch(() => ({ message: 'Erro ao processar solicitação' }));
-        setError(result.message || 'Erro ao processar solicitação');
+        const errorMessage = result.message || 'Erro ao processar solicitação';
+
+        // Tratamento específico para novos códigos de erro
+        if (errorMessage.includes('Usuário já existe com este e-mail')) {
+          setError('Este e-mail já está cadastrado no sistema. Se você já possui uma conta, faça login.');
+        } else if (errorMessage.includes('Usuário já existe com este CPF')) {
+          setError('Este CPF já está cadastrado no sistema. Se você já possui uma conta, faça login.');
+        } else if (errorMessage.includes('Já existe uma solicitação de cadastro pendente')) {
+          setError('Já existe uma solicitação de cadastro pendente para este CPF/NUSP. Aguarde a aprovação do administrador.');
+        } else {
+          setError(errorMessage);
+        }
       }
     } catch (err) {
       setError('Erro ao processar solicitação. Tente novamente.');

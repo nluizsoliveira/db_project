@@ -39,3 +39,20 @@ export async function apiPost<T>(
   }
   return await response.json();
 }
+
+export interface UpdatePasswordRequest {
+  current_password: string;
+  new_password: string;
+  new_password_confirm: string;
+}
+
+export interface UpdatePasswordResponse {
+  success: boolean;
+  message?: string;
+}
+
+export async function updatePassword(
+  data: UpdatePasswordRequest
+): Promise<UpdatePasswordResponse> {
+  return apiPost<UpdatePasswordResponse>("/auth/update-password", data);
+}

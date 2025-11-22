@@ -33,10 +33,19 @@ interface Participation {
   atividade_vagas_limite: number | null;
 }
 
+interface ExternalParticipation {
+  participant_name: string;
+  participant_email: string;
+  activity_name: string;
+  host_name: string;
+  host_nusp: string;
+}
+
 export default function ExternalDashboardPage() {
   const router = useRouter();
   const [invite, setInvite] = useState<Invite | null>(null);
   const [participation, setParticipation] = useState<Participation | null>(null);
+  const [externalParticipations, setExternalParticipations] = useState<ExternalParticipation[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
@@ -51,11 +60,13 @@ export default function ExternalDashboardPage() {
         success: boolean;
         invite: Invite;
         participation: Participation | null;
-      }>('/external/');
+        external_participations?: ExternalParticipation[];
+      }>('/external/dashboard');
 
       if (data.success) {
         setInvite(data.invite);
         setParticipation(data.participation);
+        setExternalParticipations(data.external_participations || []);
       }
     } catch (err) {
       console.error('Erro ao carregar dados do convite:', err);
@@ -296,6 +307,36 @@ export default function ExternalDashboardPage() {
               >
                 {actionLoading ? 'Processando...' : 'Recusar Convite'}
               </button>
+            </div>
+          )}
+
+          {externalParticipations.length > 0 && (
+            <div className="rounded-lg bg-white p-6 shadow">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">Participações Externas</h2>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="border-b text-left text-gray-500">
+                    <tr>
+                      <th className="px-4 py-2">Participante</th>
+                      <th className="px-4 py-2">E-mail</th>
+                      <th className="px-4 py-2">Atividade</th>
+                      <th className="px-4 py-2">Anfitrião</th>
+                      <th className="px-4 py-2">NUSP</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {externalParticipations.map((participation, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-4 py-2 text-gray-900">{participation.participant_name}</td>
+                        <td className="px-4 py-2 text-gray-600">{participation.participant_email}</td>
+                        <td className="px-4 py-2 text-gray-900">{participation.activity_name}</td>
+                        <td className="px-4 py-2 text-gray-600">{participation.host_name}</td>
+                        <td className="px-4 py-2 text-gray-600">{participation.host_nusp}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </section>

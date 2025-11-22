@@ -82,9 +82,9 @@ export function hasRole(
  */
 export function hasAnyRole(
   user: User | null,
-  roles: Array<"admin" | "staff" | "internal" | "external">
+  roles: Array<"admin" | "staff" | "internal" | "external"> | undefined
 ): boolean {
-  if (!user || !user.roles) {
+  if (!user || !user.roles || !roles || roles.length === 0) {
     return false;
   }
   return roles.some((role) => user.roles[role] === true);

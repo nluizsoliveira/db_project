@@ -27,11 +27,29 @@ interface InstallationRanking {
   total_reservations: number;
 }
 
+interface ActivityOccurrence {
+  atividade: string;
+  local: string;
+  tipo_local: string;
+  dia_semana: string;
+  horario_inicio: string;
+  horario_fim: string;
+  educador_responsavel: string;
+}
+
+interface InstallationMostReserved {
+  nome: string;
+  tipo: string;
+  total_reservas: number;
+}
+
 export default function ReportsOverviewPage() {
   const [reservationRollup, setReservationRollup] = useState<ReservationRollup[]>([]);
   const [activitiesCube, setActivitiesCube] = useState<ActivitiesCube[]>([]);
   const [participantsTotals, setParticipantsTotals] = useState<ParticipantsTotal[]>([]);
   const [installationRanking, setInstallationRanking] = useState<InstallationRanking[]>([]);
+  const [activityOccurrences, setActivityOccurrences] = useState<ActivityOccurrence[]>([]);
+  const [installationsMostReserved, setInstallationsMostReserved] = useState<InstallationMostReserved[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,13 +64,17 @@ export default function ReportsOverviewPage() {
         activities_cube: ActivitiesCube[];
         participants_totals: ParticipantsTotal[];
         installation_ranking: InstallationRanking[];
-      }>('/reports/');
+        activity_occurrences?: ActivityOccurrence[];
+        installations_most_reserved?: InstallationMostReserved[];
+      }>('/reports/overview');
 
       if (data.success) {
         setReservationRollup(data.reservation_rollup || []);
         setActivitiesCube(data.activities_cube || []);
         setParticipantsTotals(data.participants_totals || []);
         setInstallationRanking(data.installation_ranking || []);
+        setActivityOccurrences(data.activity_occurrences || []);
+        setInstallationsMostReserved(data.installations_most_reserved || []);
       }
     } catch (err) {
       console.error('Erro ao carregar relatórios:', err);
@@ -60,6 +82,8 @@ export default function ReportsOverviewPage() {
       setActivitiesCube([]);
       setParticipantsTotals([]);
       setInstallationRanking([]);
+      setActivityOccurrences([]);
+      setInstallationsMostReserved([]);
     } finally {
       setLoading(false);
     }
@@ -201,6 +225,86 @@ export default function ReportsOverviewPage() {
             </div>
           </div>
         </div>
+
+        {activityOccurrences.length > 0 && (
+          <div className="rounded-lg bg-white p-4 shadow">
+            <h2 className="text-lg font-semibold text-gray-900">Ocorrências Semanais de Atividades</h2>
+            <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
+              <table className="min-w-full text-sm">
+                <thead className="border-b text-left text-gray-500">
+                  <tr>
+                    <th className="px-3 py-2">Atividade</th>
+                    <th className="px-3 py-2">Local</th>
+                    <th className="px-3 py-2">Tipo</th>
+                    <th className="px-3 py-2">Dia da Semana</th>
+                    <th className="px-3 py-2">Horário</th>
+                    <th className="px-3 py-2">Educador</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {activityOccurrences
+                    .sort((a, b) => {
+                      const dayOrder: Record<string, number> = {
+                        SEGUNDA: 1,
+                        TERÇA: 2,
+                        TERCA: 2,
+                        QUARTA: 3,
+                        QUINTA: 4,
+                        SEXTA: 5,
+                        SÁBADO: 6,
+                        SABADO: 6,
+                        DOMINGO: 7,
+                      };
+                      const dayA = dayOrder[a.dia_semana.toUpperCase()] || 99;
+                      const dayB = dayOrder[b.dia_semana.toUpperCase()] || 99;
+                      if (dayA !== dayB) return dayA - dayB;
+                      return a.horario_inicio.localeCompare(b.horario_inicio);
+                    })
+                    .map((occurrence, index) => (
+                      <tr key={index}>
+                        <td className="px-3 py-2">{occurrence.atividade}</td>
+                        <td className="px-3 py-2">{occurrence.local}</td>
+                        <td className="px-3 py-2">{occurrence.tipo_local}</td>
+                        <td className="px-3 py-2">{occurrence.dia_semana}</td>
+                        <td className="px-3 py-2">
+                          {occurrence.horario_inicio.substring(0, 5)} - {occurrence.horario_fim.substring(0, 5)}
+                        </td>
+                        <td className="px-3 py-2">{occurrence.educador_responsavel}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {installationsMostReserved.length > 0 && (
+          <div className="rounded-lg bg-white p-4 shadow">
+            <h2 className="text-lg font-semibold text-gray-900">Instalações Mais Reservadas</h2>
+            <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
+              <table className="min-w-full text-sm">
+                <thead className="border-b text-left text-gray-500">
+                  <tr>
+                    <th className="px-3 py-2">Instalação</th>
+                    <th className="px-3 py-2">Tipo</th>
+                    <th className="px-3 py-2">Total de Reservas</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {installationsMostReserved
+                    .sort((a, b) => b.total_reservas - a.total_reservas)
+                    .map((installation, index) => (
+                      <tr key={index}>
+                        <td className="px-3 py-2 font-semibold text-gray-900">{installation.nome}</td>
+                        <td className="px-3 py-2">{installation.tipo}</td>
+                        <td className="px-3 py-2 font-semibold text-gray-900">{installation.total_reservas}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </section>
     </Layout>
   );

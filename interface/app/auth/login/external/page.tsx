@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Layout from '@/components/Layout';
 import { apiPost } from '@/lib/api';
+import { useAuthStore } from '@/lib/authStore';
 
 export default function ExternalLoginPage() {
   const router = useRouter();
+  const refreshUser = useAuthStore((state) => state.refreshUser);
   const [token, setToken] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,6 +29,9 @@ export default function ExternalLoginPage() {
       });
 
       if (data.success) {
+        // Recarrega o usuário após login bem-sucedido
+        await refreshUser();
+
         if (data.redirect) {
           router.push(data.redirect);
         } else {

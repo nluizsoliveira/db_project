@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Layout from '@/components/Layout';
 import { apiPost } from '@/lib/api';
+import { useAuthStore } from '@/lib/authStore';
 
 export default function LoginPage() {
   const router = useRouter();
+  const refreshUser = useAuthStore((state) => state.refreshUser);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,6 +31,9 @@ export default function LoginPage() {
       });
 
       if (data.success) {
+        // Recarrega o usuário após login bem-sucedido
+        await refreshUser();
+
         if (data.redirect) {
           router.push(data.redirect);
         } else {
