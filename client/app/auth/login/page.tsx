@@ -3,6 +3,7 @@
 import { useState, FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import Layout from "@/components/Layout";
 import { apiPost } from "@/lib/api";
 import { useAuthStore } from "@/lib/authStore";
@@ -80,9 +81,14 @@ export default function LoginPage() {
     >
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-xl">
         <div className="mb-6 text-center">
-          <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#1094ab] text-xl font-bold text-white">
-            CE
-          </span>
+          <Image
+            src="/cefer.png"
+            alt="CEFER"
+            width={120}
+            height={40}
+            className="mx-auto h-12 w-auto"
+            priority
+          />
           <h1 className="mt-4 text-2xl font-bold text-gray-900">
             Acesse o Sistema CEFER
           </h1>
