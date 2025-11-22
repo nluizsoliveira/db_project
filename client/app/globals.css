@@ -120,3 +120,27 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Fix z-index for Recharts legend items */
+.recharts-legend-wrapper {
+  z-index: 1 !important;
+  position: relative;
+}
+
+.recharts-legend-item {
+  z-index: 1 !important;
+  position: relative;
+}
+
+.recharts-legend-item:hover {
+  z-index: 2 !important;
+}
+
+/* Tooltip should be above legend */
+.recharts-tooltip-wrapper {
+  z-index: 100 !important;
+}
+
+.recharts-default-tooltip {
+  z-index: 100 !important;
+}

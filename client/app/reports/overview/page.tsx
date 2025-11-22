@@ -3,6 +3,11 @@
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { apiGet } from "@/lib/api";
+import ReservationRollupChart from "@/components/reports/ReservationRollupChart";
+import ActivitiesCubeChart from "@/components/reports/ActivitiesCubeChart";
+import ParticipantsTotalsChart from "@/components/reports/ParticipantsTotalsChart";
+import InstallationRankingChart from "@/components/reports/InstallationRankingChart";
+import InstallationsMostReservedChart from "@/components/reports/InstallationsMostReservedChart";
 
 interface ReservationRollup {
   installation_name: string | null;
@@ -158,11 +163,12 @@ export default function ReportsOverviewPage() {
           </h1>
         </header>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
           <div className="rounded-lg bg-white p-4 shadow">
             <h2 className="text-lg font-semibold text-gray-900">
               Consolidado de reservas
             </h2>
+            <ReservationRollupChart data={reservationRollup} />
             <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
               <table className="min-w-full text-sm">
                 <thead className="border-b text-left text-gray-500">
@@ -204,6 +210,7 @@ export default function ReportsOverviewPage() {
             <h2 className="text-lg font-semibold text-gray-900">
               Atividades por educador
             </h2>
+            <ActivitiesCubeChart data={activitiesCube} />
             <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
               <table className="min-w-full text-sm">
                 <thead className="border-b text-left text-gray-500">
@@ -240,13 +247,12 @@ export default function ReportsOverviewPage() {
               </table>
             </div>
           </div>
-        </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
           <div className="rounded-lg bg-white p-4 shadow">
             <h2 className="text-lg font-semibold text-gray-900">
               Participantes por atividade
             </h2>
+            <ParticipantsTotalsChart data={participantsTotals} />
             <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
               <table className="min-w-full text-sm">
                 <thead className="border-b text-left text-gray-500">
@@ -286,6 +292,7 @@ export default function ReportsOverviewPage() {
             <h2 className="text-lg font-semibold text-gray-900">
               Ranking de instalações
             </h2>
+            <InstallationRankingChart data={installationRanking} />
             <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
               <table className="min-w-full text-sm">
                 <thead className="border-b text-left text-gray-500">
@@ -384,6 +391,7 @@ export default function ReportsOverviewPage() {
             <h2 className="text-lg font-semibold text-gray-900">
               Instalações Mais Reservadas
             </h2>
+            <InstallationsMostReservedChart data={installationsMostReserved} />
             <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
               <table className="min-w-full text-sm">
                 <thead className="border-b text-left text-gray-500">
