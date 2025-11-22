@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { apiGet } from '@/lib/api';
+import { useInvites } from '@/hooks/useInvites';
 
 interface Invite {
   id_convite: number;
@@ -26,34 +25,9 @@ interface InvitesListProps {
 }
 
 export default function InvitesList({ refreshTrigger }: InvitesListProps) {
-  const [invites, setInvites] = useState<Invite[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { data: invites = [], isLoading: loading, error: queryError, refetch } = useInvites();
 
-  const loadInvites = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const data = await apiGet<{
-        success: boolean;
-        invites: Invite[];
-      }>('/internal/invites');
-
-      if (data.success) {
-        setInvites(data.invites || []);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar convites:', err);
-      setError('Erro ao carregar convites');
-      setInvites([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadInvites();
-  }, [refreshTrigger]);
+  const error = queryError?.message || '';
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
@@ -96,7 +70,7 @@ export default function InvitesList({ refreshTrigger }: InvitesListProps) {
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">Convites Criados</h2>
         <button
-          onClick={loadInvites}
+          onClick={() => refetch()}
           className="rounded border border-gray-300 px-3 py-1 text-sm font-semibold text-gray-600 hover:bg-gray-50"
         >
           Atualizar

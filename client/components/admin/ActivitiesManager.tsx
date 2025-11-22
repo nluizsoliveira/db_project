@@ -35,32 +35,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
-
-interface Activity {
-  id_atividade: number;
-  nome_atividade: string;
-  grupo_extensao: string | null;
-  weekday: string;
-  horario_inicio: string;
-  horario_fim: string;
-  vagas_ocupadas: number;
-  vagas_limite: number;
-}
-
-interface ActivityDetail {
-  id_atividade: number;
-  nome: string;
-  vagas_limite: number;
-  data_inicio_periodo: string;
-  data_fim_periodo: string;
-}
+import {
+  useAdminActivities,
+  useAdminActivity,
+  useCreateAdminActivity,
+  useUpdateAdminActivity,
+  useDeleteAdminActivity,
+  type Activity,
+  type ActivityDetail,
+} from '@/hooks/useActivities';
 
 export default function ActivitiesManager() {
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [editingActivity, setEditingActivity] = useState<ActivityDetail | null>(null);
+  const [editingActivityId, setEditingActivityId] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     nome: '',
@@ -68,7 +55,6 @@ export default function ActivitiesManager() {
     data_inicio: '',
     data_fim: '',
   });
-  const [submitting, setSubmitting] = useState(false);
 
   // TanStack Table states
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -76,58 +62,36 @@ export default function ActivitiesManager() {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
 
-  const loadActivities = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const data = await apiGet<{
-        success: boolean;
-        activities: Activity[];
-      }>('/admin/activities');
+  // Queries
+  const { data: activities = [], isLoading: loading, error: queryError } = useAdminActivities();
+  const { data: editingActivity } = useAdminActivity(editingActivityId || 0);
 
-      if (data.success) {
-        setActivities(data.activities || []);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar atividades:', err);
-      setError('Erro ao carregar atividades');
-      setActivities([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Mutations
+  const createMutation = useCreateAdminActivity();
+  const updateMutation = useUpdateAdminActivity();
+  const deleteMutation = useDeleteAdminActivity();
 
+  // Update form when editing activity loads
   useEffect(() => {
-    loadActivities();
-  }, []);
+    if (editingActivity && editingActivityId) {
+      setFormData({
+        nome: editingActivity.nome,
+        vagas: editingActivity.vagas_limite.toString(),
+        data_inicio: editingActivity.data_inicio_periodo,
+        data_fim: editingActivity.data_fim_periodo,
+      });
+    }
+  }, [editingActivity, editingActivityId]);
 
   const handleCreate = () => {
-    setEditingActivity(null);
+    setEditingActivityId(null);
     setFormData({ nome: '', vagas: '', data_inicio: '', data_fim: '' });
     setShowForm(true);
   };
 
-  const handleEdit = async (activityId: number) => {
-    try {
-      const data = await apiGet<{
-        success: boolean;
-        activity: ActivityDetail;
-      }>(`/admin/activities/${activityId}`);
-
-      if (data.success && data.activity) {
-        setEditingActivity(data.activity);
-        setFormData({
-          nome: data.activity.nome,
-          vagas: data.activity.vagas_limite.toString(),
-          data_inicio: data.activity.data_inicio_periodo,
-          data_fim: data.activity.data_fim_periodo,
-        });
-        setShowForm(true);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar atividade:', err);
-      alert('Erro ao carregar atividade');
-    }
+  const handleEdit = (activityId: number) => {
+    setEditingActivityId(activityId);
+    setShowForm(true);
   };
 
   const handleDelete = async (activityId: number) => {
@@ -136,17 +100,8 @@ export default function ActivitiesManager() {
     }
 
     try {
-      const data = await apiDelete<{
-        success: boolean;
-        message?: string;
-      }>(`/admin/activities/${activityId}`);
-
-      if (data.success) {
-        alert(data.message || 'Atividade deletada com sucesso!');
-        loadActivities();
-      } else {
-        alert(data.message || 'Erro ao deletar atividade');
-      }
+      const data = await deleteMutation.mutateAsync(activityId);
+      alert(data.message || 'Atividade deletada com sucesso!');
     } catch (err: any) {
       console.error('Erro ao deletar atividade:', err);
       alert(err.message || 'Erro ao deletar atividade');
@@ -155,54 +110,40 @@ export default function ActivitiesManager() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
     setError('');
 
     try {
-      if (editingActivity) {
+      if (editingActivityId && editingActivity) {
         // Update
-        const data = await apiPut<{
-          success: boolean;
-          message?: string;
-        }>(`/admin/activities/${editingActivity.id_atividade}`, {
-          nome: formData.nome,
-          vagas: parseInt(formData.vagas),
+        const data = await updateMutation.mutateAsync({
+          activityId: editingActivityId,
+          payload: {
+            nome: formData.nome,
+            vagas: parseInt(formData.vagas),
+          },
         });
-
-        if (data.success) {
-          alert(data.message || 'Atividade atualizada com sucesso!');
-          setShowForm(false);
-          loadActivities();
-        } else {
-          setError(data.message || 'Erro ao atualizar atividade');
-        }
+        alert(data.message || 'Atividade atualizada com sucesso!');
+        setShowForm(false);
+        setEditingActivityId(null);
       } else {
         // Create
-        const data = await apiPost<{
-          success: boolean;
-          message?: string;
-        }>('/admin/activities', {
+        const data = await createMutation.mutateAsync({
           nome: formData.nome,
           vagas: parseInt(formData.vagas),
           data_inicio: formData.data_inicio,
           data_fim: formData.data_fim,
         });
-
-        if (data.success) {
-          alert(data.message || 'Atividade criada com sucesso!');
-          setShowForm(false);
-          loadActivities();
-        } else {
-          setError(data.message || 'Erro ao criar atividade');
-        }
+        alert(data.message || 'Atividade criada com sucesso!');
+        setShowForm(false);
       }
     } catch (err: any) {
       console.error('Erro ao salvar atividade:', err);
       setError(err.message || 'Erro ao salvar atividade');
-    } finally {
-      setSubmitting(false);
     }
   };
+
+  const displayError = error || queryError?.message || '';
+  const submitting = createMutation.isPending || updateMutation.isPending;
 
   // Define columns
   const columns: ColumnDef<Activity>[] = useMemo(
@@ -391,7 +332,7 @@ export default function ActivitiesManager() {
       {showForm && (
         <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
           <h3 className="mb-4 text-md font-semibold text-gray-900">
-            {editingActivity ? 'Editar Atividade' : 'Nova Atividade'}
+            {editingActivityId ? 'Editar Atividade' : 'Nova Atividade'}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -416,7 +357,7 @@ export default function ActivitiesManager() {
                   className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                 />
               </label>
-              {!editingActivity && (
+              {!editingActivityId && (
                 <>
                   <label className="text-sm text-gray-600">
                     <span className="mb-1 block font-medium">Data Início</span>
@@ -441,7 +382,7 @@ export default function ActivitiesManager() {
                 </>
               )}
             </div>
-            {error && <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">{error}</div>}
+            {displayError && <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">{displayError}</div>}
             <div className="flex justify-end gap-2">
               <Button
                 type="button"
@@ -465,8 +406,8 @@ export default function ActivitiesManager() {
         </div>
       )}
 
-      {error && !showForm && (
-        <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">{error}</div>
+      {displayError && !showForm && (
+        <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">{displayError}</div>
       )}
 
       {loading ? (

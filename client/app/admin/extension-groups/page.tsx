@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, FormEvent } from 'react';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { apiGet, apiPost, apiDelete } from '@/lib/api';
+import { useExtensionGroups, useCreateExtensionGroup, useDeleteExtensionGroup } from '@/hooks/useExtensionGroups';
 
 interface ExtensionGroup {
   nome_grupo: string;
@@ -13,8 +13,6 @@ interface ExtensionGroup {
 }
 
 export default function ExtensionGroupsPage() {
-  const [groups, setGroups] = useState<ExtensionGroup[]>([]);
-  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{
     category: 'success' | 'error';
     text: string;
@@ -27,63 +25,36 @@ export default function ExtensionGroupsPage() {
     cpf_responsible: '',
   });
 
-  useEffect(() => {
-    loadGroups();
-  }, []);
+  const { data: groups = [], isLoading: loading, error: queryError } = useExtensionGroups();
+  const createMutation = useCreateExtensionGroup();
+  const deleteMutation = useDeleteExtensionGroup();
 
-  const loadGroups = async () => {
-    try {
-      const data = await apiGet<{
-        success: boolean;
-        groups: ExtensionGroup[];
-      }>('/extension_group/');
-
-      if (data.success && Array.isArray(data.groups)) {
-        setGroups(data.groups);
-      } else {
-        setGroups([]);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar grupos:', err);
-      setGroups([]);
+  if (queryError) {
+    if (!message || message.category !== 'error') {
       setMessage({
         category: 'error',
         text: 'Erro ao carregar grupos de extensão',
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  }
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      const data = await apiPost<{
-        success: boolean;
-        message?: string;
-      }>('/extension_group/create', {
+      const data = await createMutation.mutateAsync({
         group_name: formData.group_name,
         description: formData.description,
         cpf_responsible: formData.cpf_responsible,
       });
 
-      if (data.success) {
-        setMessage({
-          category: 'success',
-          text: data.message || 'Grupo de extensão criado com sucesso',
-        });
-        setShowCreateForm(false);
-        setFormData({ group_name: '', description: '', cpf_responsible: '' });
-        loadGroups();
-      } else {
-        setMessage({
-          category: 'error',
-          text: data.message || 'Erro ao criar grupo de extensão',
-        });
-      }
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Erro ao processar solicitação';
+      setMessage({
+        category: 'success',
+        text: data.message || 'Grupo de extensão criado com sucesso',
+      });
+      setShowCreateForm(false);
+      setFormData({ group_name: '', description: '', cpf_responsible: '' });
+    } catch (err: any) {
+      const errorMessage = err.message || 'Erro ao processar solicitação';
       try {
         const errorData = JSON.parse(errorMessage);
         setMessage({
@@ -146,28 +117,13 @@ export default function ExtensionGroupsPage() {
     }
 
     try {
-      const data = await apiDelete<{
-        success: boolean;
-        message?: string;
-      }>('/extension_group/delete', {
-        group_name: groupName,
+      const data = await deleteMutation.mutateAsync(groupName);
+      setMessage({
+        category: 'success',
+        text: data.message || 'Grupo de extensão deletado com sucesso',
       });
-
-      if (data.success) {
-        setMessage({
-          category: 'success',
-          text: data.message || 'Grupo de extensão deletado com sucesso',
-        });
-        loadGroups();
-      } else {
-        setMessage({
-          category: 'error',
-          text: data.message || 'Erro ao deletar grupo de extensão',
-        });
-      }
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Erro ao processar solicitação';
+    } catch (err: any) {
+      const errorMessage = err.message || 'Erro ao processar solicitação';
       try {
         const errorData = JSON.parse(errorMessage);
         setMessage({

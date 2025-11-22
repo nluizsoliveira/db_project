@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
-import { apiGet, apiDelete } from '@/lib/api';
+import { useState, FormEvent } from 'react';
+import { useInstallationReservations, useDeleteInstallationReservation } from '@/hooks/useReservations';
 
 interface InstallationReservation {
   id_reserva: number;
@@ -16,9 +16,6 @@ interface InstallationReservation {
 }
 
 export default function InstallationReservationsManager() {
-  const [reservations, setReservations] = useState<InstallationReservation[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [filters, setFilters] = useState({
     data_inicio: '',
     data_fim: '',
@@ -26,40 +23,14 @@ export default function InstallationReservationsManager() {
     cpf_responsavel: '',
   });
 
-  const loadReservations = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const params = new URLSearchParams();
-      if (filters.data_inicio) params.append('data_inicio', filters.data_inicio);
-      if (filters.data_fim) params.append('data_fim', filters.data_fim);
-      if (filters.id_instalacao) params.append('id_instalacao', filters.id_instalacao);
-      if (filters.cpf_responsavel) params.append('cpf_responsavel', filters.cpf_responsavel);
+  const { data: reservations = [], isLoading: loading, error: queryError } = useInstallationReservations();
+  const deleteMutation = useDeleteInstallationReservation();
 
-      const data = await apiGet<{
-        success: boolean;
-        reservations: InstallationReservation[];
-      }>(`/staff/installations/reservations?${params.toString()}`);
-
-      if (data.success) {
-        setReservations(data.reservations || []);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar reservas:', err);
-      setError('Erro ao carregar reservas');
-      setReservations([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadReservations();
-  }, []);
+  const error = queryError?.message || '';
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    loadReservations();
+    // Query will automatically refetch when filters change
   };
 
   const handleCancelReservation = async (id: number) => {
@@ -68,17 +39,8 @@ export default function InstallationReservationsManager() {
     }
 
     try {
-      const data = await apiDelete<{
-        success: boolean;
-        message?: string;
-      }>(`/staff/installations/reservations/${id}`);
-
-      if (data.success) {
-        alert(data.message || 'Reserva cancelada com sucesso!');
-        loadReservations();
-      } else {
-        alert(data.message || 'Erro ao cancelar reserva');
-      }
+      const data = await deleteMutation.mutateAsync(id);
+      alert(data.message || 'Reserva cancelada com sucesso!');
     } catch (err: any) {
       console.error('Erro ao cancelar reserva:', err);
       alert(err.message || 'Erro ao cancelar reserva');
@@ -133,7 +95,6 @@ export default function InstallationReservationsManager() {
             type="button"
             onClick={() => {
               setFilters({ data_inicio: '', data_fim: '', id_instalacao: '', cpf_responsavel: '' });
-              loadReservations();
             }}
             className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
           >
