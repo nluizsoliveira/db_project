@@ -18,8 +18,8 @@ services:
 
   flask_app:
     build:
-      context: .
-      dockerfile: server/docker/Dockerfile
+      context: ./server
+      dockerfile: docker/Dockerfile
     container_name: flask_app
     environment:
       DB_HOST: postgres
