@@ -34,15 +34,15 @@
   - Implementado: Interface em `/staff/dashboard` com componente `ActivitiesManager` que permite criar, editar e deletar atividades. Endpoints `POST /staff/activities`, `PUT /staff/activities/:id`, `DELETE /staff/activities/:id` e `GET /staff/activities/:id`. Usa queries SQL `criar_atividade.sql`, `atualizar_atividade.sql`, `deletar_atividade.sql` e `buscar_atividade.sql` com procedures SQL correspondentes.
 
 ### Administrador
-- ❌ gerenciar as atividades oferecidas (Administrador)
-  - Faltante: Interface e endpoints CRUD para criar, editar, deletar atividades. Apenas visualização existe, não há CRUD.
-- ❌ CRUD de infraestrutura por parte do administrador (Administrador)
-  - Faltante: Interface e endpoints CRUD para instalações e equipamentos. Existem procedures SQL (`criar_instalacao`, `atualizar_instalacao`, `deletar_instalacao`, `criar_equipamento`, `atualizar_equipamento`, `deletar_equipamento`) em `admin_functions.sql`, mas não há rotas/interface.
-- ⚠️ CRUD de grupos de extensão e eventos por parte do administrador (Administrador)
+- ✅ gerenciar as atividades oferecidas (Administrador)
+  - Implementado: Interface em `/admin/management` com componente `ActivitiesManager` que permite criar, editar e deletar atividades. Endpoints `GET /admin/activities`, `POST /admin/activities`, `PUT /admin/activities/:id`, `DELETE /admin/activities/:id` e `GET /admin/activities/:id`. Reutiliza queries SQL de staff (`criar_atividade.sql`, `atualizar_atividade.sql`, `deletar_atividade.sql`, `buscar_atividade.sql`) com procedures SQL correspondentes.
+- ✅ CRUD de infraestrutura por parte do administrador (Administrador)
+  - Implementado: Interface em `/admin/management` com componentes `InstallationsManager` e `EquipmentManager` que permitem CRUD completo de instalações e equipamentos. Endpoints para instalações: `GET /admin/installations`, `POST /admin/installations`, `PUT /admin/installations/:id`, `DELETE /admin/installations/:id` e `GET /admin/installations/:id`. Endpoints para equipamentos: `GET /admin/equipment`, `POST /admin/equipment`, `PUT /admin/equipment/:id`, `DELETE /admin/equipment/:id` e `GET /admin/equipment/:id`. Usa procedures SQL `criar_instalacao`, `atualizar_instalacao`, `deletar_instalacao`, `criar_equipamento`, `atualizar_equipamento`, `deletar_equipamento` e queries SQL em `queries/admin/`.
+- ✅ CRUD de grupos de extensão e eventos por parte do administrador (Administrador)
   - Grupos de extensão: ✅ Implementado em `/admin/extension-groups` com CRUD completo (create, update, delete).
-  - Eventos: ❌ Faltante: Não há nenhuma implementação relacionada a eventos (CRUD de eventos).
-- ❌ CRUD de usuários por parte do administrador (Administrador)
-  - Faltante: Interface e endpoints para gerenciar usuários (criar, editar, deletar, listar). Apenas aprovação/rejeição de cadastros existe em `/auth/pending-registrations`, não há CRUD completo.
+  - Eventos: ✅ Implementado: Interface em `/admin/management` com componente `EventsManager` que permite criar, editar e deletar eventos. Endpoints `GET /admin/events`, `POST /admin/events`, `PUT /admin/events/:id`, `DELETE /admin/events/:id` e `GET /admin/events/:id`. Usa procedures SQL `criar_evento`, `atualizar_evento`, `deletar_evento` e queries SQL em `queries/admin/`. Endpoint adicional `GET /admin/reservations` para listar reservas disponíveis para associar a eventos.
+- ✅ CRUD de usuários por parte do administrador (Administrador)
+  - Implementado: Interface em `/admin/management` com componente `UsersManager` que permite criar, editar, deletar e listar usuários. Endpoints `GET /admin/users`, `POST /admin/users`, `PUT /admin/users/:cpf`, `DELETE /admin/users/:cpf` e `GET /admin/users/:cpf`. Suporta criação de diferentes tipos de usuários (interno, externo, funcionário, educador físico) usando procedures SQL `criar_pessoa`, `criar_interno`, `criar_funcionario`, `criar_educador_fisico`, `atualizar_pessoa`, `atualizar_interno`, `atualizar_funcionario`, `atualizar_educador` e `deletar_pessoa`. Queries SQL em `queries/admin/listar_usuarios.sql` e `queries/admin/buscar_usuario.sql`.
 
 ### Relatórios
 - ✅ identificar espaços mais utilizados, frequência e duração de uso (Administrador, Funcionário Cefer, Relatório)
