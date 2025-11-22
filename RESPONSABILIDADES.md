@@ -378,7 +378,7 @@ def require_role(*allowed_roles):
 
 #### Função: `hasRole(user, role)`
 
-Localização: `interface/lib/auth.ts`
+Localização: `client/lib/auth.ts`
 
 ```typescript
 export function hasRole(
@@ -392,7 +392,7 @@ export function hasRole(
 
 #### Componente: `NavbarLinks`
 
-Localização: `interface/components/NavbarLinks.tsx`
+Localização: `client/components/NavbarLinks.tsx`
 
 ```typescript
 const visibility = useMemo(

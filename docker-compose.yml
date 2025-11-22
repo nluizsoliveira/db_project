@@ -46,7 +46,7 @@ services:
 
   nextjs_app:
     build:
-      context: ./interface
+      context: ./client
       dockerfile: Dockerfile.dev
     container_name: nextjs_app
     env_file:
@@ -57,7 +57,7 @@ services:
     ports:
       - "${NEXTJS_PORT}:3000"
     volumes:
-      - ./interface:/app
+      - ./client:/app
       - /app/node_modules
       - /app/.next
     depends_on:
