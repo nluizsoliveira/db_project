@@ -71,9 +71,6 @@ const NavbarLinks = memo(function NavbarLinks({ user }: NavbarLinksProps) {
           Externo
         </Link>
       )}
-      <Link href="/auth/change-password" className={getLinkClassName('/auth/change-password')}>
-        Alterar Senha
-      </Link>
     </nav>
   );
 });
