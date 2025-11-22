@@ -340,7 +340,7 @@ BEGIN
 
         RETURN json_build_object(
             'success', FALSE,
-            'message', 'Invalid credentials'
+            'message', 'Credenciais inválidas'
         );
     END IF;
 
@@ -356,7 +356,7 @@ BEGIN
 
         RETURN json_build_object(
             'success', FALSE,
-            'message', 'Invalid credentials'
+            'message', 'Credenciais inválidas'
         );
     END IF;
 
@@ -367,7 +367,7 @@ BEGIN
 
         RETURN json_build_object(
             'success', FALSE,
-            'message', 'Account is blocked'
+            'message', 'Conta bloqueada'
         );
     END IF;
 
@@ -393,7 +393,7 @@ BEGIN
 
         RETURN json_build_object(
             'success', FALSE,
-            'message', 'Invalid credentials'
+            'message', 'Credenciais inválidas'
         );
     END IF;
 

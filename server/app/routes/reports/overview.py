@@ -5,7 +5,7 @@ from app.services.database import executor as sql_queries
 from app.services.auth.decorators import require_auth
 
 
-@reports_blueprint.get("/", endpoint="overview")
+@reports_blueprint.get("/overview", endpoint="overview")
 @require_auth
 def overview():
     reservation_rollup = sql_queries.fetch_all(

@@ -31,7 +31,7 @@ const NavbarLinks = memo(function NavbarLinks({ user }: NavbarLinksProps) {
       showStaff: hasRole(user, 'staff') || hasRole(user, 'admin'),
       showInternal: hasRole(user, 'internal') || hasRole(user, 'staff') || hasRole(user, 'admin'),
       showExternal: hasRole(user, 'external'),
-      showReports: hasRole(user, 'admin') || hasRole(user, 'staff'),
+      showReports: hasRole(user, 'admin') || hasRole(user, 'staff') || hasRole(user, 'internal'),
     }),
     [user]
   );
