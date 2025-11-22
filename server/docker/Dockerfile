@@ -16,7 +16,6 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 COPY . /app/
 
 ENV FLASK_APP=wsgi.py \
-    FLASK_ENV=development \
-    FLASK_RUN_PORT=5050
+    FLASK_ENV=development
 
 ENTRYPOINT ["python", "docker/entrypoint.py"]

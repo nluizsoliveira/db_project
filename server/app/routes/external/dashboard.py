@@ -30,10 +30,16 @@ def dashboard():
             {"invite_id": invite_id},
         )
 
+    # Get external participations list
+    external_participations = sql_queries.fetch_all(
+        "queries/external/external_participations.sql"
+    )
+
     return jsonify({
         "success": True,
         "invite": invite,
         "participation": participation,
+        "external_participations": external_participations,
     })
 
 

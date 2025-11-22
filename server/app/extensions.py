@@ -6,23 +6,20 @@ from app.services.database.bootstrap import ensure_schema_populated
 
 
 def register_extensions(app: Flask) -> None:
-    # Permitir todas as origens em desenvolvimento para facilitar o desenvolvimento
-    # Em produção, especificar origens específicas
     import os
-    debug_mode = app.config.get("DEBUG", False) or os.environ.get("FLASK_DEBUG", "false").lower() == "true"
 
-    if debug_mode:
-        # Em desenvolvimento, permitir todas as origens locais
-        CORS(app, supports_credentials=True, origins=[
-            'http://localhost:3000',
-            'http://localhost:3001',
-            'http://127.0.0.1:3000',
-            'http://127.0.0.1:3001',
-            'http://nextjs_app:3000',
-        ])
+    # Ler origens CORS do ambiente ou usar padrão
+    cors_origins_env = os.environ.get("CORS_ORIGINS", "")
+
+    if cors_origins_env:
+        # Processar string separada por vírgulas
+        cors_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
     else:
-        # Em produção, apenas origens específicas
-        CORS(app, supports_credentials=True, origins=['http://localhost:3000', 'http://nextjs_app:3000'])
+        # Se CORS_ORIGINS não estiver definido, usar apenas nextjs_app (Docker)
+        # Em desenvolvimento local, CORS_ORIGINS deve estar definido no .env
+        cors_origins = ['http://nextjs_app:3000']
+
+    CORS(app, supports_credentials=True, origins=cors_origins)
     _register_db_session(app)
 
 

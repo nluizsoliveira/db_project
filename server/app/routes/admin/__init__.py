@@ -9,3 +9,9 @@ def init_app() -> None:
     """
 
     from . import dashboard  # noqa: F401
+    from . import activities  # noqa: F401
+    from . import installations  # noqa: F401
+    from . import equipment  # noqa: F401
+    from . import events  # noqa: F401
+    from . import users  # noqa: F401
+    from . import reservations  # noqa: F401

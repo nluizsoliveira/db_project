@@ -2,16 +2,18 @@ services:
   postgres:
     image: postgres:17
     container_name: postgres17
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: public
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:5432"
     volumes:
       - ./server/pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -21,15 +23,21 @@ services:
       context: ./server
       dockerfile: docker/Dockerfile
     container_name: flask_app
+    env_file:
+      - .env
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: public
-      DB_USER: postgres
-      DB_PASSWORD: password
-      POPULATE_DB: "true"
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      FLASK_SECRET_KEY: ${FLASK_SECRET_KEY}
+      FLASK_DEBUG: ${FLASK_DEBUG}
+      FLASK_RUN_PORT: ${FLASK_RUN_PORT}
+      FLASK_RUN_HOST: ${FLASK_RUN_HOST}
+      POPULATE_DB: ${POPULATE_DB}
     ports:
-      - "5050:5050"
+      - "${FLASK_PORT}:${FLASK_RUN_PORT}"
     volumes:
       - ./server:/app
     depends_on:
@@ -38,12 +46,19 @@ services:
 
   nextjs_app:
     build:
-      context: ./interface
-      dockerfile: Dockerfile
+      context: ./client
+      dockerfile: Dockerfile.dev
     container_name: nextjs_app
+    env_file:
+      - .env
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:5050
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NODE_ENV: ${NODE_ENV}
     ports:
-      - "3000:3000"
+      - "${NEXTJS_PORT}:3000"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+      - /app/.next
     depends_on:
       - flask_app
