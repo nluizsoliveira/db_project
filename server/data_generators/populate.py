@@ -84,7 +84,7 @@ def _apply_functions_and_triggers(dbsession):
         "common_triggers.sql",
     ]
 
-    sql_path = Path("./sql/funcionalidades")
+    sql_path = Path("./sql/functions")
     for f in file_names:
         print(f"Applying functions from {f}")
         try:

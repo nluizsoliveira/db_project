@@ -10,7 +10,7 @@ from data_generators.populate import populate_db
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SQL_ROOT = PROJECT_ROOT / "sql"
 SCHEMA_FILE = SQL_ROOT / "upgrade_schema.sql"
-FUNCTIONS_DIR = SQL_ROOT / "funcionalidades"
+FUNCTIONS_DIR = SQL_ROOT / "functions"
 TRIGGERS_FILE = FUNCTIONS_DIR / "common_triggers.sql"
 
 _schema_ready = False
