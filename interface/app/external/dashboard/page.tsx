@@ -148,7 +148,7 @@ export default function ExternalDashboardPage() {
 
   if (loading) {
     return (
-      <ProtectedRoute allowedRoles={['external', 'admin']}>
+      <ProtectedRoute allowedRoles={['external']}>
         <Layout>
           <div className="flex min-h-[400px] items-center justify-center">
             <div className="text-center">
@@ -163,7 +163,7 @@ export default function ExternalDashboardPage() {
 
   if (!invite) {
     return (
-      <ProtectedRoute allowedRoles={['external', 'admin']}>
+      <ProtectedRoute allowedRoles={['external']}>
         <Layout>
           <div className="rounded-lg bg-red-50 p-4 text-red-800">
             {error || 'Convite não encontrado'}
@@ -174,7 +174,7 @@ export default function ExternalDashboardPage() {
   }
 
   return (
-    <ProtectedRoute allowedRoles={['external', 'admin']}>
+    <ProtectedRoute allowedRoles={['external']}>
       <Layout>
         <section className="space-y-6">
           <header>

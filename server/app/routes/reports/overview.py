@@ -20,6 +20,12 @@ def overview():
     installation_ranking = sql_queries.fetch_all(
         "queries/reports/installation_ranking.sql"
     )
+    activity_occurrences = sql_queries.fetch_all(
+        "queries/reports/activity_occurrences.sql"
+    )
+    installations_most_reserved = sql_queries.fetch_all(
+        "queries/reports/installations_most_reserved.sql"
+    )
 
     return jsonify({
         "success": True,
@@ -27,4 +33,6 @@ def overview():
         "activities_cube": activities_cube,
         "participants_totals": participants_totals,
         "installation_ranking": installation_ranking,
+        "activity_occurrences": activity_occurrences,
+        "installations_most_reserved": installations_most_reserved,
     })

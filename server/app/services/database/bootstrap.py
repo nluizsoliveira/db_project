@@ -73,16 +73,18 @@ def ensure_schema_populated(db_session) -> None:
 
 def _count_tables(db_session) -> int:
     try:
-        # Usar a conexão diretamente para evitar problemas com executor
+        # Usar query SQL ao invés de código Python
+        sql_root = PROJECT_ROOT / "sql"
+        query_path = sql_root / "queries" / "meta" / "table_count.sql"
+        if not query_path.exists():
+            current_app.logger.warning(f"Query não encontrada: {query_path}")
+            return 0
+
+        query = query_path.read_text(encoding="utf-8")
         with db_session.connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT COUNT(*)
-                FROM information_schema.tables
-                WHERE table_schema = 'public'
-                AND table_type = 'BASE TABLE'
-            """)
+            cursor.execute(query)
             result = cursor.fetchone()
-            if result:
+            if result and result[0] is not None:
                 return int(result[0])
         return 0
     except Exception as e:

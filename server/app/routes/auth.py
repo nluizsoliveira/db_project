@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request, session
 import logging
+from pathlib import Path
 
 from app.services.database import executor as sql_queries
 
@@ -94,6 +95,32 @@ def register_post():
 
     if password != password_confirm:
         return jsonify({"success": False, "message": "As senhas não coincidem"}), 400
+
+    # Verificar se usuário já existe (por email ou CPF)
+    existing_user_by_email = sql_queries.fetch_one(
+        "queries/auth/check_user_exists.sql",
+        {"email_or_cpf": email}
+    )
+    if existing_user_by_email:
+        return jsonify({"success": False, "message": "Usuário já existe com este e-mail"}), 400
+
+    existing_user_by_cpf = sql_queries.fetch_one(
+        "queries/auth/check_user_exists.sql",
+        {"email_or_cpf": cpf}
+    )
+    if existing_user_by_cpf:
+        return jsonify({"success": False, "message": "Usuário já existe com este CPF"}), 400
+
+    # Verificar se já existe solicitação pendente
+    existing_request = sql_queries.fetch_one(
+        "queries/auth/check_registration_request_exists.sql",
+        {
+            "cpf_pessoa": cpf,
+            "nusp": nusp,
+        }
+    )
+    if existing_request:
+        return jsonify({"success": False, "message": "Já existe uma solicitação de cadastro pendente para este CPF/NUSP"}), 400
 
     result = sql_queries.fetch_one(
         "queries/auth/request_registration.sql",
@@ -221,7 +248,27 @@ def get_current_user():
     if not session.get("user_id"):
         return jsonify({"success": False, "message": "Autenticação necessária"}), 401
 
-    profile_access = session.get("profile_access", {})
+    # Get user roles using SQL query instead of session
+    cpf_pessoa = session.get("user_id")
+    roles_result = sql_queries.fetch_one(
+        "queries/auth/get_user_roles.sql",
+        {"cpf_pessoa": cpf_pessoa}
+    )
+
+    # Extract roles from result
+    roles = {}
+    if roles_result and roles_result.get("result"):
+        roles_data = roles_result["result"]
+        if isinstance(roles_data, dict) and "roles" in roles_data:
+            roles_list = roles_data["roles"]
+            if isinstance(roles_list, list):
+                roles = {role: True for role in roles_list}
+        elif isinstance(roles_data, list):
+            roles = {role: True for role in roles_data}
+
+    # Fallback to session if query fails
+    if not roles:
+        roles = session.get("profile_access", {})
 
     return jsonify({
         "success": True,
@@ -229,7 +276,7 @@ def get_current_user():
             "user_id": session.get("user_id"),
             "email": session.get("user_email"),
             "nome": session.get("user_nome"),
-            "roles": profile_access,
+            "roles": roles,
         }
     })
 
@@ -324,6 +371,84 @@ def login_external():
             "status": auth_data["invite_status"],
             "activity_id": auth_data.get("activity_id"),
         }
+    })
+
+
+@auth_blueprint.route("/update-password", methods=["POST"])
+def update_password():
+    """Update user password."""
+    if not session.get("user_id"):
+        return jsonify({"success": False, "message": "Autenticação necessária"}), 401
+
+    if request.is_json:
+        data = request.json
+        current_password = data.get("current_password", "").strip()
+        new_password = data.get("new_password", "").strip()
+        new_password_confirm = data.get("new_password_confirm", "").strip()
+    else:
+        current_password = request.form.get("current_password", "").strip()
+        new_password = request.form.get("new_password", "").strip()
+        new_password_confirm = request.form.get("new_password_confirm", "").strip()
+
+    if not all([current_password, new_password, new_password_confirm]):
+        return jsonify({"success": False, "message": "Todos os campos são obrigatórios"}), 400
+
+    if new_password != new_password_confirm:
+        return jsonify({"success": False, "message": "As novas senhas não coincidem"}), 400
+
+    if current_password == new_password:
+        return jsonify({"success": False, "message": "A nova senha deve ser diferente da senha atual"}), 400
+
+    cpf_pessoa = session.get("user_id")
+
+    # Verificar senha atual
+    verify_result = sql_queries.fetch_one(
+        "queries/auth/login_user.sql",
+        {
+            "email_or_cpf": cpf_pessoa,
+            "password": current_password,
+            "ip_origin": request.remote_addr,
+        },
+    )
+
+    if not verify_result or not verify_result.get("result") or not verify_result["result"].get("success"):
+        return jsonify({"success": False, "message": "Senha atual incorreta"}), 401
+
+    # Fazer hash da nova senha usando função SQL
+    from flask import g
+
+    new_password_hash = None
+    if hasattr(g, 'db_session') and g.db_session:
+        with g.db_session.connection.cursor() as cursor:
+            cursor.execute("SELECT hash_password(%s) AS password_hash", (new_password,))
+            hash_result = cursor.fetchone()
+            if not hash_result:
+                return jsonify({"success": False, "message": "Erro ao processar nova senha"}), 500
+            new_password_hash = hash_result[0]
+    else:
+        return jsonify({"success": False, "message": "Erro de conexão com banco de dados"}), 500
+
+    # Atualizar senha usando query SQL
+    if hasattr(g, 'db_session') and g.db_session:
+        sql_root = Path(__file__).resolve().parents[2] / "sql"
+        query_path = sql_root / "queries" / "auth" / "update_password.sql"
+        if query_path.exists():
+            query = query_path.read_text(encoding="utf-8")
+            with g.db_session.connection.cursor() as cursor:
+                # psycopg2 suporta parâmetros nomeados quando você passa um dicionário
+                cursor.execute(query, {
+                    "cpf_pessoa": cpf_pessoa,
+                    "new_password_hash": new_password_hash,
+                })
+            g.db_session.connection.commit()
+        else:
+            return jsonify({"success": False, "message": "Erro ao encontrar query de atualização"}), 500
+    else:
+        return jsonify({"success": False, "message": "Erro de conexão com banco de dados"}), 500
+
+    return jsonify({
+        "success": True,
+        "message": "Senha atualizada com sucesso"
     })
 
 
