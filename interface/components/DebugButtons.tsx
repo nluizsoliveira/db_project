@@ -151,13 +151,13 @@ export default function DebugButtons() {
     <>
       {/* Debug Buttons (Floating) */}
       <div
-        className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-3"
+        className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2"
         style={{ zIndex: 9999 }}
       >
         <button
           onClick={populateDatabase}
           disabled={loading || isPopulated === true}
-          className={`bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-2 disabled:opacity-50 ${
+          className={`bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2 px-4 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-2 disabled:opacity-50 ${
             !(loading || isPopulated === true)
               ? "cursor-pointer"
               : "cursor-not-allowed"
@@ -169,7 +169,7 @@ export default function DebugButtons() {
           }
         >
           <svg
-            className="w-5 h-5"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -186,7 +186,7 @@ export default function DebugButtons() {
         <button
           onClick={clearDatabase}
           disabled={loading || isPopulated === false}
-          className={`bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-2 disabled:opacity-50 ${
+          className={`bg-red-600 hover:bg-red-700 text-white text-sm font-semibold py-2 px-4 rounded-full shadow-lg transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-2 disabled:opacity-50 ${
             !(loading || isPopulated === false)
               ? "cursor-pointer"
               : "cursor-not-allowed"
@@ -198,7 +198,7 @@ export default function DebugButtons() {
           }
         >
           <svg
-            className="w-5 h-5"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Layout from '@/components/Layout';
-import { apiGet } from '@/lib/api';
+import { useState, useEffect } from "react";
+import Layout from "@/components/Layout";
+import { apiGet } from "@/lib/api";
 
 interface ReservationRollup {
   installation_name: string | null;
@@ -44,12 +44,22 @@ interface InstallationMostReserved {
 }
 
 export default function ReportsOverviewPage() {
-  const [reservationRollup, setReservationRollup] = useState<ReservationRollup[]>([]);
+  const [reservationRollup, setReservationRollup] = useState<
+    ReservationRollup[]
+  >([]);
   const [activitiesCube, setActivitiesCube] = useState<ActivitiesCube[]>([]);
-  const [participantsTotals, setParticipantsTotals] = useState<ParticipantsTotal[]>([]);
-  const [installationRanking, setInstallationRanking] = useState<InstallationRanking[]>([]);
-  const [activityOccurrences, setActivityOccurrences] = useState<ActivityOccurrence[]>([]);
-  const [installationsMostReserved, setInstallationsMostReserved] = useState<InstallationMostReserved[]>([]);
+  const [participantsTotals, setParticipantsTotals] = useState<
+    ParticipantsTotal[]
+  >([]);
+  const [installationRanking, setInstallationRanking] = useState<
+    InstallationRanking[]
+  >([]);
+  const [activityOccurrences, setActivityOccurrences] = useState<
+    ActivityOccurrence[]
+  >([]);
+  const [installationsMostReserved, setInstallationsMostReserved] = useState<
+    InstallationMostReserved[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,7 +78,7 @@ export default function ReportsOverviewPage() {
         installation_ranking: InstallationRanking[];
         activity_occurrences?: ActivityOccurrence[];
         installations_most_reserved?: InstallationMostReserved[];
-      }>('/reports/overview');
+      }>("/reports/overview");
 
       if (data.success) {
         setReservationRollup(data.reservation_rollup || []);
@@ -79,8 +89,11 @@ export default function ReportsOverviewPage() {
         setInstallationsMostReserved(data.installations_most_reserved || []);
       }
     } catch (err) {
-      console.error('Erro ao carregar relatórios:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao carregar relatórios';
+      console.error("Erro ao carregar relatórios:", err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Erro desconhecido ao carregar relatórios";
       setError(errorMessage);
       setReservationRollup([]);
       setActivitiesCube([]);
@@ -98,7 +111,9 @@ export default function ReportsOverviewPage() {
       <Layout>
         <section className="space-y-6">
           <header>
-            <h1 className="text-2xl font-semibold text-gray-900">Relatórios operacionais</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">
+              Relatórios operacionais
+            </h1>
           </header>
           <div className="rounded-lg bg-white p-4 shadow">
             <p className="text-gray-600">Carregando relatórios...</p>
@@ -113,10 +128,14 @@ export default function ReportsOverviewPage() {
       <Layout>
         <section className="space-y-6">
           <header>
-            <h1 className="text-2xl font-semibold text-gray-900">Relatórios operacionais</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">
+              Relatórios operacionais
+            </h1>
           </header>
           <div className="rounded-lg bg-red-50 border border-red-200 p-4 shadow">
-            <h2 className="text-lg font-semibold text-red-900 mb-2">Erro ao carregar relatórios</h2>
+            <h2 className="text-lg font-semibold text-red-900 mb-2">
+              Erro ao carregar relatórios
+            </h2>
             <p className="text-red-700">{error}</p>
             <button
               onClick={loadReports}
@@ -134,12 +153,16 @@ export default function ReportsOverviewPage() {
     <Layout>
       <section className="space-y-6">
         <header>
-          <h1 className="text-2xl font-semibold text-gray-900">Relatórios operacionais</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Relatórios operacionais
+          </h1>
         </header>
 
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="rounded-lg bg-white p-4 shadow">
-            <h2 className="text-lg font-semibold text-gray-900">Consolidado de reservas</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Consolidado de reservas
+            </h2>
             <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
               <table className="min-w-full text-sm">
                 <thead className="border-b text-left text-gray-500">
@@ -153,14 +176,21 @@ export default function ReportsOverviewPage() {
                   {reservationRollup.length > 0 ? (
                     reservationRollup.map((row, index) => (
                       <tr key={index}>
-                        <td className="px-3 py-2">{row.installation_name || 'Total'}</td>
-                        <td className="px-3 py-2">{row.month_number || '—'}</td>
-                        <td className="px-3 py-2 font-semibold text-gray-900">{row.total_reservations}</td>
+                        <td className="px-3 py-2">
+                          {row.installation_name || "Total"}
+                        </td>
+                        <td className="px-3 py-2">{row.month_number || "—"}</td>
+                        <td className="px-3 py-2 font-semibold text-gray-900">
+                          {row.total_reservations}
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td className="px-3 py-6 text-center text-gray-500" colSpan={3}>
+                      <td
+                        className="px-3 py-6 text-center text-gray-500"
+                        colSpan={3}
+                      >
                         Nenhum dado de reserva disponível.
                       </td>
                     </tr>
@@ -171,7 +201,9 @@ export default function ReportsOverviewPage() {
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow">
-            <h2 className="text-lg font-semibold text-gray-900">Atividades por educador</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Atividades por educador
+            </h2>
             <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
               <table className="min-w-full text-sm">
                 <thead className="border-b text-left text-gray-500">
@@ -185,14 +217,21 @@ export default function ReportsOverviewPage() {
                   {activitiesCube.length > 0 ? (
                     activitiesCube.map((row, index) => (
                       <tr key={index}>
-                        <td className="px-3 py-2">{row.council_number || 'Todos'}</td>
-                        <td className="px-3 py-2">{row.category || 'Todos'}</td>
-                        <td className="px-3 py-2 font-semibold text-gray-900">{row.total_activities}</td>
+                        <td className="px-3 py-2">
+                          {row.council_number || "Todos"}
+                        </td>
+                        <td className="px-3 py-2">{row.category || "Todos"}</td>
+                        <td className="px-3 py-2 font-semibold text-gray-900">
+                          {row.total_activities}
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td className="px-3 py-6 text-center text-gray-500" colSpan={3}>
+                      <td
+                        className="px-3 py-6 text-center text-gray-500"
+                        colSpan={3}
+                      >
                         Nenhum dado de atividade disponível.
                       </td>
                     </tr>
@@ -205,7 +244,9 @@ export default function ReportsOverviewPage() {
 
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="rounded-lg bg-white p-4 shadow">
-            <h2 className="text-lg font-semibold text-gray-900">Participantes por atividade</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Participantes por atividade
+            </h2>
             <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
               <table className="min-w-full text-sm">
                 <thead className="border-b text-left text-gray-500">
@@ -218,13 +259,20 @@ export default function ReportsOverviewPage() {
                   {participantsTotals.length > 0 ? (
                     participantsTotals.map((row, index) => (
                       <tr key={index}>
-                        <td className="px-3 py-2">{row.activity_name || 'Total'}</td>
-                        <td className="px-3 py-2 font-semibold text-gray-900">{row.total_participants}</td>
+                        <td className="px-3 py-2">
+                          {row.activity_name || "Total"}
+                        </td>
+                        <td className="px-3 py-2 font-semibold text-gray-900">
+                          {row.total_participants}
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td className="px-3 py-6 text-center text-gray-500" colSpan={2}>
+                      <td
+                        className="px-3 py-6 text-center text-gray-500"
+                        colSpan={2}
+                      >
                         Nenhum dado de participante disponível.
                       </td>
                     </tr>
@@ -235,7 +283,9 @@ export default function ReportsOverviewPage() {
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow">
-            <h2 className="text-lg font-semibold text-gray-900">Ranking de instalações</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Ranking de instalações
+            </h2>
             <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
               <table className="min-w-full text-sm">
                 <thead className="border-b text-left text-gray-500">
@@ -249,14 +299,19 @@ export default function ReportsOverviewPage() {
                   {installationRanking.length > 0 ? (
                     installationRanking.map((row, index) => (
                       <tr key={index}>
-                        <td className="px-3 py-2 font-semibold text-gray-900">#{row.ranking}</td>
+                        <td className="px-3 py-2 font-semibold text-gray-900">
+                          #{row.ranking}
+                        </td>
                         <td className="px-3 py-2">{row.installation_name}</td>
                         <td className="px-3 py-2">{row.total_reservations}</td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td className="px-3 py-6 text-center text-gray-500" colSpan={3}>
+                      <td
+                        className="px-3 py-6 text-center text-gray-500"
+                        colSpan={3}
+                      >
                         Nenhum ranking disponível.
                       </td>
                     </tr>
@@ -269,7 +324,9 @@ export default function ReportsOverviewPage() {
 
         {activityOccurrences.length > 0 && (
           <div className="rounded-lg bg-white p-4 shadow">
-            <h2 className="text-lg font-semibold text-gray-900">Ocorrências Semanais de Atividades</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Ocorrências Semanais de Atividades
+            </h2>
             <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
               <table className="min-w-full text-sm">
                 <thead className="border-b text-left text-gray-500">
@@ -308,9 +365,12 @@ export default function ReportsOverviewPage() {
                         <td className="px-3 py-2">{occurrence.tipo_local}</td>
                         <td className="px-3 py-2">{occurrence.dia_semana}</td>
                         <td className="px-3 py-2">
-                          {occurrence.horario_inicio.substring(0, 5)} - {occurrence.horario_fim.substring(0, 5)}
+                          {occurrence.horario_inicio.substring(0, 5)} -{" "}
+                          {occurrence.horario_fim.substring(0, 5)}
                         </td>
-                        <td className="px-3 py-2">{occurrence.educador_responsavel}</td>
+                        <td className="px-3 py-2">
+                          {occurrence.educador_responsavel}
+                        </td>
                       </tr>
                     ))}
                 </tbody>
@@ -321,7 +381,9 @@ export default function ReportsOverviewPage() {
 
         {installationsMostReserved.length > 0 && (
           <div className="rounded-lg bg-white p-4 shadow">
-            <h2 className="text-lg font-semibold text-gray-900">Instalações Mais Reservadas</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Instalações Mais Reservadas
+            </h2>
             <div className="mt-4 max-h-96 overflow-x-auto overflow-y-auto">
               <table className="min-w-full text-sm">
                 <thead className="border-b text-left text-gray-500">
@@ -336,9 +398,13 @@ export default function ReportsOverviewPage() {
                     .sort((a, b) => b.total_reservas - a.total_reservas)
                     .map((installation, index) => (
                       <tr key={index}>
-                        <td className="px-3 py-2 font-semibold text-gray-900">{installation.nome}</td>
+                        <td className="px-3 py-2 font-semibold text-gray-900">
+                          {installation.nome}
+                        </td>
                         <td className="px-3 py-2">{installation.tipo}</td>
-                        <td className="px-3 py-2 font-semibold text-gray-900">{installation.total_reservas}</td>
+                        <td className="px-3 py-2 font-semibold text-gray-900">
+                          {installation.total_reservas}
+                        </td>
                       </tr>
                     ))}
                 </tbody>
