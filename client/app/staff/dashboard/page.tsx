@@ -5,8 +5,13 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { apiGet } from '@/lib/api';
+import ActivitiesManager from '@/components/staff/ActivitiesManager';
+import ActivityParticipantsManager from '@/components/staff/ActivityParticipantsManager';
+import EquipmentReservationsManager from '@/components/staff/EquipmentReservationsManager';
+import InstallationReservationsManager from '@/components/staff/InstallationReservationsManager';
 
 interface Activity {
+  id_atividade: number;
   nome_atividade: string;
   grupo_extensao: string | null;
   weekday: string;
@@ -20,6 +25,7 @@ function StaffDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null);
   const [filters, setFilters] = useState({
     weekday: searchParams.get('weekday') || '',
     group: searchParams.get('group') || '',
@@ -140,32 +146,62 @@ function StaffDashboardContent() {
                 <th className="px-4 py-3">Dia da semana</th>
                 <th className="px-4 py-3">Horário</th>
                 <th className="px-4 py-3">Inscrições</th>
+                <th className="px-4 py-3">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {activities.length > 0 ? (
-                activities.map((activity, index) => (
-                  <tr key={index}>
-                    <td className="px-4 py-3 font-medium text-gray-900">{activity.nome_atividade}</td>
-                    <td className="px-4 py-3">{activity.grupo_extensao || '—'}</td>
-                    <td className="px-4 py-3">{activity.weekday}</td>
-                    <td className="px-4 py-3">
-                      {activity.horario_inicio} - {activity.horario_fim}
-                    </td>
-                    <td className="px-4 py-3">
-                      {activity.vagas_ocupadas} / {activity.vagas_limite}
-                    </td>
-                  </tr>
-                ))
+                activities.map((activity, index) => {
+                  const uniqueKey = `${activity.id_atividade}-${activity.weekday || 'no-day'}-${activity.horario_inicio || 'no-time'}-${index}`;
+                  return (
+                    <tr key={uniqueKey}>
+                      <td className="px-4 py-3 font-medium text-gray-900">{activity.nome_atividade}</td>
+                      <td className="px-4 py-3">{activity.grupo_extensao || '—'}</td>
+                      <td className="px-4 py-3">{activity.weekday}</td>
+                      <td className="px-4 py-3">
+                        {activity.horario_inicio} - {activity.horario_fim}
+                      </td>
+                      <td className="px-4 py-3">
+                        {activity.vagas_ocupadas} / {activity.vagas_limite}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => setSelectedActivityId(activity.id_atividade)}
+                          className={`rounded px-3 py-1 text-xs font-semibold ${
+                            selectedActivityId === activity.id_atividade
+                              ? 'bg-[#1094ab] text-white'
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          Gerenciar Participantes
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
-                  <td className="px-4 py-6 text-center text-gray-500" colSpan={5}>
+                  <td className="px-4 py-6 text-center text-gray-500" colSpan={6}>
                     Nenhuma atividade corresponde aos filtros selecionados.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <ActivityParticipantsManager
+            activityId={selectedActivityId}
+            onUpdate={loadActivities}
+          />
+        </div>
+
+        <ActivitiesManager />
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <InstallationReservationsManager />
+          <EquipmentReservationsManager />
         </div>
       </section>
     </Layout>

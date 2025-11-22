@@ -24,14 +24,14 @@
   - Implementado: Interface em `/internal/dashboard` com componente `InviteForm` para criar convites externos. Endpoint `POST /internal/invites`. Query `criar_convite_externo.sql`. Gera token único automaticamente e permite associar a uma atividade específica.
 
 ### Funcionário Cefer
-- ❌ gerenciar a participação de Usuários internos em atividades (Funcionário Cefer)
-  - Faltante: Interface e endpoints para gerenciar (inscrever/remover) participantes em atividades. Existem procedures SQL mas não há interface/rotas.
-- ❌ gerenciar a utilização dos equipamentos (Funcionário Cefer)
-  - Faltante: Interface e endpoints para visualizar e gerenciar reservas/empréstimos de equipamentos. Existem procedures SQL mas não há interface.
-- ❌ gerenciar a utilização das instalações (Funcionário Cefer)
-  - Faltante: Interface e endpoints para visualizar e gerenciar reservas de instalações. Existem procedures SQL mas não há interface.
-- ❌ gerenciar as atividades oferecidas (Funcionário Cefer)
-  - Faltante: Interface e endpoints CRUD para criar, editar, deletar atividades. Apenas visualização existe em `/staff/dashboard`, não há CRUD.
+- ✅ gerenciar a participação de Usuários internos em atividades (Funcionário Cefer)
+  - Implementado: Interface em `/staff/dashboard` com componente `ActivityParticipantsManager` que permite listar, adicionar e remover participantes de atividades. Endpoints `GET /staff/activities/:id/participants`, `POST /staff/activities/:id/participants` e `DELETE /staff/activities/:id/participants/:cpf`. Usa queries SQL `listar_participantes_atividade.sql` e procedures `inscrever_participante_atividade` e `remover_participante_atividade`.
+- ✅ gerenciar a utilização dos equipamentos (Funcionário Cefer)
+  - Implementado: Interface em `/staff/dashboard` com componente `EquipmentReservationsManager` que lista todas as reservas de equipamentos com filtros (data, equipamento, responsável) e permite cancelar reservas. Endpoints `GET /staff/equipment/reservations` e `DELETE /staff/equipment/reservations/:id`. Usa queries SQL `listar_reservas_equipamentos.sql` e procedure `cancelar_reserva_equipamento`.
+- ✅ gerenciar a utilização das instalações (Funcionário Cefer)
+  - Implementado: Interface em `/staff/dashboard` com componente `InstallationReservationsManager` que lista todas as reservas de instalações com filtros (data, instalação, responsável) e permite cancelar reservas. Endpoints `GET /staff/installations/reservations` e `DELETE /staff/installations/reservations/:id`. Usa queries SQL `listar_reservas_instalacoes.sql` e procedure `cancelar_reserva_instalacao`.
+- ✅ gerenciar as atividades oferecidas (Funcionário Cefer)
+  - Implementado: Interface em `/staff/dashboard` com componente `ActivitiesManager` que permite criar, editar e deletar atividades. Endpoints `POST /staff/activities`, `PUT /staff/activities/:id`, `DELETE /staff/activities/:id` e `GET /staff/activities/:id`. Usa queries SQL `criar_atividade.sql`, `atualizar_atividade.sql`, `deletar_atividade.sql` e `buscar_atividade.sql` com procedures SQL correspondentes.
 
 ### Administrador
 - ❌ gerenciar as atividades oferecidas (Administrador)
