@@ -1,4 +1,4 @@
-from flask import flash, redirect, render_template, request, url_for
+from flask import jsonify, request
 
 from app.routes.extension_group import extension_group_blueprint
 from app.services.auth.decorators import require_role
@@ -13,8 +13,12 @@ def create_extension_group():
     cpf_responsible = request.form.get("cpf_responsible", "").strip()
 
     if not name or not description or not cpf_responsible:
-        flash("Grupo de extensão precisa de nome, descrição e responsável", "error")
-        return render_template("admin/dashboard.html"), 400
+        return jsonify(
+            {
+                "success": False,
+                "message": "Grupo de extensão precisa de nome, descrição e responsável.",
+            }
+        ), 400
 
     sql_queries.execute_statement(
         "queries/extension_group/criar_grupo_extensao.sql",
@@ -25,7 +29,12 @@ def create_extension_group():
         },
     )
 
-    return redirect(url_for("admin.dashboard", _method="GET"))
+    return jsonify(
+        {
+            "success": True,
+            "message": "Grupo de extensão criado com sucesso!",
+        }
+    ), 200
 
 
 @require_role("admin")
@@ -33,19 +42,9 @@ def create_extension_group():
 def update_extension_group():
     old_name = request.form.get("old_group_name", "").strip()
 
-    group = sql_queries.fetch_one(
-        "queries/extension_group/buscar_grupo.sql", {"nome_grupo": old_name}
-    )
-
-    if not group:
-        flash("Grupo de extensão não encontrado", "error")
-        return render_template("admin/dashboard.html"), 400
-
-    new_name = request.form.get("new_group_name", group["nome_grupo"]).strip()
-    description = request.form.get("description", group["descricao"]).strip()
-    cpf_responsible = request.form.get(
-        "cpf_responsible", group["cpf_responsavel_interno"]
-    ).strip()
+    new_name = request.form.get("new_group_name", None)
+    description = request.form.get("description", None)
+    cpf_responsible = request.form.get("cpf_responsible", None)
 
     sql_queries.execute_statement(
         "queries/extension_group/atualizar_grupo_extensao.sql",
@@ -57,7 +56,12 @@ def update_extension_group():
         },
     )
 
-    return redirect(url_for("admin.dashboard", _method="GET"))
+    return jsonify(
+        {
+            "success": True,
+            "message": "Grupo atualizado!",
+        }
+    ), 200
 
 
 @require_role("admin")
@@ -66,8 +70,12 @@ def delete_extension_group():
     name = request.form.get("group_name", "").strip()
 
     if not name:
-        flash("É necessário passar o nome de um grupo", "error")
-        return render_template("admin/dashboard.html"), 400
+        return jsonify(
+            {
+                "success": False,
+                "message": "Grupo não encontrado.",
+            }
+        ), 400
 
     sql_queries.execute_statement(
         "queries/extension_group/deletar_grupo_extensao.sql",
@@ -76,4 +84,9 @@ def delete_extension_group():
         },
     )
 
-    return redirect(url_for("admin.dashboard", _method="GET"))
+    return jsonify(
+        {
+            "success": True,
+            "message": "Grupo deletado!",
+        }
+    ), 200
