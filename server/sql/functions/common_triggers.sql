@@ -60,11 +60,11 @@ BEGIN
     calculated_type := get_user_type(cpf_pessoa);
 
     -- Atualiza o campo TIPO se o usuário existir em USUARIO_SENHA
-    IF EXISTS(SELECT 1 FROM usuario_senha WHERE userid = cpf_pessoa) THEN
+    IF EXISTS(SELECT 1 FROM usuario_senha WHERE cpf = cpf_pessoa) THEN
         UPDATE usuario_senha
         SET tipo = calculated_type,
             data_ultima_alteracao = CURRENT_TIMESTAMP
-        WHERE userid = cpf_pessoa;
+        WHERE cpf = cpf_pessoa;
     END IF;
 END;
 $$ LANGUAGE plpgsql;
@@ -168,7 +168,7 @@ DECLARE
 BEGIN
     -- Se TIPO não foi fornecido ou é NULL, calcula usando get_user_type
     IF NEW.tipo IS NULL THEN
-        calculated_type := get_user_type(NEW.userid);
+        calculated_type := get_user_type(NEW.cpf);
         NEW.tipo := calculated_type;
     END IF;
 

@@ -9,4 +9,4 @@ UPDATE usuario_senha
 SET senha = %(new_password_hash)s,
     senha_hash = %(new_password_hash)s,
     data_ultima_alteracao = CURRENT_TIMESTAMP
-WHERE userid = %(cpf_pessoa)s;
+WHERE cpf = %(cpf_pessoa)s;

@@ -166,13 +166,13 @@ def gerar_usuario_senha(dbsession):
     # Inserir usando hash pré-gerado (muito mais rápido)
     query = """
         INSERT INTO USUARIO_SENHA (
-            USERID, LOGIN, SENHA, TIPO, IDORIGINAL,
+            CPF, LOGIN, SENHA, TIPO,
             SENHA_HASH,
             DATA_CRIACAO, DATA_ULTIMA_ALTERACAO,
             BLOQUEADO, TENTATIVAS_LOGIN, DATA_ULTIMO_LOGIN
         )
         VALUES (
-            %s, %s, %s, %s, %s,
+            %s, %s, %s, %s,
             %s,
             %s, %s,
             %s, %s, %s
@@ -182,11 +182,10 @@ def gerar_usuario_senha(dbsession):
     # Preparar dados com hash pré-gerado e novos campos do PF
     dados_com_hash = [
         (
-            cpf,  # USERID
+            cpf,  # CPF
             email,  # LOGIN
             senha_hash,  # SENHA
             tipos_usuarios.get(cpf, 'Interno'),  # TIPO
-            cpf,  # IDORIGINAL
             senha_hash,  # SENHA_HASH (compatibilidade)
             data_criacao, data_alt,  # DATAS
             bloqueado, tentativas, data_login  # STATUS

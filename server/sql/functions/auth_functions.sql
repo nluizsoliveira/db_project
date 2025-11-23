@@ -231,7 +231,7 @@ BEGIN
     END IF;
 
     -- Check if user already has account
-    IF EXISTS(SELECT 1 FROM usuario_senha us WHERE us.userid = request_registration.cpf_pessoa) THEN
+    IF EXISTS(SELECT 1 FROM usuario_senha us WHERE us.cpf = request_registration.cpf_pessoa) THEN
         RETURN json_build_object(
             'success', FALSE,
             'message', 'User already has an account'
@@ -330,19 +330,18 @@ BEGIN
 
     -- Create user account (conforme estrutura USERS do PF)
     INSERT INTO usuario_senha (
-        userid, login, senha, tipo, idoriginal,
+        cpf, login, senha, tipo,
         senha_hash, data_criacao
     )
     VALUES (
-        solicitation_record.cpf_pessoa,  -- UserID = CPF
+        solicitation_record.cpf_pessoa,  -- CPF
         user_email,                      -- Login = Email
         password_hash,                   -- Senha = Hash MD5
         user_type,                       -- Tipo
-        solicitation_record.cpf_pessoa,  -- IdOriginal = CPF
         password_hash,                   -- SENHA_HASH (compatibilidade)
         CURRENT_TIMESTAMP
     )
-    ON CONFLICT (userid) DO UPDATE
+    ON CONFLICT (cpf) DO UPDATE
     SET senha = EXCLUDED.senha,
         senha_hash = EXCLUDED.senha_hash,
         tipo = COALESCE(EXCLUDED.tipo, usuario_senha.tipo),
@@ -452,9 +451,9 @@ BEGIN
     WHERE email = email_or_cpf OR cpf = email_or_cpf;
 
     IF NOT FOUND THEN
-        -- Log failed attempt (sem USERID pois usuário não existe)
+        -- Log failed attempt (sem CPF pois usuário não existe)
         INSERT INTO auditoria_login (
-            userid, data_hora_login,
+            cpf, data_hora_login,
             timestamp_evento, email_usuario, ip_origem, status, mensagem
         )
         VALUES (
@@ -471,12 +470,12 @@ BEGIN
     -- Get password record
     SELECT * INTO password_record
     FROM usuario_senha
-    WHERE userid = user_record.cpf;
+    WHERE cpf = user_record.cpf;
 
     IF NOT FOUND THEN
-        -- Log failed attempt (sem USERID pois conta não existe)
+        -- Log failed attempt (sem CPF pois conta não existe)
         INSERT INTO auditoria_login (
-            userid, data_hora_login,
+            cpf, data_hora_login,
             timestamp_evento, email_usuario, ip_origem, status, mensagem
         )
         VALUES (
@@ -493,11 +492,11 @@ BEGIN
     -- Check if account is blocked
     IF password_record.bloqueado THEN
         INSERT INTO auditoria_login (
-            userid, data_hora_login,
+            cpf, data_hora_login,
             timestamp_evento, email_usuario, ip_origem, status, mensagem
         )
         VALUES (
-            password_record.userid, CURRENT_TIMESTAMP,
+            password_record.cpf, CURRENT_TIMESTAMP,
             CURRENT_TIMESTAMP, user_record.email, ip_origin, 'LOCKED', 'Account is blocked'
         );
 
@@ -514,22 +513,22 @@ BEGIN
         -- Increment failed attempts
         UPDATE usuario_senha
         SET tentativas_login = tentativas_login + 1
-        WHERE userid = user_record.cpf;
+        WHERE cpf = user_record.cpf;
 
         -- Block account after 5 failed attempts
         IF password_record.tentativas_login + 1 >= 5 THEN
             UPDATE usuario_senha
             SET bloqueado = TRUE
-            WHERE userid = user_record.cpf;
+            WHERE cpf = user_record.cpf;
         END IF;
 
         -- Log failed attempt
         INSERT INTO auditoria_login (
-            userid, data_hora_login,
+            cpf, data_hora_login,
             timestamp_evento, email_usuario, ip_origem, status, mensagem
         )
         VALUES (
-            password_record.userid, CURRENT_TIMESTAMP,
+            password_record.cpf, CURRENT_TIMESTAMP,
             CURRENT_TIMESTAMP, user_record.email, ip_origin, 'FAILURE', 'Invalid password'
         );
 
@@ -543,18 +542,18 @@ BEGIN
     UPDATE usuario_senha
     SET tentativas_login = 0,
         data_ultimo_login = CURRENT_TIMESTAMP
-    WHERE userid = user_record.cpf;
+    WHERE cpf = user_record.cpf;
 
     -- Get user roles
     roles_json := get_user_roles(user_record.cpf);
 
     -- Log successful login
     INSERT INTO auditoria_login (
-        userid, data_hora_login,
+        cpf, data_hora_login,
         timestamp_evento, email_usuario, ip_origem, status, mensagem
     )
     VALUES (
-        password_record.userid, CURRENT_TIMESTAMP,
+        password_record.cpf, CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP, user_record.email, ip_origin, 'SUCCESS', 'Login successful'
     );
 
@@ -854,7 +853,7 @@ DECLARE
 BEGIN
     -- Check if user exists in usuario_senha table
     SELECT EXISTS(
-        SELECT 1 FROM usuario_senha us WHERE us.userid = unblock_user.cpf_pessoa
+        SELECT 1 FROM usuario_senha us WHERE us.cpf = unblock_user.cpf_pessoa
     ) INTO user_exists;
 
     IF NOT user_exists THEN
@@ -867,13 +866,13 @@ BEGIN
     -- Check if user was blocked
     SELECT bloqueado INTO was_blocked
     FROM usuario_senha
-    WHERE userid = unblock_user.cpf_pessoa;
+    WHERE cpf = unblock_user.cpf_pessoa;
 
     -- Unblock user and reset failed attempts
     UPDATE usuario_senha
     SET bloqueado = FALSE,
         tentativas_login = 0
-    WHERE userid = unblock_user.cpf_pessoa;
+    WHERE cpf = unblock_user.cpf_pessoa;
 
     RETURN json_build_object(
         'success', TRUE,
