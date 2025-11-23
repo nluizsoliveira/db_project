@@ -45,10 +45,11 @@ def gerar_pessoas(dbsession, quantidade):
     print(f"Gerando {quantidade} pessoas...")
 
     # Criar usuários de teste no início
+    # CPFs fixos para garantir consistência entre repopulações
     usuarios_teste = [
-        ("admin@usp.br", "Administrador Teste", None),
-        ("interno@usp.br", "Interno Teste", None),
-        ("funcionario@usp.br", "Funcionário Teste", None),
+        ("admin@usp.br", "Administrador Teste", "75005017900"),
+        ("interno@usp.br", "Interno Teste", "75005018033"),
+        ("funcionario@usp.br", "Funcionário Teste", "75005018111"),
         ("cadastro@usp.br", "Teste Cadastro", "01995923222"),
     ]
 
