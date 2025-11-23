@@ -30,7 +30,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useInvites } from '@/hooks/useInvites';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 
 interface Invite {
   id_convite: number;
@@ -56,6 +66,7 @@ interface InvitesListProps {
 
 export default function InvitesList({ refreshTrigger }: InvitesListProps) {
   const { data: invites = [], isLoading: loading, error: queryError, refetch } = useInvites();
+  const alertDialog = useAlertDialog();
 
   const error = queryError?.message || '';
 
@@ -97,7 +108,7 @@ export default function InvitesList({ refreshTrigger }: InvitesListProps) {
 
   const copyToken = (token: string) => {
     navigator.clipboard.writeText(token);
-    alert('Token copiado para a área de transferência!');
+    alertDialog.showAlert('Token copiado para a área de transferência!', 'Sucesso');
   };
 
   // Define columns
@@ -388,6 +399,18 @@ export default function InvitesList({ refreshTrigger }: InvitesListProps) {
           </div>
         </div>
       )}
+
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

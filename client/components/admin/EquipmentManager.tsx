@@ -34,7 +34,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
+import { useAlertDialog } from "@/hooks/useAlertDialog";
 
 interface Equipment {
   id_patrimonio: string;
@@ -69,6 +80,7 @@ export default function EquipmentManager() {
     eh_reservavel: "N",
   });
   const [submitting, setSubmitting] = useState(false);
+  const alertDialog = useAlertDialog();
 
   // TanStack Table states
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -150,35 +162,42 @@ export default function EquipmentManager() {
       }
     } catch (err) {
       console.error("Erro ao carregar equipamento:", err);
-      alert("Erro ao carregar equipamento");
+      alertDialog.showAlert("Erro ao carregar equipamento", "Erro");
     }
   };
 
   const handleDelete = async (equipmentId: string) => {
-    if (
-      !confirm(
-        "Deseja realmente deletar este equipamento? Esta ação não pode ser desfeita."
-      )
-    ) {
-      return;
-    }
+    alertDialog.showConfirm(
+      "Deseja realmente deletar este equipamento? Esta ação não pode ser desfeita.",
+      "Confirmar Exclusão",
+      async () => {
+        try {
+          const data = await apiDelete<{
+            success: boolean;
+            message?: string;
+          }>(`/admin/equipment/${equipmentId}`);
 
-    try {
-      const data = await apiDelete<{
-        success: boolean;
-        message?: string;
-      }>(`/admin/equipment/${equipmentId}`);
-
-      if (data.success) {
-        alert(data.message || "Equipamento deletado com sucesso!");
-        loadEquipment();
-      } else {
-        alert(data.message || "Erro ao deletar equipamento");
+          if (data.success) {
+            alertDialog.showAlert(
+              data.message || "Equipamento deletado com sucesso!",
+              "Sucesso"
+            );
+            loadEquipment();
+          } else {
+            alertDialog.showAlert(
+              data.message || "Erro ao deletar equipamento",
+              "Erro"
+            );
+          }
+        } catch (err: any) {
+          console.error("Erro ao deletar equipamento:", err);
+          alertDialog.showAlert(
+            err.message || "Erro ao deletar equipamento",
+            "Erro"
+          );
+        }
       }
-    } catch (err: any) {
-      console.error("Erro ao deletar equipamento:", err);
-      alert(err.message || "Erro ao deletar equipamento");
-    }
+    );
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -201,7 +220,10 @@ export default function EquipmentManager() {
         });
 
         if (data.success) {
-          alert(data.message || "Equipamento atualizado com sucesso!");
+          alertDialog.showAlert(
+            data.message || "Equipamento atualizado com sucesso!",
+            "Sucesso"
+          );
           setShowForm(false);
           loadEquipment();
         } else {
@@ -224,7 +246,10 @@ export default function EquipmentManager() {
         });
 
         if (data.success) {
-          alert(data.message || "Equipamento criado com sucesso!");
+          alertDialog.showAlert(
+            data.message || "Equipamento criado com sucesso!",
+            "Sucesso"
+          );
           setShowForm(false);
           loadEquipment();
         } else {
@@ -681,6 +706,36 @@ export default function EquipmentManager() {
           </div>
         </div>
       )}
+
+      <AlertDialog
+        open={alertDialog.open}
+        onOpenChange={alertDialog.handleClose}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {alertDialog.message}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {alertDialog.type === "confirm" ? (
+              <>
+                <AlertDialogCancel onClick={alertDialog.handleCancel}>
+                  Cancelar
+                </AlertDialogCancel>
+                <AlertDialogAction onClick={alertDialog.handleConfirm}>
+                  Confirmar
+                </AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction onClick={alertDialog.handleClose}>
+                OK
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

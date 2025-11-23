@@ -30,7 +30,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useInternalActivities, useEnrollActivity, type Activity } from '@/hooks/useActivities';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 
 interface ActivitiesListProps {
   onEnroll?: (activityId: number) => void;
@@ -50,6 +60,7 @@ export default function ActivitiesList({ onEnroll }: ActivitiesListProps) {
 
   const { data: activities = [], isLoading: loading, error: queryError } = useInternalActivities(filters);
   const enrollMutation = useEnrollActivity();
+  const alertDialog = useAlertDialog();
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -59,15 +70,15 @@ export default function ActivitiesList({ onEnroll }: ActivitiesListProps) {
   const handleEnroll = useCallback(async (activityId: number) => {
     try {
       const data = await enrollMutation.mutateAsync(activityId);
-      alert(data.message || 'Inscrição realizada com sucesso!');
+      alertDialog.showAlert(data.message || 'Inscrição realizada com sucesso!', 'Sucesso');
       if (onEnroll) {
         onEnroll(activityId);
       }
     } catch (err: any) {
       console.error('Erro ao inscrever:', err);
-      alert(err.message || 'Erro ao inscrever na atividade');
+      alertDialog.showAlert(err.message || 'Erro ao inscrever na atividade', 'Erro');
     }
-  }, [enrollMutation, onEnroll]);
+  }, [enrollMutation, onEnroll, alertDialog]);
 
   const error = queryError?.message || '';
 
@@ -408,6 +419,18 @@ export default function ActivitiesList({ onEnroll }: ActivitiesListProps) {
           </div>
         </div>
       )}
+
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

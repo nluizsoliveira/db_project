@@ -35,6 +35,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   useAdminActivities,
   useAdminActivity,
   useCreateAdminActivity,
@@ -43,6 +53,7 @@ import {
   type Activity,
   type ActivityDetail,
 } from '@/hooks/useActivities';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 
 export default function ActivitiesManager() {
   const [error, setError] = useState('');
@@ -68,6 +79,7 @@ export default function ActivitiesManager() {
   const createMutation = useCreateAdminActivity();
   const updateMutation = useUpdateAdminActivity();
   const deleteMutation = useDeleteAdminActivity();
+  const alertDialog = useAlertDialog();
 
   // Update form when editing activity loads
   useEffect(() => {
@@ -93,17 +105,19 @@ export default function ActivitiesManager() {
   };
 
   const handleDelete = async (activityId: number) => {
-    if (!confirm('Deseja realmente deletar esta atividade? Esta ação não pode ser desfeita.')) {
-      return;
-    }
-
-    try {
-      const data = await deleteMutation.mutateAsync(activityId);
-      alert(data.message || 'Atividade deletada com sucesso!');
-    } catch (err: any) {
-      console.error('Erro ao deletar atividade:', err);
-      alert(err.message || 'Erro ao deletar atividade');
-    }
+    alertDialog.showConfirm(
+      'Deseja realmente deletar esta atividade? Esta ação não pode ser desfeita.',
+      'Confirmar Exclusão',
+      async () => {
+        try {
+          const data = await deleteMutation.mutateAsync(activityId);
+          alertDialog.showAlert(data.message || 'Atividade deletada com sucesso!', 'Sucesso');
+        } catch (err: any) {
+          console.error('Erro ao deletar atividade:', err);
+          alertDialog.showAlert(err.message || 'Erro ao deletar atividade', 'Erro');
+        }
+      }
+    );
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -120,7 +134,7 @@ export default function ActivitiesManager() {
             vagas: parseInt(formData.vagas),
           },
         });
-        alert(data.message || 'Atividade atualizada com sucesso!');
+        alertDialog.showAlert(data.message || 'Atividade atualizada com sucesso!', 'Sucesso');
         setShowForm(false);
         setEditingActivityId(null);
       } else {
@@ -131,7 +145,7 @@ export default function ActivitiesManager() {
           data_inicio: formData.data_inicio,
           data_fim: formData.data_fim,
         });
-        alert(data.message || 'Atividade criada com sucesso!');
+        alertDialog.showAlert(data.message || 'Atividade criada com sucesso!', 'Sucesso');
         setShowForm(false);
       }
     } catch (err: any) {
@@ -494,6 +508,25 @@ export default function ActivitiesManager() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {alertDialog.type === 'confirm' ? (
+              <>
+                <AlertDialogCancel onClick={alertDialog.handleCancel}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={alertDialog.handleConfirm}>Confirmar</AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

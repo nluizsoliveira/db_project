@@ -30,10 +30,21 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { apiGet, apiPost } from '@/lib/api';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 
 interface Invite {
   id_convite: number;
@@ -134,30 +145,32 @@ export default function ExternalDashboardPage() {
   };
 
   const handleReject = async () => {
-    if (!confirm('Tem certeza que deseja recusar este convite?')) {
-      return;
-    }
+    alertDialog.showConfirm(
+      'Tem certeza que deseja recusar este convite?',
+      'Confirmar Recusa',
+      async () => {
+        setActionLoading(true);
+        setError('');
 
-    setActionLoading(true);
-    setError('');
+        try {
+          const data = await apiPost<{
+            success: boolean;
+            message?: string;
+          }>('/external/reject', {});
 
-    try {
-      const data = await apiPost<{
-        success: boolean;
-        message?: string;
-      }>('/external/reject', {});
-
-      if (data.success) {
-        await loadInviteData();
-      } else {
-        setError(data.message || 'Erro ao recusar convite');
+          if (data.success) {
+            await loadInviteData();
+          } else {
+            setError(data.message || 'Erro ao recusar convite');
+          }
+        } catch (err) {
+          console.error('Erro ao recusar convite:', err);
+          setError('Erro ao recusar convite. Tente novamente.');
+        } finally {
+          setActionLoading(false);
+        }
       }
-    } catch (err) {
-      console.error('Erro ao recusar convite:', err);
-      setError('Erro ao recusar convite. Tente novamente.');
-    } finally {
-      setActionLoading(false);
-    }
+    );
   };
 
   const formatDate = (dateString: string | null) => {
@@ -454,6 +467,25 @@ export default function ExternalDashboardPage() {
             </div>
           )}
         </section>
+
+        <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+              <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              {alertDialog.type === 'confirm' ? (
+                <>
+                  <AlertDialogCancel onClick={alertDialog.handleCancel}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={alertDialog.handleConfirm}>Confirmar</AlertDialogAction>
+                </>
+              ) : (
+                <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+              )}
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </Layout>
     </ProtectedRoute>
   );

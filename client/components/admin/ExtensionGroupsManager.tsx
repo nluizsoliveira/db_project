@@ -35,12 +35,23 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   useExtensionGroups,
   useCreateExtensionGroup,
   useUpdateExtensionGroup,
   useDeleteExtensionGroup,
   type ExtensionGroup,
 } from '@/hooks/useExtensionGroups';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 
 export default function ExtensionGroupsManager() {
   const [error, setError] = useState('');
@@ -51,6 +62,8 @@ export default function ExtensionGroupsManager() {
     description: '',
     cpf_responsible: '',
   });
+
+  const alertDialog = useAlertDialog();
 
   // TanStack Table states
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -82,17 +95,19 @@ export default function ExtensionGroupsManager() {
   };
 
   const handleDelete = async (groupName: string) => {
-    if (!confirm(`Tem certeza que deseja deletar o grupo "${groupName}"?`)) {
-      return;
-    }
-
-    try {
-      const data = await deleteMutation.mutateAsync(groupName);
-      alert(data.message || 'Grupo de extensão deletado com sucesso!');
-    } catch (err: any) {
-      console.error('Erro ao deletar grupo:', err);
-      alert(err.message || 'Erro ao deletar grupo de extensão');
-    }
+    alertDialog.showConfirm(
+      `Tem certeza que deseja deletar o grupo "${groupName}"?`,
+      'Confirmar Exclusão',
+      async () => {
+        try {
+          const data = await deleteMutation.mutateAsync(groupName);
+          alertDialog.showAlert(data.message || 'Grupo de extensão deletado com sucesso!', 'Sucesso');
+        } catch (err: any) {
+          console.error('Erro ao deletar grupo:', err);
+          alertDialog.showAlert(err.message || 'Erro ao deletar grupo de extensão', 'Erro');
+        }
+      }
+    );
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -108,7 +123,7 @@ export default function ExtensionGroupsManager() {
           description: formData.description,
           cpf_responsible: formData.cpf_responsible,
         });
-        alert(data.message || 'Grupo de extensão atualizado com sucesso!');
+        alertDialog.showAlert(data.message || 'Grupo de extensão atualizado com sucesso!', 'Sucesso');
         setShowForm(false);
         setEditingGroup(null);
       } else {
@@ -118,7 +133,7 @@ export default function ExtensionGroupsManager() {
           description: formData.description,
           cpf_responsible: formData.cpf_responsible,
         });
-        alert(data.message || 'Grupo de extensão criado com sucesso!');
+        alertDialog.showAlert(data.message || 'Grupo de extensão criado com sucesso!', 'Sucesso');
         setShowForm(false);
       }
     } catch (err: any) {
@@ -456,6 +471,25 @@ export default function ExtensionGroupsManager() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {alertDialog.type === 'confirm' ? (
+              <>
+                <AlertDialogCancel onClick={alertDialog.handleCancel}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={alertDialog.handleConfirm}>Confirmar</AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

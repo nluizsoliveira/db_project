@@ -31,6 +31,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useAlertDialog } from "@/hooks/useAlertDialog";
 
 interface EquipmentReservation {
   id_reserva_equip: number;
@@ -47,6 +58,7 @@ export default function EquipmentReservationsManager() {
   const [reservations, setReservations] = useState<EquipmentReservation[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const alertDialog = useAlertDialog();
   const [filters, setFilters] = useState({
     data_inicio: "",
     data_fim: "",
@@ -99,26 +111,28 @@ export default function EquipmentReservationsManager() {
   };
 
   const handleCancelReservation = async (id: number) => {
-    if (!confirm("Deseja realmente cancelar esta reserva?")) {
-      return;
-    }
+    alertDialog.showConfirm(
+      "Deseja realmente cancelar esta reserva?",
+      "Confirmar Cancelamento",
+      async () => {
+        try {
+          const data = await apiDelete<{
+            success: boolean;
+            message?: string;
+          }>(`/staff/equipment/reservations/${id}`);
 
-    try {
-      const data = await apiDelete<{
-        success: boolean;
-        message?: string;
-      }>(`/staff/equipment/reservations/${id}`);
-
-      if (data.success) {
-        alert(data.message || "Reserva cancelada com sucesso!");
-        loadReservations();
-      } else {
-        alert(data.message || "Erro ao cancelar reserva");
+          if (data.success) {
+            alertDialog.showAlert(data.message || "Reserva cancelada com sucesso!", "Sucesso");
+            loadReservations();
+          } else {
+            alertDialog.showAlert(data.message || "Erro ao cancelar reserva", "Erro");
+          }
+        } catch (err: any) {
+          console.error("Erro ao cancelar reserva:", err);
+          alertDialog.showAlert(err.message || "Erro ao cancelar reserva", "Erro");
+        }
       }
-    } catch (err: any) {
-      console.error("Erro ao cancelar reserva:", err);
-      alert(err.message || "Erro ao cancelar reserva");
-    }
+    );
   };
 
   // Define columns
@@ -454,6 +468,25 @@ export default function EquipmentReservationsManager() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {alertDialog.type === "confirm" ? (
+              <>
+                <AlertDialogCancel onClick={alertDialog.handleCancel}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={alertDialog.handleConfirm}>Confirmar</AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

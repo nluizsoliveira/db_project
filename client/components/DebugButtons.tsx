@@ -2,6 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { getApiBaseUrl } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useAlertDialog } from "@/hooks/useAlertDialog";
 
 const API_BASE_URL = getApiBaseUrl();
 
@@ -13,6 +24,7 @@ export default function DebugButtons() {
     type: "success" | "error";
   } | null>(null);
   const [isPopulated, setIsPopulated] = useState<boolean | null>(null);
+  const alertDialog = useAlertDialog();
 
   const showLoading = (message: string) => {
     setLoadingMessage(message);
@@ -56,15 +68,11 @@ export default function DebugButtons() {
   }, []);
 
   const populateDatabase = async () => {
-    if (
-      !confirm(
-        "Tem certeza que deseja popular o banco de dados? Isso pode levar alguns minutos."
-      )
-    ) {
-      return;
-    }
-
-    showLoading("Gerando dados sintéticos e populando banco...");
+    alertDialog.showConfirm(
+      "Tem certeza que deseja popular o banco de dados? Isso pode levar alguns minutos.",
+      "Confirmar População",
+      async () => {
+        showLoading("Gerando dados sintéticos e populando banco...");
 
     try {
       const response = await fetch(`${API_BASE_URL}/debug/populate-db`, {
@@ -83,68 +91,66 @@ export default function DebugButtons() {
         setTimeout(() => {
           window.location.reload();
         }, 2000);
-      } else {
-        showToast(data.message || "Erro ao popular banco de dados", "error");
+        } else {
+          showToast(data.message || "Erro ao popular banco de dados", "error");
+        }
+      } catch (error) {
+        showToast(
+          "Erro ao popular banco de dados: " +
+            (error instanceof Error ? error.message : "Erro desconhecido"),
+          "error"
+        );
+      } finally {
+        hideLoading();
       }
-    } catch (error) {
-      showToast(
-        "Erro ao popular banco de dados: " +
-          (error instanceof Error ? error.message : "Erro desconhecido"),
-        "error"
-      );
-    } finally {
-      hideLoading();
     }
+    );
   };
 
   const clearDatabase = async () => {
-    if (
-      !confirm(
-        "ATENÇÃO: Tem certeza que deseja APAGAR TODOS os dados do banco? Esta ação não pode ser desfeita!"
-      )
-    ) {
-      return;
-    }
+    alertDialog.showConfirm(
+      "ATENÇÃO: Tem certeza que deseja APAGAR TODOS os dados do banco? Esta ação não pode ser desfeita!",
+      "Confirmar Limpeza",
+      () => {
+        alertDialog.showConfirm(
+          "Confirma novamente: Todos os dados serão PERMANENTEMENTE apagados!",
+          "Confirmação Final",
+          async () => {
+            showLoading("Limpando banco de dados...");
 
-    if (
-      !confirm(
-        "Confirma novamente: Todos os dados serão PERMANENTEMENTE apagados!"
-      )
-    ) {
-      return;
-    }
+            try {
+              const response = await fetch(`${API_BASE_URL}/debug/clear-db`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                credentials: "include",
+              });
 
-    showLoading("Limpando banco de dados...");
+              const data = await response.json();
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/debug/clear-db`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        showToast(data.message, "success");
-        setIsPopulated(false);
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
-      } else {
-        showToast(data.message || "Erro ao limpar banco de dados", "error");
+              if (data.success) {
+                showToast(data.message, "success");
+                setIsPopulated(false);
+                setTimeout(() => {
+                  window.location.reload();
+                }, 2000);
+              } else {
+                showToast(data.message || "Erro ao limpar banco de dados", "error");
+              }
+            } catch (error) {
+              showToast(
+                "Erro ao limpar banco de dados: " +
+                  (error instanceof Error ? error.message : "Erro desconhecido"),
+                "error"
+              );
+            } finally {
+              hideLoading();
+            }
+          }
+        );
       }
-    } catch (error) {
-      showToast(
-        "Erro ao limpar banco de dados: " +
-          (error instanceof Error ? error.message : "Erro desconhecido"),
-        "error"
-      );
-    } finally {
-      hideLoading();
-    }
+    );
   };
 
   return (
@@ -298,6 +304,25 @@ export default function DebugButtons() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {alertDialog.type === "confirm" ? (
+              <>
+                <AlertDialogCancel onClick={alertDialog.handleCancel}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={alertDialog.handleConfirm}>Confirmar</AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

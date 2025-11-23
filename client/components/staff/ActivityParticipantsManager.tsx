@@ -30,7 +30,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { apiGet, apiPost, apiDelete } from '@/lib/api';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 
 interface Participant {
   cpf_participante: string;
@@ -52,6 +63,7 @@ export default function ActivityParticipantsManager({
   const [error, setError] = useState('');
   const [cpfToAdd, setCpfToAdd] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const alertDialog = useAlertDialog();
 
   // TanStack Table states
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -106,7 +118,7 @@ export default function ActivityParticipantsManager({
       });
 
       if (data.success) {
-        alert(data.message || 'Participante inscrito com sucesso!');
+        alertDialog.showAlert(data.message || 'Participante inscrito com sucesso!', 'Sucesso');
         setCpfToAdd('');
         loadParticipants();
         if (onUpdate) {
@@ -125,29 +137,31 @@ export default function ActivityParticipantsManager({
 
   const handleRemoveParticipant = async (cpf: string) => {
     if (!activityId) return;
-    if (!confirm(`Deseja realmente remover o participante ${cpf} desta atividade?`)) {
-      return;
-    }
+    alertDialog.showConfirm(
+      `Deseja realmente remover o participante ${cpf} desta atividade?`,
+      'Confirmar Remoção',
+      async () => {
+        try {
+          const data = await apiDelete<{
+            success: boolean;
+            message?: string;
+          }>(`/staff/activities/${activityId}/participants/${cpf}`);
 
-    try {
-      const data = await apiDelete<{
-        success: boolean;
-        message?: string;
-      }>(`/staff/activities/${activityId}/participants/${cpf}`);
-
-      if (data.success) {
-        alert(data.message || 'Participante removido com sucesso!');
-        loadParticipants();
-        if (onUpdate) {
-          onUpdate();
+          if (data.success) {
+            alertDialog.showAlert(data.message || 'Participante removido com sucesso!', 'Sucesso');
+            loadParticipants();
+            if (onUpdate) {
+              onUpdate();
+            }
+          } else {
+            alertDialog.showAlert(data.message || 'Erro ao remover participante', 'Erro');
+          }
+        } catch (err: any) {
+          console.error('Erro ao remover participante:', err);
+          alertDialog.showAlert(err.message || 'Erro ao remover participante', 'Erro');
         }
-      } else {
-        alert(data.message || 'Erro ao remover participante');
       }
-    } catch (err: any) {
-      console.error('Erro ao remover participante:', err);
-      alert(err.message || 'Erro ao remover participante');
-    }
+    );
   };
 
   // Define columns
@@ -380,6 +394,25 @@ export default function ActivityParticipantsManager({
           </div>
         </div>
       )}
+
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {alertDialog.type === 'confirm' ? (
+              <>
+                <AlertDialogCancel onClick={alertDialog.handleCancel}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={alertDialog.handleConfirm}>Confirmar</AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

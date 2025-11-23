@@ -30,7 +30,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useInstallationReservations, useDeleteInstallationReservation } from '@/hooks/useReservations';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 
 interface InstallationReservation {
   id_reserva: number;
@@ -59,6 +70,7 @@ export default function InstallationReservationsManager() {
 
   const { data: reservations = [], isLoading: loading, error: queryError } = useInstallationReservations();
   const deleteMutation = useDeleteInstallationReservation();
+  const alertDialog = useAlertDialog();
 
   const error = queryError?.message || '';
 
@@ -68,17 +80,19 @@ export default function InstallationReservationsManager() {
   };
 
   const handleCancelReservation = async (id: number) => {
-    if (!confirm('Deseja realmente cancelar esta reserva?')) {
-      return;
-    }
-
-    try {
-      const data = await deleteMutation.mutateAsync(id);
-      alert(data.message || 'Reserva cancelada com sucesso!');
-    } catch (err: any) {
-      console.error('Erro ao cancelar reserva:', err);
-      alert(err.message || 'Erro ao cancelar reserva');
-    }
+    alertDialog.showConfirm(
+      'Deseja realmente cancelar esta reserva?',
+      'Confirmar Cancelamento',
+      async () => {
+        try {
+          const data = await deleteMutation.mutateAsync(id);
+          alertDialog.showAlert(data.message || 'Reserva cancelada com sucesso!', 'Sucesso');
+        } catch (err: any) {
+          console.error('Erro ao cancelar reserva:', err);
+          alertDialog.showAlert(err.message || 'Erro ao cancelar reserva', 'Erro');
+        }
+      }
+    );
   };
 
   // Define columns
@@ -384,6 +398,25 @@ export default function InstallationReservationsManager() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {alertDialog.type === 'confirm' ? (
+              <>
+                <AlertDialogCancel onClick={alertDialog.handleCancel}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={alertDialog.handleConfirm}>Confirmar</AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -30,7 +30,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 
 interface Activity {
   id_atividade: number;
@@ -64,6 +75,7 @@ export default function ActivitiesManager() {
     data_fim: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const alertDialog = useAlertDialog();
 
   // TanStack Table states
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -120,31 +132,33 @@ export default function ActivitiesManager() {
       }
     } catch (err) {
       console.error('Erro ao carregar atividade:', err);
-      alert('Erro ao carregar atividade');
+      alertDialog.showAlert('Erro ao carregar atividade', 'Erro');
     }
   };
 
   const handleDelete = async (activityId: number) => {
-    if (!confirm('Deseja realmente deletar esta atividade? Esta ação não pode ser desfeita.')) {
-      return;
-    }
+    alertDialog.showConfirm(
+      'Deseja realmente deletar esta atividade? Esta ação não pode ser desfeita.',
+      'Confirmar Exclusão',
+      async () => {
+        try {
+          const data = await apiDelete<{
+            success: boolean;
+            message?: string;
+          }>(`/staff/activities/${activityId}`);
 
-    try {
-      const data = await apiDelete<{
-        success: boolean;
-        message?: string;
-      }>(`/staff/activities/${activityId}`);
-
-      if (data.success) {
-        alert(data.message || 'Atividade deletada com sucesso!');
-        loadActivities();
-      } else {
-        alert(data.message || 'Erro ao deletar atividade');
+          if (data.success) {
+            alertDialog.showAlert(data.message || 'Atividade deletada com sucesso!', 'Sucesso');
+            loadActivities();
+          } else {
+            alertDialog.showAlert(data.message || 'Erro ao deletar atividade', 'Erro');
+          }
+        } catch (err: any) {
+          console.error('Erro ao deletar atividade:', err);
+          alertDialog.showAlert(err.message || 'Erro ao deletar atividade', 'Erro');
+        }
       }
-    } catch (err: any) {
-      console.error('Erro ao deletar atividade:', err);
-      alert(err.message || 'Erro ao deletar atividade');
-    }
+    );
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -164,7 +178,7 @@ export default function ActivitiesManager() {
         });
 
         if (data.success) {
-          alert(data.message || 'Atividade atualizada com sucesso!');
+          alertDialog.showAlert(data.message || 'Atividade atualizada com sucesso!', 'Sucesso');
           setShowForm(false);
           loadActivities();
         } else {
@@ -183,7 +197,7 @@ export default function ActivitiesManager() {
         });
 
         if (data.success) {
-          alert(data.message || 'Atividade criada com sucesso!');
+          alertDialog.showAlert(data.message || 'Atividade criada com sucesso!', 'Sucesso');
           setShowForm(false);
           loadActivities();
         } else {
@@ -545,6 +559,25 @@ export default function ActivitiesManager() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {alertDialog.type === 'confirm' ? (
+              <>
+                <AlertDialogCancel onClick={alertDialog.handleCancel}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={alertDialog.handleConfirm}>Confirmar</AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

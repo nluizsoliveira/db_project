@@ -34,7 +34,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 
 interface Event {
   id_evento: number;
@@ -68,6 +79,7 @@ export default function EventsManager() {
     id_reserva: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const alertDialog = useAlertDialog();
 
   // TanStack Table states
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -139,31 +151,33 @@ export default function EventsManager() {
       }
     } catch (err) {
       console.error('Erro ao carregar evento:', err);
-      alert('Erro ao carregar evento');
+      alertDialog.showAlert('Erro ao carregar evento', 'Erro');
     }
   };
 
   const handleDelete = async (eventId: number) => {
-    if (!confirm('Deseja realmente deletar este evento? Esta ação não pode ser desfeita.')) {
-      return;
-    }
+    alertDialog.showConfirm(
+      'Deseja realmente deletar este evento? Esta ação não pode ser desfeita.',
+      'Confirmar Exclusão',
+      async () => {
+        try {
+          const data = await apiDelete<{
+            success: boolean;
+            message?: string;
+          }>(`/admin/events/${eventId}`);
 
-    try {
-      const data = await apiDelete<{
-        success: boolean;
-        message?: string;
-      }>(`/admin/events/${eventId}`);
-
-      if (data.success) {
-        alert(data.message || 'Evento deletado com sucesso!');
-        loadEvents();
-      } else {
-        alert(data.message || 'Erro ao deletar evento');
+          if (data.success) {
+            alertDialog.showAlert(data.message || 'Evento deletado com sucesso!', 'Sucesso');
+            loadEvents();
+          } else {
+            alertDialog.showAlert(data.message || 'Erro ao deletar evento', 'Erro');
+          }
+        } catch (err: any) {
+          console.error('Erro ao deletar evento:', err);
+          alertDialog.showAlert(err.message || 'Erro ao deletar evento', 'Erro');
+        }
       }
-    } catch (err: any) {
-      console.error('Erro ao deletar evento:', err);
-      alert(err.message || 'Erro ao deletar evento');
-    }
+    );
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -183,7 +197,7 @@ export default function EventsManager() {
         });
 
         if (data.success) {
-          alert(data.message || 'Evento atualizado com sucesso!');
+          alertDialog.showAlert(data.message || 'Evento atualizado com sucesso!', 'Sucesso');
           setShowForm(false);
           loadEvents();
         } else {
@@ -201,7 +215,7 @@ export default function EventsManager() {
         });
 
         if (data.success) {
-          alert(data.message || 'Evento criado com sucesso!');
+          alertDialog.showAlert(data.message || 'Evento criado com sucesso!', 'Sucesso');
           setShowForm(false);
           loadEvents();
         } else {
@@ -530,6 +544,25 @@ export default function EventsManager() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {alertDialog.type === 'confirm' ? (
+              <>
+                <AlertDialogCancel onClick={alertDialog.handleCancel}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={alertDialog.handleConfirm}>Confirmar</AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
