@@ -12,6 +12,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refetch: refetchUser } = useCurrentUser();
+  const refreshUser = useAuthStore((state) => state.refreshUser);
   const loginMutation = useLogin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,8 +28,8 @@ export default function LoginPage() {
         password,
       });
 
-      // Recarrega o usuário após login bem-sucedido
-      await refetchUser();
+      // Recarrega o usuário após login bem-sucedido e sincroniza o store
+      await Promise.all([refetchUser(), refreshUser()]);
 
       // Check for redirect parameter or use backend redirect
       const redirectUrl = searchParams.get("redirect") || (data as any).redirect;
