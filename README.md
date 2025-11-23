@@ -1,10 +1,53 @@
 # db_project
 
-Sistema de gerenciamento de reservas e atividades para instalações esportivas.
+Projeto acadêmico - Sistema de gerenciamento de reservas e atividades para instalações esportivas.
+
+**Disciplina**: SCC0641 – Laboratório de Bases de Dados
+
+## 📑 Sumário
+
+- [db_project](#db_project)
+  - [📑 Sumário](#-sumário)
+  - [📋 Sobre o Projeto](#-sobre-o-projeto)
+  - [🏗️ Estrutura do Projeto](#️-estrutura-do-projeto)
+  - [📦 Pré-requisitos](#-pré-requisitos)
+  - [🚀 Como Rodar](#-como-rodar)
+    - [Método 1: Docker Compose (Recomendado)](#método-1-docker-compose-recomendado)
+      - [1. Configurar variáveis de ambiente](#1-configurar-variáveis-de-ambiente)
+      - [2. Subir os serviços](#2-subir-os-serviços)
+      - [3. Acessar as aplicações](#3-acessar-as-aplicações)
+      - [4. Ver logs](#4-ver-logs)
+      - [5. Parar os serviços](#5-parar-os-serviços)
+    - [Método 2: Desenvolvimento Local](#método-2-desenvolvimento-local)
+      - [Backend (Flask)](#backend-flask)
+      - [Frontend (Next.js)](#frontend-nextjs)
+  - [🗄️ Banco de Dados](#️-banco-de-dados)
+    - [Popular o banco de dados](#popular-o-banco-de-dados)
+      - [Opção 1: Automática (Docker)](#opção-1-automática-docker)
+      - [Opção 2: Manual](#opção-2-manual)
+    - [Reverter/limpar o banco](#reverterlimpar-o-banco)
+    - [Acessar o PostgreSQL via psql](#acessar-o-postgresql-via-psql)
+  - [🧪 Testes](#-testes)
+    - [Rodar testes do backend](#rodar-testes-do-backend)
+    - [Rodar testes específicos](#rodar-testes-específicos)
+  - [👤 Logins de Teste](#-logins-de-teste)
+  - [📝 Scripts Úteis](#-scripts-úteis)
+    - [Backend](#backend)
+    - [Frontend](#frontend)
+  - [🔧 Desenvolvimento](#-desenvolvimento)
+    - [Estrutura do Backend](#estrutura-do-backend)
+    - [Estrutura do Frontend](#estrutura-do-frontend)
+  - [🐛 Troubleshooting](#-troubleshooting)
+    - [Erro de conexão com o banco](#erro-de-conexão-com-o-banco)
+    - [Erro ao popular o banco](#erro-ao-popular-o-banco)
+    - [Porta já em uso](#porta-já-em-uso)
+  - [📚 Documentação Adicional](#-documentação-adicional)
+  - [📄 Sobre](#-sobre)
 
 ## 📋 Sobre o Projeto
 
-Aplicação full-stack desenvolvida com:
+Aplicação full-stack para gerenciamento de reservas e atividades em instalações esportivas, desenvolvida com:
+
 - **Backend**: Flask (Python) - API REST
 - **Frontend**: Next.js 16 (React 19 + TypeScript)
 - **Banco de Dados**: PostgreSQL 17
@@ -77,6 +120,7 @@ docker compose up -d
 ```
 
 Isso irá:
+
 - Iniciar o PostgreSQL 17
 - Construir e iniciar a aplicação Flask
 - Construir e iniciar a aplicação Next.js
@@ -164,6 +208,7 @@ cd server
 ```
 
 Este script:
+
 - Aplica as migrações de schema
 - Popula todas as tabelas com dados sintéticos
 
@@ -210,6 +255,7 @@ pytest tests/test_populate_minimal_db_migration.py -s
 Consulte o arquivo `LOGINS.md` para informações sobre usuários de teste e senhas padrão.
 
 **Resumo rápido:**
+
 - **Senha padrão**: `senha123` (para todos os usuários internos)
 - **Admin**: `admin@usp.br` / `senha123`
 - **Funcionário**: `funcionario@usp.br` / `senha123`
@@ -269,17 +315,11 @@ Consulte o arquivo `LOGINS.md` para informações sobre usuários de teste e sen
 
 ## 📚 Documentação Adicional
 
+- [`relatorio.md`](relatorio.md) - Relatório técnico completo do projeto (Projeto Final - Bases de Dados)
 - `LOGINS.md` - Informações sobre logins de teste
 - `RESPONSABILIDADES.md` - Responsabilidades do projeto
 - `docs/` - Documentação técnica e entregas
 
-## 🤝 Contribuindo
+## 📄 Sobre
 
-1. Crie uma branch para sua feature
-2. Faça suas alterações
-3. Teste localmente
-4. Envie um pull request
-
-## 📄 Licença
-
-Este projeto é parte de um trabalho acadêmico.
+Este projeto foi desenvolvido como parte do Projeto Final (PF) da disciplina SCC0641 – Laboratório de Bases de Dados.
