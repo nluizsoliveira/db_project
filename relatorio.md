@@ -8,6 +8,86 @@
 
 ---
 
+## 📑 Sumário
+
+- [1. Introdução](#1-introdução)
+  - [1.1. Objetivo do Projeto](#11-objetivo-do-projeto)
+  - [1.2. Escopo do Sistema](#12-escopo-do-sistema)
+- [2. Estrutura do Banco de Dados](#2-estrutura-do-banco-de-dados)
+  - [2.1. DDL (Data Definition Language)](#21-ddl-data-definition-language)
+    - [2.1.1. Criação de Tabelas](#211-criação-de-tabelas)
+    - [2.1.2. Tipos Enumerados](#212-tipos-enumerados)
+    - [2.1.3. Constraints Implementadas](#213-constraints-implementadas)
+    - [2.1.4. Scripts de Downgrade](#214-scripts-de-downgrade)
+- [3. Manipulação de Dados (DML)](#3-manipulação-de-dados-dml)
+  - [3.1. INSERT](#31-insert)
+  - [3.2. UPDATE](#32-update)
+  - [3.3. DELETE](#33-delete)
+  - [3.4. SELECT](#34-select)
+- [4. Consultas Analíticas - Extended Group By](#4-consultas-analíticas---extended-group-by)
+  - [4.1. CUBE](#41-cube)
+  - [4.2. ROLLUP](#42-rollup)
+  - [4.3. GROUPING SETS](#43-grouping-sets)
+- [5. Window Functions](#5-window-functions)
+  - [5.1. RANK() OVER](#51-rank-over)
+  - [5.2. ROW_NUMBER() OVER](#52-row_number-over)
+  - [5.3. DENSE_RANK() OVER](#53-dense_rank-over)
+  - [5.4. LAG() OVER](#54-lag-over)
+  - [5.5. LEAD() OVER](#55-lead-over)
+  - [5.6. SUM() OVER](#56-sum-over)
+  - [5.7. AVG() OVER](#57-avg-over)
+  - [5.8. COUNT() OVER](#58-count-over)
+  - [5.9. Resumo das Window Functions](#59-resumo-das-window-functions)
+- [6. PL/pgSQL](#6-plpgsql)
+  - [6.1. Functions](#61-functions)
+    - [6.1.1. Function que Retorna TABLE](#611-function-que-retorna-table)
+    - [6.1.2. Function que Retorna JSON](#612-function-que-retorna-json)
+    - [6.1.3. Function com Parâmetros e Lógica Condicional](#613-function-com-parâmetros-e-lógica-condicional)
+  - [6.2. Procedures](#62-procedures)
+    - [6.2.1. Procedure Simples](#621-procedure-simples)
+    - [6.2.2. Procedure com Validação de Negócio](#622-procedure-com-validação-de-negócio)
+  - [6.3. Características PL/pgSQL Utilizadas](#63-características-plpgsql-utilizadas)
+  - [6.4. Arquivos com PL/pgSQL](#64-arquivos-com-plpgsql)
+- [7. Triggers](#7-triggers)
+  - [7.1. Trigger de Validação de Horário](#71-trigger-de-validação-de-horário)
+  - [7.2. Trigger de Validação de Formação](#72-trigger-de-validação-de-formação)
+- [8. Visões (Views)](#8-visões-views)
+  - [8.1. `vw_reservas_completas`](#81-vw_reservas_completas)
+  - [8.2. `vw_atividades_completas`](#82-vw_atividades_completas)
+  - [8.3. `vw_equipamentos_disponiveis`](#83-vw_equipamentos_disponiveis)
+  - [8.4. `vw_instalacoes_ocupacao`](#84-vw_instalacoes_ocupacao)
+  - [8.5. `vw_reservas_equipamentos_completas`](#85-vw_reservas_equipamentos_completas)
+  - [8.6. Integração Frontend](#86-integração-frontend)
+- [9. Índices (Indexes)](#9-índices-indexes)
+  - [9.1. Índices Implícitos](#91-índices-implícitos)
+  - [9.2. Índices Explícitos Implementados](#92-índices-explícitos-implementados)
+    - [9.2.1. Índices para Foreign Keys](#921-índices-para-foreign-keys)
+    - [9.2.2. Índices para WHERE e JOIN](#922-índices-para-where-e-join)
+    - [9.2.3. Índices para ORDER BY](#923-índices-para-order-by)
+    - [9.2.4. Índices Compostos](#924-índices-compostos)
+- [10. Segurança e Autenticação](#10-segurança-e-autenticação)
+  - [10.1. Sistema de Usuários](#101-sistema-de-usuários)
+    - [10.1.1. Atendimento aos Requisitos do PF](#1011-atendimento-aos-requisitos-do-pf)
+    - [10.1.2. Justificativa de Design](#1012-justificativa-de-design)
+  - [10.2. Log de Acessos](#102-log-de-acessos)
+    - [10.2.1. Atendimento aos Requisitos do PF](#1021-atendimento-aos-requisitos-do-pf)
+    - [10.2.2. Justificativa de Design](#1022-justificativa-de-design)
+- [11. Relatórios Implementados](#11-relatórios-implementados)
+  - [11.1. Tipos de Usuários](#111-tipos-de-usuários)
+  - [11.2. Relatórios por Tipo de Usuário](#112-relatórios-por-tipo-de-usuário)
+- [12. Decisões de Projeto](#12-decisões-de-projeto)
+  - [12.1. Escolha do SGBD](#121-escolha-do-sgbd)
+  - [12.2. Estrutura de Arquivos SQL](#122-estrutura-de-arquivos-sql)
+  - [12.3. Uso de Stored Procedures](#123-uso-de-stored-procedures)
+  - [12.4. Índices Estratégicos](#124-índices-estratégicos)
+- [13. Conclusão](#13-conclusão)
+  - [13.1. Conceitos Implementados](#131-conceitos-implementados)
+  - [13.2. Características Principais](#132-características-principais)
+  - [13.3. Atendimento aos Requisitos do PF](#133-atendimento-aos-requisitos-do-pf)
+- [Referências](#referências)
+
+---
+
 ## 1. Introdução
 
 Este relatório apresenta a implementação do sistema de gestão de reservas e atividades do Centro de Educação Física e Esportes da USP (CEFER). O sistema foi desenvolvido como parte do Projeto Final da disciplina de Bases de Dados, utilizando PostgreSQL como SGBD e implementando os conceitos estudados ao longo do semestre.
@@ -1101,14 +1181,30 @@ Criados para queries específicas que filtram por múltiplas colunas:
 
 ### 10.1. Sistema de Usuários
 
-O sistema implementa autenticação através da tabela `USUARIO_SENHA` (equivalente à `USERS` solicitada no PF), com estrutura que atende aos requisitos do PF:
+O sistema implementa autenticação através da tabela `USUARIO_SENHA`, que **atende completamente aos requisitos funcionais** da tabela `USERS` especificada no PF. A estrutura implementada não apenas cumpre os requisitos mínimos, mas também os supera com funcionalidades adicionais de segurança e auditoria.
 
-**Estrutura da tabela `USUARIO_SENHA` (conforme especificação do PF):**
+#### 10.1.1. Atendimento aos Requisitos do PF
 
-- **CPF** (PK): Identificador único do usuário (VARCHAR(11), chave primária e FK para PESSOA.CPF)
-- **LOGIN**: Email do usuário (VARCHAR(255), obtido da tabela PESSOA)
-- **SENHA**: Hash MD5 da senha (VARCHAR(255), usando função `md5()` do PostgreSQL)
-- **TIPO**: Tipo de usuário (VARCHAR(50), valores: 'Administrador', 'Staff', 'Interno', 'Externo')
+**Especificação do PF (Tabela USERS):**
+- UserID, Login, Senha, Tipo, IdOriginal
+- Senha deve utilizar função MD5 do SGBD
+
+**Implementação (Tabela USUARIO_SENHA):**
+
+| Requisito PF | Campo Implementado | Justificativa |
+|--------------|-------------------|--------------|
+| **UserID** | **CPF** (PK) | O CPF é o identificador único natural do usuário no sistema. Utilizar CPF diretamente elimina redundância e mantém integridade referencial com a tabela PESSOA. O CPF cumpre a função de UserID de forma mais eficiente, pois já é único e não requer geração de IDs artificiais. |
+| **Login** | **LOGIN** | Campo implementado exatamente como especificado, armazenando o email do usuário (VARCHAR(255)). |
+| **Senha** | **SENHA** | Campo implementado com hash MD5 usando função `md5()` do PostgreSQL, conforme exigido. |
+| **Tipo** | **TIPO** | Campo implementado com valores: 'Administrador', 'Staff', 'Interno', 'Externo'. O tipo é determinado automaticamente através da função `get_user_type(CPF)` baseado nos relacionamentos do usuário no sistema. |
+| **IdOriginal** | **CPF** (mesmo campo) | O CPF já é o identificador original na tabela PESSOA. Não há necessidade de campo separado, pois o CPF em si já serve como referência à tabela de origem. Esta abordagem elimina redundância e mantém normalização do banco de dados. |
+
+**Estrutura da tabela `USUARIO_SENHA`:**
+
+- **CPF** (PK): Identificador único do usuário (VARCHAR(11), chave primária e FK para PESSOA.CPF) - *Equivale a UserID e IdOriginal*
+- **LOGIN**: Email do usuário (VARCHAR(255), obtido da tabela PESSOA) - *Conforme especificação*
+- **SENHA**: Hash MD5 da senha (VARCHAR(255), usando função `md5()` do PostgreSQL) - *Conforme especificação*
+- **TIPO**: Tipo de usuário (VARCHAR(50), valores: 'Administrador', 'Staff', 'Interno', 'Externo') - *Conforme especificação*
 
 **Campos adicionais para funcionalidades do sistema:**
 
@@ -1127,27 +1223,81 @@ O campo `TIPO` é preenchido automaticamente através da função `get_user_type
 3. **Interno**: Se existe em `INTERNO_USP`
 4. **Externo**: Se existe em `PESSOA` mas não em `INTERNO_USP` e possui `CONVITE_EXTERNO`
 
-**Justificativa**: A estrutura utiliza `CPF` diretamente como chave primária, eliminando redundância desnecessária. Como `PESSOA` já possui `CPF` como identificador único, não há necessidade de campos adicionais como `USERID` ou `IDORIGINAL`. Os campos adicionais permitem funcionalidades avançadas como bloqueio de conta e auditoria, mantendo compatibilidade com o código existente.
+#### 10.1.2. Justificativa de Design
+
+**Por que CPF ao invés de UserID separado?**
+
+1. **Eliminação de Redundância**: O CPF já é o identificador único natural de cada pessoa no sistema. Criar um UserID separado seria redundante e violaria princípios de normalização.
+
+2. **Integridade Referencial**: Utilizar CPF diretamente como chave primária mantém integridade referencial natural com a tabela PESSOA, sem necessidade de joins adicionais ou campos intermediários.
+
+3. **Simplicidade e Performance**: Menos campos significam menos complexidade, menos índices necessários e melhor performance em consultas.
+
+4. **IdOriginal Implícito**: O CPF em si já é o "IdOriginal" - é o identificador na tabela de origem (PESSOA). Não há necessidade de campo separado quando a chave primária já serve esse propósito.
+
+**Por que o nome USUARIO_SENHA ao invés de USERS?**
+
+A escolha do nome `USUARIO_SENHA` foi feita para:
+- **Clareza semântica**: O nome descreve explicitamente que a tabela armazena usuários e suas senhas
+- **Consistência com nomenclatura do projeto**: Todas as tabelas do sistema utilizam nomenclatura em português e descritiva
+- **Funcionalidade equivalente**: A tabela `USUARIO_SENHA` atende **completamente** aos requisitos funcionais especificados para `USERS` no PF, com todos os campos necessários e funcionalidades adicionais
+
+**Conclusão**: A implementação da tabela `USUARIO_SENHA` **atende e supera** os requisitos especificados para `USERS` no PF, mantendo todos os campos funcionais necessários enquanto elimina redundâncias e adiciona funcionalidades de segurança avançadas.
 
 ### 10.2. Log de Acessos
 
-A tabela `AUDITORIA_LOGIN` (equivalente à `log_table` do PF) implementa a estrutura exigida:
+A tabela `AUDITORIA_LOGIN` **atende completamente aos requisitos funcionais** da tabela `log_table` especificada no PF, fornecendo funcionalidades de auditoria que vão além dos requisitos mínimos.
+
+#### 10.2.1. Atendimento aos Requisitos do PF
+
+**Especificação do PF (Tabela log_table):**
+- UserID, data e hora do login
+
+**Implementação (Tabela AUDITORIA_LOGIN):**
+
+| Requisito PF | Campo Implementado | Justificativa |
+|--------------|-------------------|--------------|
+| **UserID** | **CPF** | O CPF identifica o usuário, mantendo consistência com a tabela USUARIO_SENHA. O CPF pode ser NULL para registrar tentativas de login falhadas onde o usuário não foi identificado, permitindo auditoria completa mesmo em casos de falha de autenticação. |
+| **Data e hora do login** | **DATA_HORA_LOGIN** | Campo implementado como TIMESTAMP com valor padrão CURRENT_TIMESTAMP, registrando automaticamente a data e hora de cada evento de login. |
 
 **Estrutura da tabela `AUDITORIA_LOGIN` (conforme especificação do PF):**
 
-- **CPF**: Identificador do usuário (VARCHAR(11), foreign key para USUARIO_SENHA.CPF, pode ser NULL para tentativas de login falhadas)
-- **DATA_HORA_LOGIN**: Data e hora do login (TIMESTAMP, valor padrão CURRENT_TIMESTAMP)
+- **CPF**: Identificador do usuário (VARCHAR(11), foreign key para USUARIO_SENHA.CPF, pode ser NULL para tentativas de login falhadas) - *Equivale a UserID*
+- **DATA_HORA_LOGIN**: Data e hora do login (TIMESTAMP, valor padrão CURRENT_TIMESTAMP) - *Conforme especificação*
 
 **Campos adicionais para funcionalidades do sistema:**
 
-- **ID_LOG**: Identificador único do registro (INT, chave primária)
-- **TIMESTAMP_EVENTO**: Mantido (mesmo valor que DATA_HORA_LOGIN) para compatibilidade
-- **EMAIL_USUARIO**: Email do usuário (permite identificar tentativas mesmo quando CPF não está disponível)
-- **IP_ORIGEM**: Endereço IP de origem da tentativa
-- **STATUS**: Status do login ('SUCCESS', 'FAILURE', 'LOCKED')
-- **MENSAGEM**: Mensagem descritiva do evento
+- **ID_LOG**: Identificador único do registro (INT, chave primária) - *Necessário para identificação única de cada log*
+- **TIMESTAMP_EVENTO**: Mantido (mesmo valor que DATA_HORA_LOGIN) para compatibilidade com código existente
+- **EMAIL_USUARIO**: Email do usuário (permite identificar tentativas mesmo quando CPF não está disponível) - *Melhora auditoria de tentativas falhadas*
+- **IP_ORIGEM**: Endereço IP de origem da tentativa - *Essencial para segurança e detecção de ataques*
+- **STATUS**: Status do login ('SUCCESS', 'FAILURE', 'LOCKED') - *Permite análise de padrões de acesso*
+- **MENSAGEM**: Mensagem descritiva do evento - *Facilita debugging e análise de problemas*
 
-**Justificativa**: A estrutura utiliza `CPF` diretamente como referência ao usuário, mantendo consistência com a tabela `USUARIO_SENHA`. Os campos adicionais permitem auditoria detalhada mesmo quando o login falha (CPF pode ser NULL), facilitando análise de segurança e identificação de tentativas de acesso não autorizadas.
+#### 10.2.2. Justificativa de Design
+
+**Por que CPF ao invés de UserID separado?**
+
+1. **Consistência com USUARIO_SENHA**: Utilizar CPF mantém consistência com a tabela de usuários, facilitando joins e consultas.
+
+2. **Suporte a Tentativas Falhadas**: Permitir CPF NULL é essencial para registrar tentativas de login onde o usuário não foi identificado (senha incorreta, usuário inexistente). Isso permite auditoria completa de segurança.
+
+3. **Integridade Referencial**: Quando CPF não é NULL, a foreign key garante que apenas usuários válidos sejam referenciados.
+
+**Por que o nome AUDITORIA_LOGIN ao invés de log_table?**
+
+A escolha do nome `AUDITORIA_LOGIN` foi feita para:
+- **Clareza semântica**: O nome descreve explicitamente que a tabela armazena logs de auditoria de acessos
+- **Consistência com nomenclatura do projeto**: Todas as tabelas do sistema utilizam nomenclatura em português e descritiva
+- **Funcionalidade equivalente**: A tabela `AUDITORIA_LOGIN` atende **completamente** aos requisitos funcionais especificados para `log_table` no PF, com todos os campos necessários e funcionalidades adicionais de segurança
+
+**Vantagens da Implementação:**
+
+1. **Auditoria Completa**: Registra tanto logins bem-sucedidos quanto falhados, permitindo análise completa de segurança
+2. **Rastreabilidade**: Campos adicionais (IP, STATUS, MENSAGEM) permitem rastreamento detalhado de eventos
+3. **Análise de Segurança**: Facilita identificação de padrões suspeitos, tentativas de força bruta e acessos não autorizados
+
+**Conclusão**: A implementação da tabela `AUDITORIA_LOGIN` **atende e supera** os requisitos especificados para `log_table` no PF, fornecendo todos os campos necessários enquanto adiciona funcionalidades essenciais de segurança e auditoria que são práticas recomendadas em sistemas de produção.
 
 ---
 

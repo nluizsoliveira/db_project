@@ -16,4 +16,3 @@ JOIN pessoa p ON sc.cpf_pessoa = p.cpf
 LEFT JOIN pessoa admin_p ON sc.cpf_admin_aprovador = admin_p.cpf
 WHERE sc.status = 'REJEITADA'
 ORDER BY sc.data_aprovacao DESC;
-
