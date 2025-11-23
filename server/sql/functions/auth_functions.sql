@@ -570,6 +570,29 @@ BEGIN
         );
     END IF;
 
+    -- Check if activity exists and has available spots BEFORE accepting
+    IF invite_record.id_atividade IS NOT NULL THEN
+        SELECT * INTO activity_record
+        FROM atividade
+        WHERE id_atividade = invite_record.id_atividade;
+
+        IF FOUND THEN
+            -- Check if there are available spots
+            SELECT COUNT(*) INTO current_participants_count
+            FROM participacao_atividade
+            WHERE id_atividade = invite_record.id_atividade;
+
+            -- If activity has a limit and it's reached, reject the acceptance
+            IF activity_record.vagas_limite IS NOT NULL
+               AND current_participants_count >= activity_record.vagas_limite THEN
+                RETURN json_build_object(
+                    'success', FALSE,
+                    'message', 'Não é possível aceitar o convite: a atividade está com vagas esgotadas. Entre em contato com o organizador.'
+                );
+            END IF;
+        END IF;
+    END IF;
+
     -- Check if DOCUMENTO_CONVIDADO is a valid CPF (11 digits, numeric only)
     is_valid_cpf := LENGTH(TRIM(invite_record.documento_convidado)) = 11
                     AND invite_record.documento_convidado ~ '^[0-9]+$';
@@ -611,7 +634,7 @@ BEGIN
             WHERE cpf = cpf_document;
         END IF;
 
-        -- Check if activity exists and get its information
+        -- Check if activity exists and create participation
         IF invite_record.id_atividade IS NOT NULL THEN
             SELECT * INTO activity_record
             FROM atividade
@@ -627,27 +650,7 @@ BEGIN
                 ) INTO participation_exists;
 
                 IF NOT participation_exists THEN
-                    -- Check if there are available spots
-                    SELECT COUNT(*) INTO current_participants_count
-                    FROM participacao_atividade
-                    WHERE id_atividade = invite_record.id_atividade;
-
-                    -- If activity has a limit and it's reached, don't create participation
-                    IF activity_record.vagas_limite IS NOT NULL
-                       AND current_participants_count >= activity_record.vagas_limite THEN
-                        -- Update invite status to ACEITO but don't create participation
-                        UPDATE convite_externo
-                        SET status = 'ACEITO',
-                            data_resposta = CURRENT_TIMESTAMP
-                        WHERE id_convite = accept_external_invite.invite_id;
-
-                        RETURN json_build_object(
-                            'success', TRUE,
-                            'message', 'Convite aceito, mas a atividade está com vagas esgotadas. Entre em contato com o organizador.'
-                        );
-                    END IF;
-
-                    -- Create participation record
+                    -- Create participation record (we already checked for available spots above)
                     INSERT INTO participacao_atividade (
                         cpf_participante,
                         id_atividade,

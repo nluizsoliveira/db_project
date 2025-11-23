@@ -1,35 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { useState, useEffect } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,7 +11,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { apiGet, apiPost } from '@/lib/api';
@@ -73,45 +43,70 @@ interface Participation {
   atividade_vagas_limite: number | null;
 }
 
-interface ExternalParticipation {
-  participant_name: string;
-  participant_email: string;
-  activity_name: string;
-  host_name: string;
-  host_nusp: string;
-}
 
 export default function ExternalDashboardPage() {
-  const router = useRouter();
+  const alertDialog = useAlertDialog();
   const [invite, setInvite] = useState<Invite | null>(null);
   const [participation, setParticipation] = useState<Participation | null>(null);
-  const [externalParticipations, setExternalParticipations] = useState<ExternalParticipation[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // TanStack Table states
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [successMessage, setSuccessMessage] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     loadInviteData();
   }, []);
 
-  const loadInviteData = async () => {
+  const loadInviteData = async (forceReload = false) => {
     try {
+      setError('');
+      if (forceReload) {
+        // Forçar recarregamento limpando o estado primeiro
+        setInvite(null);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // Adicionar timestamp para evitar cache
+      const timestamp = new Date().getTime();
       const data = await apiGet<{
         success: boolean;
         invite: Invite;
         participation: Participation | null;
-        external_participations?: ExternalParticipation[];
-      }>('/external/dashboard');
+      }>(`/external/dashboard?t=${timestamp}`);
 
       if (data.success) {
-        setInvite(data.invite);
-        setParticipation(data.participation);
-        setExternalParticipations(data.external_participations || []);
+        console.log('Dados do convite recarregados:', data.invite);
+        console.log('Status do convite:', data.invite.status);
+        console.log('Status anterior:', invite?.status);
+
+        // Forçar atualização do estado criando novos objetos
+        const newInvite: Invite = {
+          id_convite: data.invite.id_convite,
+          status: data.invite.status,
+          nome_convidado: data.invite.nome_convidado,
+          documento_convidado: data.invite.documento_convidado,
+          email_convidado: data.invite.email_convidado,
+          telefone_convidado: data.invite.telefone_convidado,
+          id_atividade: data.invite.id_atividade,
+          data_convite: data.invite.data_convite,
+          data_resposta: data.invite.data_resposta,
+          observacoes: data.invite.observacoes,
+          atividade_nome: data.invite.atividade_nome,
+          atividade_data_inicio: data.invite.atividade_data_inicio,
+          atividade_data_fim: data.invite.atividade_data_fim,
+          atividade_vagas_limite: data.invite.atividade_vagas_limite,
+        };
+
+        setInvite(newInvite);
+        setParticipation(data.participation ? { ...data.participation } : null);
+        const newRefreshKey = refreshKey + 1;
+        setRefreshKey(newRefreshKey); // Forçar re-render
+
+        console.log('Estado atualizado. Novo status:', newInvite.status);
+        console.log('Refresh key atualizado para:', newRefreshKey);
+      } else {
+        console.error('Erro ao carregar dados: resposta não foi bem-sucedida');
       }
     } catch (err) {
       console.error('Erro ao carregar dados do convite:', err);
@@ -124,21 +119,39 @@ export default function ExternalDashboardPage() {
   const handleAccept = async () => {
     setActionLoading(true);
     setError('');
+    setSuccessMessage('');
 
     try {
+      console.log('Iniciando aceitação do convite...');
       const data = await apiPost<{
         success: boolean;
         message?: string;
       }>('/external/accept', {});
 
+      console.log('Resposta do servidor:', data);
+
       if (data.success) {
-        await loadInviteData();
+        const message = data.message || 'Convite aceito com sucesso!';
+        setSuccessMessage(message);
+        console.log('Convite aceito com sucesso, recarregando dados...');
+
+        // Aguardar um pouco antes de recarregar para garantir que o servidor processou
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Recarregar dados do convite forçando atualização
+        await loadInviteData(true);
+
+        // Mensagem de sucesso permanece visível (não será removida automaticamente)
       } else {
-        setError(data.message || 'Erro ao aceitar convite');
+        // Erro de negócio (ex: vagas esgotadas) - não é uma exceção, apenas uma resposta negativa
+        const errorMsg = data.message || 'Erro ao aceitar convite';
+        setError(errorMsg);
+        // Não usar console.error aqui para evitar aparecer como erro no console do Next.js
       }
     } catch (err) {
       console.error('Erro ao aceitar convite:', err);
-      setError('Erro ao aceitar convite. Tente novamente.');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao aceitar convite. Tente novamente.';
+      setError(errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -151,21 +164,38 @@ export default function ExternalDashboardPage() {
       async () => {
         setActionLoading(true);
         setError('');
+        setSuccessMessage('');
 
         try {
+          console.log('Iniciando recusa do convite...');
           const data = await apiPost<{
             success: boolean;
             message?: string;
           }>('/external/reject', {});
 
+          console.log('Resposta do servidor:', data);
+
           if (data.success) {
-            await loadInviteData();
+            const message = data.message || 'Convite recusado com sucesso!';
+            setSuccessMessage(message);
+            console.log('Convite recusado com sucesso, recarregando dados...');
+
+            // Aguardar um pouco antes de recarregar para garantir que o servidor processou
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Recarregar dados do convite forçando atualização
+            await loadInviteData(true);
+
+            // Mensagem de sucesso permanece visível
           } else {
-            setError(data.message || 'Erro ao recusar convite');
+            // Erro de negócio - não é uma exceção, apenas uma resposta negativa
+            const errorMsg = data.message || 'Erro ao recusar convite';
+            setError(errorMsg);
           }
         } catch (err) {
           console.error('Erro ao recusar convite:', err);
-          setError('Erro ao recusar convite. Tente novamente.');
+          const errorMessage = err instanceof Error ? err.message : 'Erro ao recusar convite. Tente novamente.';
+          setError(errorMessage);
         } finally {
           setActionLoading(false);
         }
@@ -203,6 +233,7 @@ export default function ExternalDashboardPage() {
       </span>
     );
   };
+
 
   if (loading) {
     return (
@@ -243,6 +274,17 @@ export default function ExternalDashboardPage() {
           {error && (
             <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">
               {error}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="rounded-lg border-2 border-green-300 bg-green-50 p-4 text-sm font-medium text-green-800 shadow-sm">
+              <div className="flex items-start gap-2">
+                <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span>{successMessage}</span>
+              </div>
             </div>
           )}
 
@@ -341,131 +383,33 @@ export default function ExternalDashboardPage() {
           {invite.status === 'PENDENTE' && (
             <div className="flex gap-4 rounded-lg bg-white p-6 shadow">
               <button
-                onClick={handleAccept}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Botão Aceitar clicado');
+                  handleAccept();
+                }}
                 disabled={actionLoading}
-                className="flex-1 rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50"
+                className="flex-1 rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {actionLoading ? 'Processando...' : 'Aceitar Convite'}
               </button>
               <button
-                onClick={handleReject}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleReject();
+                }}
                 disabled={actionLoading}
-                className="flex-1 rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+                className="flex-1 rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {actionLoading ? 'Processando...' : 'Recusar Convite'}
               </button>
             </div>
           )}
 
-          {externalParticipations.length > 0 && (
-            <div className="rounded-lg bg-white p-6 shadow">
-              <h2 className="mb-4 text-lg font-semibold text-gray-900">Participações Externas</h2>
-              <div className="w-full space-y-4">
-                <div className="flex items-center gap-2">
-                  <Input
-                    placeholder="Filtrar por participante..."
-                    value={(externalParticipationTable.getColumn('participant_name')?.getFilterValue() as string) ?? ''}
-                    onChange={(event) =>
-                      externalParticipationTable.getColumn('participant_name')?.setFilterValue(event.target.value)
-                    }
-                    className="max-w-sm"
-                  />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="ml-auto">
-                        Colunas <ChevronDown className="ml-2 h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {externalParticipationTable
-                        .getAllColumns()
-                        .filter((column) => column.getCanHide())
-                        .map((column) => {
-                          return (
-                            <DropdownMenuCheckboxItem
-                              key={column.id}
-                              className="capitalize"
-                              checked={column.getIsVisible()}
-                              onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                            >
-                              {column.id === 'participant_name'
-                                ? 'Participante'
-                                : column.id === 'participant_email'
-                                ? 'E-mail'
-                                : column.id === 'activity_name'
-                                ? 'Atividade'
-                                : column.id === 'host_name'
-                                ? 'Anfitrião'
-                                : column.id === 'host_nusp'
-                                ? 'NUSP'
-                                : column.id}
-                            </DropdownMenuCheckboxItem>
-                          );
-                        })}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      {externalParticipationTable.getHeaderGroups().map((headerGroup) => (
-                        <TableRow key={headerGroup.id}>
-                          {headerGroup.headers.map((header) => {
-                            return (
-                              <TableHead key={header.id}>
-                                {header.isPlaceholder
-                                  ? null
-                                  : flexRender(header.column.columnDef.header, header.getContext())}
-                              </TableHead>
-                            );
-                          })}
-                        </TableRow>
-                      ))}
-                    </TableHeader>
-                    <TableBody>
-                      {externalParticipationTable.getRowModel().rows?.length ? (
-                        externalParticipationTable.getRowModel().rows.map((row) => (
-                          <TableRow key={row.id} className="hover:bg-gray-50">
-                            {row.getVisibleCells().map((cell) => (
-                              <TableCell key={cell.id}>
-                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={externalParticipationColumns.length} className="h-24 text-center">
-                            Nenhum resultado encontrado.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-                <div className="flex items-center justify-end space-x-2">
-                  <div className="space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => externalParticipationTable.previousPage()}
-                      disabled={!externalParticipationTable.getCanPreviousPage()}
-                    >
-                      Anterior
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => externalParticipationTable.nextPage()}
-                      disabled={!externalParticipationTable.getCanNextPage()}
-                    >
-                      Próxima
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </section>
 
         <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>

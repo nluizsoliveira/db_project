@@ -48,10 +48,14 @@ export function useAlertDialog() {
   );
 
   const handleConfirm = useCallback(() => {
-    if (state.onConfirm) {
-      state.onConfirm();
-    }
+    const onConfirmCallback = state.onConfirm;
     setState((prev) => ({ ...prev, open: false }));
+    // Execute callback after dialog is closed to allow chaining confirms
+    if (onConfirmCallback) {
+      setTimeout(() => {
+        onConfirmCallback();
+      }, 100);
+    }
   }, [state.onConfirm]);
 
   const handleCancel = useCallback(() => {

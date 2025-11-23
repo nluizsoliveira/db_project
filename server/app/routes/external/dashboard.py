@@ -5,7 +5,7 @@ from app.services.database import executor as sql_queries
 from app.services.auth.decorators import require_external_auth
 
 
-@external_blueprint.get("/", endpoint="dashboard")
+@external_blueprint.get("/dashboard", endpoint="dashboard")
 @require_external_auth()
 def dashboard():
     """Get invite information and related data for external user."""
@@ -22,24 +22,26 @@ def dashboard():
     if not invite:
         return jsonify({"success": False, "message": "Convite não encontrado"}), 404
 
+    # Update session with current status from database
+    invite_status = invite.get("status")
+    session["invite_status"] = invite_status
+
+    # Log para debug
+    from flask import current_app
+    current_app.logger.info(f"Dashboard: Convite ID {invite_id}, Status: {invite_status}")
+
     # Get participation if invite is accepted
     participation = None
-    if session.get("invite_status") == "ACEITO":
+    if invite_status == "ACEITO":
         participation = sql_queries.fetch_one(
             "queries/external/get_invite_participation.sql",
             {"invite_id": invite_id},
         )
 
-    # Get external participations list
-    external_participations = sql_queries.fetch_all(
-        "queries/external/external_participations.sql"
-    )
-
     return jsonify({
         "success": True,
         "invite": invite,
         "participation": participation,
-        "external_participations": external_participations,
     })
 
 
@@ -51,8 +53,19 @@ def accept_invite():
     if not invite_id:
         return jsonify({"success": False, "message": "Sessão inválida"}), 401
 
-    if session.get("invite_status") != "PENDENTE":
-        return jsonify({"success": False, "message": "Convite não está pendente"}), 400
+    # Get current invite status from database
+    invite = sql_queries.fetch_one(
+        "queries/external/get_invite_by_token.sql",
+        {"token": session.get("external_token")},
+    )
+
+    if not invite:
+        return jsonify({"success": False, "message": "Convite não encontrado"}), 404
+
+    # Check if invite is actually pending
+    # Return 200 with success: false for business logic errors
+    if invite.get("status") != "PENDENTE":
+        return jsonify({"success": False, "message": "Convite não está pendente"}), 200
 
     result = sql_queries.fetch_one(
         "queries/external/accept_invite.sql",
@@ -64,11 +77,32 @@ def accept_invite():
 
     accept_data = result["result"]
 
+    # Return 200 with success: false for business logic errors (like no available spots)
+    # This prevents the error from appearing in the console as an exception
     if not accept_data.get("success"):
-        return jsonify({"success": False, "message": accept_data.get("message", "Erro ao aceitar convite")}), 400
+        return jsonify({
+            "success": False,
+            "message": accept_data.get("message", "Erro ao aceitar convite")
+        }), 200
 
-    # Update session
-    session["invite_status"] = "ACEITO"
+    # Get updated invite status from database to ensure it's current
+    updated_invite = sql_queries.fetch_one(
+        "queries/external/get_invite_by_token.sql",
+        {"token": session.get("external_token")},
+    )
+
+    if updated_invite:
+        # Update session with current status from database
+        new_status = updated_invite.get("status", "ACEITO")
+        session["invite_status"] = new_status
+
+        # Log para debug
+        from flask import current_app
+        current_app.logger.info(f"Accept: Convite ID {invite_id}, Status atualizado para: {new_status}")
+    else:
+        session["invite_status"] = "ACEITO"
+        from flask import current_app
+        current_app.logger.warning(f"Accept: Convite ID {invite_id}, não foi possível buscar status atualizado")
 
     return jsonify({
         "success": True,
@@ -84,8 +118,19 @@ def reject_invite():
     if not invite_id:
         return jsonify({"success": False, "message": "Sessão inválida"}), 401
 
-    if session.get("invite_status") != "PENDENTE":
-        return jsonify({"success": False, "message": "Convite não está pendente"}), 400
+    # Get current invite status from database
+    invite = sql_queries.fetch_one(
+        "queries/external/get_invite_by_token.sql",
+        {"token": session.get("external_token")},
+    )
+
+    if not invite:
+        return jsonify({"success": False, "message": "Convite não encontrado"}), 404
+
+    # Check if invite is actually pending
+    # Return 200 with success: false for business logic errors
+    if invite.get("status") != "PENDENTE":
+        return jsonify({"success": False, "message": "Convite não está pendente"}), 200
 
     result = sql_queries.fetch_one(
         "queries/external/reject_invite.sql",
@@ -97,11 +142,32 @@ def reject_invite():
 
     reject_data = result["result"]
 
+    # Return 200 with success: false for business logic errors
+    # This prevents the error from appearing in the console as an exception
     if not reject_data.get("success"):
-        return jsonify({"success": False, "message": reject_data.get("message", "Erro ao recusar convite")}), 400
+        return jsonify({
+            "success": False,
+            "message": reject_data.get("message", "Erro ao recusar convite")
+        }), 200
 
-    # Update session
-    session["invite_status"] = "RECUSADO"
+    # Get updated invite status from database to ensure it's current
+    updated_invite = sql_queries.fetch_one(
+        "queries/external/get_invite_by_token.sql",
+        {"token": session.get("external_token")},
+    )
+
+    if updated_invite:
+        # Update session with current status from database
+        new_status = updated_invite.get("status", "RECUSADO")
+        session["invite_status"] = new_status
+
+        # Log para debug
+        from flask import current_app
+        current_app.logger.info(f"Reject: Convite ID {invite_id}, Status atualizado para: {new_status}")
+    else:
+        session["invite_status"] = "RECUSADO"
+        from flask import current_app
+        current_app.logger.warning(f"Reject: Convite ID {invite_id}, não foi possível buscar status atualizado")
 
     return jsonify({
         "success": True,
