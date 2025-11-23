@@ -52,6 +52,7 @@ export default function ExternalDashboardPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [infoMessage, setInfoMessage] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export default function ExternalDashboardPage() {
       if (forceReload) {
         // Forçar recarregamento limpando o estado primeiro
         setInvite(null);
+        setParticipation(null);
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
@@ -75,10 +77,9 @@ export default function ExternalDashboardPage() {
         participation: Participation | null;
       }>(`/external/dashboard?t=${timestamp}`);
 
-      if (data.success) {
+      if (data.success && data.invite) {
         console.log('Dados do convite recarregados:', data.invite);
         console.log('Status do convite:', data.invite.status);
-        console.log('Status anterior:', invite?.status);
 
         // Forçar atualização do estado criando novos objetos
         const newInvite: Invite = {
@@ -98,15 +99,15 @@ export default function ExternalDashboardPage() {
           atividade_vagas_limite: data.invite.atividade_vagas_limite,
         };
 
+        // Atualizar estados de forma síncrona
         setInvite(newInvite);
         setParticipation(data.participation ? { ...data.participation } : null);
-        const newRefreshKey = refreshKey + 1;
-        setRefreshKey(newRefreshKey); // Forçar re-render
+        setRefreshKey(prev => prev + 1);
 
         console.log('Estado atualizado. Novo status:', newInvite.status);
-        console.log('Refresh key atualizado para:', newRefreshKey);
       } else {
         console.error('Erro ao carregar dados: resposta não foi bem-sucedida');
+        setError('Erro ao carregar informações do convite');
       }
     } catch (err) {
       console.error('Erro ao carregar dados do convite:', err);
@@ -120,6 +121,7 @@ export default function ExternalDashboardPage() {
     setActionLoading(true);
     setError('');
     setSuccessMessage('');
+    setInfoMessage('');
 
     try {
       console.log('Iniciando aceitação do convite...');
@@ -136,17 +138,17 @@ export default function ExternalDashboardPage() {
         console.log('Convite aceito com sucesso, recarregando dados...');
 
         // Aguardar um pouco antes de recarregar para garantir que o servidor processou
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 800));
 
         // Recarregar dados do convite forçando atualização
         await loadInviteData(true);
 
-        // Mensagem de sucesso permanece visível (não será removida automaticamente)
+        // Aguardar um pouco mais para garantir que o estado foi atualizado
+        await new Promise(resolve => setTimeout(resolve, 200));
       } else {
         // Erro de negócio (ex: vagas esgotadas) - não é uma exceção, apenas uma resposta negativa
         const errorMsg = data.message || 'Erro ao aceitar convite';
         setError(errorMsg);
-        // Não usar console.error aqui para evitar aparecer como erro no console do Next.js
       }
     } catch (err) {
       console.error('Erro ao aceitar convite:', err);
@@ -165,6 +167,7 @@ export default function ExternalDashboardPage() {
         setActionLoading(true);
         setError('');
         setSuccessMessage('');
+        setInfoMessage('');
 
         try {
           console.log('Iniciando recusa do convite...');
@@ -177,16 +180,19 @@ export default function ExternalDashboardPage() {
 
           if (data.success) {
             const message = data.message || 'Convite recusado com sucesso!';
-            setSuccessMessage(message);
+            setInfoMessage(message);
+            setSuccessMessage('');
             console.log('Convite recusado com sucesso, recarregando dados...');
 
             // Aguardar um pouco antes de recarregar para garantir que o servidor processou
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 800));
 
             // Recarregar dados do convite forçando atualização
+            console.log('Recarregando dados após recusar...');
             await loadInviteData(true);
 
-            // Mensagem de sucesso permanece visível
+            // Aguardar um pouco mais para garantir que o estado foi atualizado
+            await new Promise(resolve => setTimeout(resolve, 200));
           } else {
             // Erro de negócio - não é uma exceção, apenas uma resposta negativa
             const errorMsg = data.message || 'Erro ao recusar convite';
@@ -288,6 +294,17 @@ export default function ExternalDashboardPage() {
             </div>
           )}
 
+          {infoMessage && (
+            <div className="rounded-lg border-2 border-blue-300 bg-blue-50 p-4 text-sm font-medium text-blue-800 shadow-sm">
+              <div className="flex items-start gap-2">
+                <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                <span>{infoMessage}</span>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-6 md:grid-cols-2">
             <div className="rounded-lg bg-white p-6 shadow">
               <h2 className="mb-4 text-lg font-semibold text-gray-900">Informações do Convite</h2>
@@ -380,35 +397,39 @@ export default function ExternalDashboardPage() {
             )}
           </div>
 
-          {invite.status === 'PENDENTE' && (
-            <div className="flex gap-4 rounded-lg bg-white p-6 shadow">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
+          <div className="flex gap-4 rounded-lg bg-white p-6 shadow" key={`buttons-${invite.status}-${refreshKey}`}>
+            <button
+              type="button"
+              key={`accept-${invite.status}-${refreshKey}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (invite.status === 'PENDENTE' && !actionLoading) {
                   console.log('Botão Aceitar clicado');
                   handleAccept();
-                }}
-                disabled={actionLoading}
-                className="flex-1 rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {actionLoading ? 'Processando...' : 'Aceitar Convite'}
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
+                }
+              }}
+              disabled={actionLoading || invite.status !== 'PENDENTE'}
+              className="flex-1 rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {actionLoading ? 'Processando...' : 'Aceitar Convite'}
+            </button>
+            <button
+              type="button"
+              key={`reject-${invite.status}-${refreshKey}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (invite.status === 'PENDENTE' && !actionLoading) {
                   handleReject();
-                }}
-                disabled={actionLoading}
-                className="flex-1 rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {actionLoading ? 'Processando...' : 'Recusar Convite'}
-              </button>
-            </div>
-          )}
+                }
+              }}
+              disabled={actionLoading || invite.status !== 'PENDENTE'}
+              className="flex-1 rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {actionLoading ? 'Processando...' : 'Recusar Convite'}
+            </button>
+          </div>
 
         </section>
 

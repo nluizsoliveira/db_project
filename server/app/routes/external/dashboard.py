@@ -1,4 +1,4 @@
-from flask import jsonify, request, session
+from flask import g, jsonify, request, session
 
 from app.routes.external import external_blueprint
 from app.services.database import executor as sql_queries
@@ -62,17 +62,30 @@ def accept_invite():
     if not invite:
         return jsonify({"success": False, "message": "Convite não encontrado"}), 404
 
+    # Use the invite_id from the database query instead of session to ensure it's correct
+    db_invite_id = invite.get("id_convite")
+    if not db_invite_id:
+        return jsonify({"success": False, "message": "ID do convite inválido"}), 400
+
+    # Log para debug
+    from flask import current_app
+    current_app.logger.info(f"Accept: Session invite_id={invite_id}, DB invite_id={db_invite_id}")
+
     # Check if invite is actually pending
     # Return 200 with success: false for business logic errors
     if invite.get("status") != "PENDENTE":
         return jsonify({"success": False, "message": "Convite não está pendente"}), 200
 
+    # Use the invite_id from database to ensure it's correct
     result = sql_queries.fetch_one(
         "queries/external/accept_invite.sql",
-        {"invite_id": invite_id},
+        {"invite_id": db_invite_id},
     )
 
     if not result or not result.get("result"):
+        # Rollback on error
+        if hasattr(g, 'db_session') and g.db_session:
+            g.db_session.connection.rollback()
         return jsonify({"success": False, "message": "Erro ao processar aceitação"}), 500
 
     accept_data = result["result"]
@@ -80,10 +93,17 @@ def accept_invite():
     # Return 200 with success: false for business logic errors (like no available spots)
     # This prevents the error from appearing in the console as an exception
     if not accept_data.get("success"):
+        # Rollback on business logic error
+        if hasattr(g, 'db_session') and g.db_session:
+            g.db_session.connection.rollback()
         return jsonify({
             "success": False,
             "message": accept_data.get("message", "Erro ao aceitar convite")
         }), 200
+
+    # Commit the transaction after executing the function that modifies the database
+    if hasattr(g, 'db_session') and g.db_session:
+        g.db_session.connection.commit()
 
     # Get updated invite status from database to ensure it's current
     updated_invite = sql_queries.fetch_one(
@@ -92,17 +112,20 @@ def accept_invite():
     )
 
     if updated_invite:
-        # Update session with current status from database
+        # Update session with current status and invite_id from database
         new_status = updated_invite.get("status", "ACEITO")
+        updated_invite_id = updated_invite.get("id_convite")
         session["invite_status"] = new_status
+        if updated_invite_id:
+            session["invite_id"] = updated_invite_id
 
         # Log para debug
         from flask import current_app
-        current_app.logger.info(f"Accept: Convite ID {invite_id}, Status atualizado para: {new_status}")
+        current_app.logger.info(f"Accept: Convite ID {db_invite_id}, Status atualizado para: {new_status}")
     else:
         session["invite_status"] = "ACEITO"
         from flask import current_app
-        current_app.logger.warning(f"Accept: Convite ID {invite_id}, não foi possível buscar status atualizado")
+        current_app.logger.warning(f"Accept: Convite ID {db_invite_id}, não foi possível buscar status atualizado")
 
     return jsonify({
         "success": True,
@@ -127,17 +150,30 @@ def reject_invite():
     if not invite:
         return jsonify({"success": False, "message": "Convite não encontrado"}), 404
 
+    # Use the invite_id from the database query instead of session to ensure it's correct
+    db_invite_id = invite.get("id_convite")
+    if not db_invite_id:
+        return jsonify({"success": False, "message": "ID do convite inválido"}), 400
+
+    # Log para debug
+    from flask import current_app
+    current_app.logger.info(f"Reject: Session invite_id={invite_id}, DB invite_id={db_invite_id}")
+
     # Check if invite is actually pending
     # Return 200 with success: false for business logic errors
     if invite.get("status") != "PENDENTE":
         return jsonify({"success": False, "message": "Convite não está pendente"}), 200
 
+    # Use the invite_id from database to ensure it's correct
     result = sql_queries.fetch_one(
         "queries/external/reject_invite.sql",
-        {"invite_id": invite_id},
+        {"invite_id": db_invite_id},
     )
 
     if not result or not result.get("result"):
+        # Rollback on error
+        if hasattr(g, 'db_session') and g.db_session:
+            g.db_session.connection.rollback()
         return jsonify({"success": False, "message": "Erro ao processar recusa"}), 500
 
     reject_data = result["result"]
@@ -145,10 +181,17 @@ def reject_invite():
     # Return 200 with success: false for business logic errors
     # This prevents the error from appearing in the console as an exception
     if not reject_data.get("success"):
+        # Rollback on business logic error
+        if hasattr(g, 'db_session') and g.db_session:
+            g.db_session.connection.rollback()
         return jsonify({
             "success": False,
             "message": reject_data.get("message", "Erro ao recusar convite")
         }), 200
+
+    # Commit the transaction after executing the function that modifies the database
+    if hasattr(g, 'db_session') and g.db_session:
+        g.db_session.connection.commit()
 
     # Get updated invite status from database to ensure it's current
     updated_invite = sql_queries.fetch_one(
@@ -157,17 +200,20 @@ def reject_invite():
     )
 
     if updated_invite:
-        # Update session with current status from database
+        # Update session with current status and invite_id from database
         new_status = updated_invite.get("status", "RECUSADO")
+        updated_invite_id = updated_invite.get("id_convite")
         session["invite_status"] = new_status
+        if updated_invite_id:
+            session["invite_id"] = updated_invite_id
 
         # Log para debug
         from flask import current_app
-        current_app.logger.info(f"Reject: Convite ID {invite_id}, Status atualizado para: {new_status}")
+        current_app.logger.info(f"Reject: Convite ID {db_invite_id}, Status atualizado para: {new_status}")
     else:
         session["invite_status"] = "RECUSADO"
         from flask import current_app
-        current_app.logger.warning(f"Reject: Convite ID {invite_id}, não foi possível buscar status atualizado")
+        current_app.logger.warning(f"Reject: Convite ID {db_invite_id}, não foi possível buscar status atualizado")
 
     return jsonify({
         "success": True,
