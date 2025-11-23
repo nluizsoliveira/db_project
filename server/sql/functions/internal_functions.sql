@@ -38,7 +38,13 @@ RETURNS TABLE (
     id_instalacao INT,
     nome VARCHAR,
     tipo VARCHAR,
-    capacidade INT
+    capacidade INT,
+    status_disponibilidade VARCHAR,
+    proxima_reserva_data DATE,
+    proxima_reserva_inicio TIME,
+    proxima_reserva_fim TIME,
+    reserva_anterior_data DATE,
+    reserva_anterior_fim TIME
 )
 AS $$
 BEGIN
@@ -47,7 +53,63 @@ BEGIN
         i.id_instalacao,
         i.nome,
         i.tipo,
-        i.capacidade
+        i.capacidade,
+        'Disponível'::VARCHAR AS status_disponibilidade,
+        (
+            SELECT r_prox.data_reserva
+            FROM reserva r_prox
+            WHERE r_prox.id_instalacao = i.id_instalacao
+              AND (
+                  (r_prox.data_reserva > dia)
+                  OR (r_prox.data_reserva = dia AND r_prox.horario_inicio >= hora_fim)
+              )
+            ORDER BY r_prox.data_reserva ASC, r_prox.horario_inicio ASC
+            LIMIT 1
+        ) AS proxima_reserva_data,
+        (
+            SELECT r_prox.horario_inicio
+            FROM reserva r_prox
+            WHERE r_prox.id_instalacao = i.id_instalacao
+              AND (
+                  (r_prox.data_reserva > dia)
+                  OR (r_prox.data_reserva = dia AND r_prox.horario_inicio >= hora_fim)
+              )
+            ORDER BY r_prox.data_reserva ASC, r_prox.horario_inicio ASC
+            LIMIT 1
+        ) AS proxima_reserva_inicio,
+        (
+            SELECT r_prox.horario_fim
+            FROM reserva r_prox
+            WHERE r_prox.id_instalacao = i.id_instalacao
+              AND (
+                  (r_prox.data_reserva > dia)
+                  OR (r_prox.data_reserva = dia AND r_prox.horario_inicio >= hora_fim)
+              )
+            ORDER BY r_prox.data_reserva ASC, r_prox.horario_inicio ASC
+            LIMIT 1
+        ) AS proxima_reserva_fim,
+        (
+            SELECT r_ant.data_reserva
+            FROM reserva r_ant
+            WHERE r_ant.id_instalacao = i.id_instalacao
+              AND (
+                  (r_ant.data_reserva < dia)
+                  OR (r_ant.data_reserva = dia AND r_ant.horario_fim <= hora_inicio)
+              )
+            ORDER BY r_ant.data_reserva DESC, r_ant.horario_fim DESC
+            LIMIT 1
+        ) AS reserva_anterior_data,
+        (
+            SELECT r_ant.horario_fim
+            FROM reserva r_ant
+            WHERE r_ant.id_instalacao = i.id_instalacao
+              AND (
+                  (r_ant.data_reserva < dia)
+                  OR (r_ant.data_reserva = dia AND r_ant.horario_fim <= hora_inicio)
+              )
+            ORDER BY r_ant.data_reserva DESC, r_ant.horario_fim DESC
+            LIMIT 1
+        ) AS reserva_anterior_fim
     FROM instalacao i
     WHERE i.eh_reservavel = 'S'
       AND i.id_instalacao NOT IN (
@@ -74,7 +136,13 @@ CREATE OR REPLACE FUNCTION get_equipamentos_disponiveis_horario(
 RETURNS TABLE (
     id_patrimonio VARCHAR,
     nome VARCHAR,
-    local VARCHAR
+    local VARCHAR,
+    status_disponibilidade VARCHAR,
+    proxima_reserva_data DATE,
+    proxima_reserva_inicio TIME,
+    proxima_reserva_fim TIME,
+    reserva_anterior_data DATE,
+    reserva_anterior_fim TIME
 )
 AS $$
 BEGIN
@@ -82,7 +150,63 @@ BEGIN
     SELECT
         e.id_patrimonio,
         e.nome,
-        COALESCE(i.nome, 'Sem local') AS local
+        COALESCE(i.nome, 'Sem local') AS local,
+        'Disponível'::VARCHAR AS status_disponibilidade,
+        (
+            SELECT re_prox.data_reserva
+            FROM reserva_equipamento re_prox
+            WHERE re_prox.id_equipamento = e.id_patrimonio
+              AND (
+                  (re_prox.data_reserva > dia)
+                  OR (re_prox.data_reserva = dia AND re_prox.horario_inicio >= hora_fim)
+              )
+            ORDER BY re_prox.data_reserva ASC, re_prox.horario_inicio ASC
+            LIMIT 1
+        ) AS proxima_reserva_data,
+        (
+            SELECT re_prox.horario_inicio
+            FROM reserva_equipamento re_prox
+            WHERE re_prox.id_equipamento = e.id_patrimonio
+              AND (
+                  (re_prox.data_reserva > dia)
+                  OR (re_prox.data_reserva = dia AND re_prox.horario_inicio >= hora_fim)
+              )
+            ORDER BY re_prox.data_reserva ASC, re_prox.horario_inicio ASC
+            LIMIT 1
+        ) AS proxima_reserva_inicio,
+        (
+            SELECT re_prox.horario_fim
+            FROM reserva_equipamento re_prox
+            WHERE re_prox.id_equipamento = e.id_patrimonio
+              AND (
+                  (re_prox.data_reserva > dia)
+                  OR (re_prox.data_reserva = dia AND re_prox.horario_inicio >= hora_fim)
+              )
+            ORDER BY re_prox.data_reserva ASC, re_prox.horario_inicio ASC
+            LIMIT 1
+        ) AS proxima_reserva_fim,
+        (
+            SELECT re_ant.data_reserva
+            FROM reserva_equipamento re_ant
+            WHERE re_ant.id_equipamento = e.id_patrimonio
+              AND (
+                  (re_ant.data_reserva < dia)
+                  OR (re_ant.data_reserva = dia AND re_ant.horario_fim <= hora_inicio)
+              )
+            ORDER BY re_ant.data_reserva DESC, re_ant.horario_fim DESC
+            LIMIT 1
+        ) AS reserva_anterior_data,
+        (
+            SELECT re_ant.horario_fim
+            FROM reserva_equipamento re_ant
+            WHERE re_ant.id_equipamento = e.id_patrimonio
+              AND (
+                  (re_ant.data_reserva < dia)
+                  OR (re_ant.data_reserva = dia AND re_ant.horario_fim <= hora_inicio)
+              )
+            ORDER BY re_ant.data_reserva DESC, re_ant.horario_fim DESC
+            LIMIT 1
+        ) AS reserva_anterior_fim
     FROM equipamento e
     LEFT JOIN instalacao i ON e.id_instalacao_local = i.id_instalacao
     WHERE e.eh_reservavel = 'S'
