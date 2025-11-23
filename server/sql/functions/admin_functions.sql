@@ -57,8 +57,57 @@ $$;
 CREATE OR REPLACE PROCEDURE deletar_pessoa(p_cpf VARCHAR)
 LANGUAGE plpgsql AS $$
 BEGIN
+    -- Verificar se a pessoa existe
+    IF NOT EXISTS (SELECT 1 FROM PESSOA WHERE CPF = p_cpf) THEN
+        RAISE EXCEPTION 'Pessoa não encontrada.';
+    END IF;
+
+    -- Deletar dependências em cascata (na ordem correta)
+    -- Deletar supervisões de eventos
+    DELETE FROM SUPERVISAO_EVENTO WHERE CPF_FUNCIONARIO = p_cpf;
+
+    -- Deletar atividades conduzidas
+    DELETE FROM CONDUZ_ATIVIDADE WHERE CPF_EDUCADOR_FISICO = p_cpf;
+
+    -- Deletar participações como convidante
+    DELETE FROM PARTICIPACAO_ATIVIDADE WHERE CPF_CONVIDANTE_INTERNO = p_cpf;
+
+    -- Deletar convites externos criados
+    DELETE FROM CONVITE_EXTERNO WHERE CPF_CONVIDANTE = p_cpf;
+
+    -- Deletar empréstimos de equipamentos
+    DELETE FROM EMPRESTIMO_EQUIPAMENTO WHERE CPF_RESPONSAVEL_INTERNO = p_cpf;
+
+    -- Deletar reservas de equipamentos (já tem CASCADE, mas deletar explicitamente)
+    DELETE FROM RESERVA_EQUIPAMENTO WHERE CPF_RESPONSAVEL_INTERNO = p_cpf;
+
+    -- Deletar eventos que referenciam reservas desta pessoa
+    DELETE FROM SUPERVISAO_EVENTO WHERE ID_EVENTO IN (
+        SELECT ID_EVENTO FROM EVENTO WHERE ID_RESERVA IN (
+            SELECT ID_RESERVA FROM RESERVA WHERE CPF_RESPONSAVEL_INTERNO = p_cpf
+        )
+    );
+    DELETE FROM EVENTO WHERE ID_RESERVA IN (
+        SELECT ID_RESERVA FROM RESERVA WHERE CPF_RESPONSAVEL_INTERNO = p_cpf
+    );
+
+    -- Deletar reservas
+    DELETE FROM RESERVA WHERE CPF_RESPONSAVEL_INTERNO = p_cpf;
+
+    -- Deletar grupos de extensão (primeiro deletar associações com atividades)
+    DELETE FROM ATIVIDADE_GRUPO_EXTENSAO WHERE NOME_GRUPO IN (
+        SELECT NOME_GRUPO FROM GRUPO_EXTENSAO WHERE CPF_RESPONSAVEL_INTERNO = p_cpf
+    );
+    DELETE FROM GRUPO_EXTENSAO WHERE CPF_RESPONSAVEL_INTERNO = p_cpf;
+
+    -- Deletar participações como participante
+    DELETE FROM PARTICIPACAO_ATIVIDADE WHERE CPF_PARTICIPANTE = p_cpf;
+
+    -- Deletar doações
+    DELETE FROM DOACAO WHERE CPF_DOADOR = p_cpf;
+
+    -- Deletar a pessoa principal (isso vai deletar automaticamente INTERNO_USP, FUNCIONARIO, EDUCADOR_FISICO, etc. por causa do CASCADE)
     DELETE FROM PESSOA WHERE CPF = p_cpf;
-    IF NOT FOUND THEN RAISE EXCEPTION 'Pessoa não encontrada.'; END IF;
 END;
 $$;
 
@@ -285,6 +334,15 @@ $$;
 CREATE OR REPLACE PROCEDURE deletar_grupo_extensao(p_nome VARCHAR)
 LANGUAGE plpgsql AS $$
 BEGIN
+    -- Verificar se o grupo de extensão existe
+    IF NOT EXISTS (SELECT 1 FROM GRUPO_EXTENSAO WHERE NOME_GRUPO = p_nome) THEN
+        RAISE EXCEPTION 'Grupo de extensão não encontrado.';
+    END IF;
+
+    -- Deletar dependências em cascata
+    DELETE FROM ATIVIDADE_GRUPO_EXTENSAO WHERE NOME_GRUPO = p_nome;
+
+    -- Deletar o grupo de extensão principal
     DELETE FROM GRUPO_EXTENSAO WHERE NOME_GRUPO = p_nome;
 END;
 $$;
@@ -341,8 +399,19 @@ $$;
 CREATE OR REPLACE PROCEDURE deletar_equipamento(p_id VARCHAR)
 LANGUAGE plpgsql AS $$
 BEGIN
+    -- Verificar se o equipamento existe
+    IF NOT EXISTS (SELECT 1 FROM EQUIPAMENTO WHERE ID_PATRIMONIO = p_id) THEN
+        RAISE EXCEPTION 'Equipamento não encontrado.';
+    END IF;
+
+    -- Deletar dependências em cascata (na ordem correta)
+    DELETE FROM EMPRESTIMO_EQUIPAMENTO WHERE ID_EQUIPAMENTO = p_id;
+    DELETE FROM DOACAO WHERE ID_EQUIPAMENTO = p_id;
+    -- RESERVA_EQUIPAMENTO já tem CASCADE, mas deletar explicitamente para garantir
+    DELETE FROM RESERVA_EQUIPAMENTO WHERE ID_EQUIPAMENTO = p_id;
+
+    -- Deletar o equipamento principal
     DELETE FROM EQUIPAMENTO WHERE ID_PATRIMONIO = p_id;
-    IF NOT FOUND THEN RAISE EXCEPTION 'Equipamento não encontrado.'; END IF;
 END;
 $$;
 
@@ -404,8 +473,48 @@ $$;
 CREATE OR REPLACE PROCEDURE deletar_instalacao(p_id INT)
 LANGUAGE plpgsql AS $$
 BEGIN
+    -- Verificar se a instalação existe
+    IF NOT EXISTS (SELECT 1 FROM INSTALACAO WHERE ID_INSTALACAO = p_id) THEN
+        RAISE EXCEPTION 'Instalação não encontrada.';
+    END IF;
+
+    -- Deletar dependências em cascata (na ordem correta)
+    -- Primeiro deletar ocorrências semanais
+    DELETE FROM OCORRENCIA_SEMANAL WHERE ID_INSTALACAO = p_id;
+
+    -- Deletar eventos que referenciam reservas desta instalação
+    DELETE FROM SUPERVISAO_EVENTO WHERE ID_EVENTO IN (
+        SELECT ID_EVENTO FROM EVENTO WHERE ID_RESERVA IN (
+            SELECT ID_RESERVA FROM RESERVA WHERE ID_INSTALACAO = p_id
+        )
+    );
+    DELETE FROM EVENTO WHERE ID_RESERVA IN (
+        SELECT ID_RESERVA FROM RESERVA WHERE ID_INSTALACAO = p_id
+    );
+
+    -- Deletar reservas
+    DELETE FROM RESERVA WHERE ID_INSTALACAO = p_id;
+
+    -- Deletar empréstimos de equipamentos desta instalação
+    DELETE FROM EMPRESTIMO_EQUIPAMENTO WHERE ID_EQUIPAMENTO IN (
+        SELECT ID_PATRIMONIO FROM EQUIPAMENTO WHERE ID_INSTALACAO_LOCAL = p_id
+    );
+
+    -- Deletar doações de equipamentos desta instalação
+    DELETE FROM DOACAO WHERE ID_EQUIPAMENTO IN (
+        SELECT ID_PATRIMONIO FROM EQUIPAMENTO WHERE ID_INSTALACAO_LOCAL = p_id
+    );
+
+    -- Deletar reservas de equipamentos (já tem CASCADE, mas deletar explicitamente)
+    DELETE FROM RESERVA_EQUIPAMENTO WHERE ID_EQUIPAMENTO IN (
+        SELECT ID_PATRIMONIO FROM EQUIPAMENTO WHERE ID_INSTALACAO_LOCAL = p_id
+    );
+
+    -- Deletar equipamentos
+    DELETE FROM EQUIPAMENTO WHERE ID_INSTALACAO_LOCAL = p_id;
+
+    -- Deletar a instalação principal
     DELETE FROM INSTALACAO WHERE ID_INSTALACAO = p_id;
-    IF NOT FOUND THEN RAISE EXCEPTION 'Instalação não encontrada.'; END IF;
 END;
 $$;
 
@@ -459,7 +568,15 @@ $$;
 CREATE OR REPLACE PROCEDURE deletar_evento(p_id_evento INT)
 LANGUAGE plpgsql AS $$
 BEGIN
+    -- Verificar se o evento existe
+    IF NOT EXISTS (SELECT 1 FROM EVENTO WHERE ID_EVENTO = p_id_evento) THEN
+        RAISE EXCEPTION 'Evento não encontrado.';
+    END IF;
+
+    -- Deletar dependências em cascata
+    DELETE FROM SUPERVISAO_EVENTO WHERE ID_EVENTO = p_id_evento;
+
+    -- Deletar o evento principal
     DELETE FROM EVENTO WHERE ID_EVENTO = p_id_evento;
-    IF NOT FOUND THEN RAISE EXCEPTION 'Evento não encontrado.'; END IF;
 END;
 $$;

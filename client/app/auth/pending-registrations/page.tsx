@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Layout from "@/components/Layout";
 import { apiGet, apiPost } from "@/lib/api";
 import {
@@ -17,6 +17,35 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { ArrowUpDown, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Registration {
   id_solicitacao: number;
@@ -30,6 +59,919 @@ interface Registration {
   cpf_admin_aprovador?: string;
   nome_admin_aprovador?: string;
   motivo_rejeicao?: string;
+}
+
+interface PendingRegistrationsTableProps {
+  registrations: Registration[];
+  processingIds: Set<number>;
+  onApprove: (id: number) => void;
+  onReject: (id: number) => void;
+}
+
+interface ApprovedRegistrationsTableProps {
+  registrations: Registration[];
+}
+
+interface RejectedRegistrationsTableProps {
+  registrations: Registration[];
+}
+
+const formatDate = (dateString: string) => {
+  if (!dateString) return "-";
+  const date = new Date(dateString);
+  return date.toLocaleString("pt-BR");
+};
+
+function PendingRegistrationsTable({
+  registrations,
+  processingIds,
+  onApprove,
+  onReject,
+}: PendingRegistrationsTableProps) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  const columns: ColumnDef<Registration>[] = useMemo(
+    () => [
+      {
+        accessorKey: "cpf_pessoa",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              CPF
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div className="font-medium">{row.getValue("cpf_pessoa")}</div>
+        ),
+      },
+      {
+        accessorKey: "nome",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Nome
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue("nome")}</div>,
+      },
+      {
+        accessorKey: "email",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Email
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div className="lowercase">{row.getValue("email")}</div>
+        ),
+      },
+      {
+        accessorKey: "nusp",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              NUSP
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue("nusp") || "—"}</div>,
+      },
+      {
+        accessorKey: "data_solicitacao",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Data Solicitação
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div>{formatDate(row.getValue("data_solicitacao"))}</div>
+        ),
+      },
+      {
+        id: "actions",
+        enableHiding: false,
+        cell: ({ row }) => {
+          const registration = row.original;
+          const isProcessing = processingIds.has(registration.id_solicitacao);
+
+          return (
+            <div className="flex gap-2">
+              <Button
+                onClick={() => onApprove(registration.id_solicitacao)}
+                disabled={isProcessing}
+                className="bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                size="sm"
+              >
+                {isProcessing ? "Processando..." : "Aprovar"}
+              </Button>
+              <Button
+                onClick={() => onReject(registration.id_solicitacao)}
+                disabled={isProcessing}
+                className="bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                size="sm"
+              >
+                {isProcessing ? "Processando..." : "Rejeitar"}
+              </Button>
+            </div>
+          );
+        },
+      },
+    ],
+    [processingIds, onApprove, onReject]
+  );
+
+  const table = useReactTable({
+    data: registrations,
+    columns,
+    getRowId: (row) => row.id_solicitacao.toString(),
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+    },
+  });
+
+  if (registrations.length === 0) {
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white p-8 text-center shadow">
+        <p className="text-gray-500">
+          Nenhuma solicitação de cadastro pendente.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full space-y-4">
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="Filtrar por nome..."
+          value={
+            (table.getColumn("nome")?.getFilterValue() as string) ?? ""
+          }
+          onChange={(event) =>
+            table.getColumn("nome")?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="ml-auto">
+              Colunas <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                  >
+                    {column.id === "cpf_pessoa"
+                      ? "CPF"
+                      : column.id === "nome"
+                      ? "Nome"
+                      : column.id === "email"
+                      ? "Email"
+                      : column.id === "nusp"
+                      ? "NUSP"
+                      : column.id === "data_solicitacao"
+                      ? "Data Solicitação"
+                      : column.id}
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  Nenhum resultado encontrado.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-end space-x-2">
+        <div className="space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Anterior
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Próxima
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ApprovedRegistrationsTable({
+  registrations,
+}: ApprovedRegistrationsTableProps) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  const columns: ColumnDef<Registration>[] = useMemo(
+    () => [
+      {
+        accessorKey: "cpf_pessoa",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              CPF
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div className="font-medium">{row.getValue("cpf_pessoa")}</div>
+        ),
+      },
+      {
+        accessorKey: "nome",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Nome
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue("nome")}</div>,
+      },
+      {
+        accessorKey: "email",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Email
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div className="lowercase">{row.getValue("email")}</div>
+        ),
+      },
+      {
+        accessorKey: "nusp",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              NUSP
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue("nusp") || "—"}</div>,
+      },
+      {
+        accessorKey: "data_solicitacao",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Data Solicitação
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div>{formatDate(row.getValue("data_solicitacao"))}</div>
+        ),
+      },
+      {
+        accessorKey: "data_aprovacao",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Data Aprovação
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div>{formatDate(row.getValue("data_aprovacao") || "")}</div>
+        ),
+      },
+      {
+        accessorKey: "nome_admin_aprovador",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Aprovado por
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div>{row.getValue("nome_admin_aprovador") || "—"}</div>
+        ),
+      },
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: registrations,
+    columns,
+    getRowId: (row) => row.id_solicitacao.toString(),
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+    },
+  });
+
+  if (registrations.length === 0) {
+    return (
+      <div className="rounded-lg border border-green-200 bg-white p-8 text-center shadow">
+        <p className="text-gray-500">Nenhuma solicitação aprovada.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full space-y-4">
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="Filtrar por nome..."
+          value={
+            (table.getColumn("nome")?.getFilterValue() as string) ?? ""
+          }
+          onChange={(event) =>
+            table.getColumn("nome")?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="ml-auto">
+              Colunas <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                  >
+                    {column.id === "cpf_pessoa"
+                      ? "CPF"
+                      : column.id === "nome"
+                      ? "Nome"
+                      : column.id === "email"
+                      ? "Email"
+                      : column.id === "nusp"
+                      ? "NUSP"
+                      : column.id === "data_solicitacao"
+                      ? "Data Solicitação"
+                      : column.id === "data_aprovacao"
+                      ? "Data Aprovação"
+                      : column.id === "nome_admin_aprovador"
+                      ? "Aprovado por"
+                      : column.id}
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id} className="bg-green-50/30">
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  Nenhum resultado encontrado.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-end space-x-2">
+        <div className="space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Anterior
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Próxima
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RejectedRegistrationsTable({
+  registrations,
+}: RejectedRegistrationsTableProps) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  const columns: ColumnDef<Registration>[] = useMemo(
+    () => [
+      {
+        accessorKey: "cpf_pessoa",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              CPF
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div className="font-medium">{row.getValue("cpf_pessoa")}</div>
+        ),
+      },
+      {
+        accessorKey: "nome",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Nome
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue("nome")}</div>,
+      },
+      {
+        accessorKey: "email",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Email
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div className="lowercase">{row.getValue("email")}</div>
+        ),
+      },
+      {
+        accessorKey: "nusp",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              NUSP
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue("nusp") || "—"}</div>,
+      },
+      {
+        accessorKey: "data_solicitacao",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Data Solicitação
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div>{formatDate(row.getValue("data_solicitacao"))}</div>
+        ),
+      },
+      {
+        accessorKey: "data_rejeicao",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Data Rejeição
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div>{formatDate(row.getValue("data_rejeicao") || "")}</div>
+        ),
+      },
+      {
+        accessorKey: "nome_admin_aprovador",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Rejeitado por
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div>{row.getValue("nome_admin_aprovador") || "—"}</div>
+        ),
+      },
+      {
+        accessorKey: "motivo_rejeicao",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Motivo
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div>{row.getValue("motivo_rejeicao") || "—"}</div>
+        ),
+      },
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: registrations,
+    columns,
+    getRowId: (row) => row.id_solicitacao.toString(),
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+    },
+  });
+
+  if (registrations.length === 0) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-white p-8 text-center shadow">
+        <p className="text-gray-500">Nenhuma solicitação rejeitada.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full space-y-4">
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="Filtrar por nome..."
+          value={
+            (table.getColumn("nome")?.getFilterValue() as string) ?? ""
+          }
+          onChange={(event) =>
+            table.getColumn("nome")?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="ml-auto">
+              Colunas <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                  >
+                    {column.id === "cpf_pessoa"
+                      ? "CPF"
+                      : column.id === "nome"
+                      ? "Nome"
+                      : column.id === "email"
+                      ? "Email"
+                      : column.id === "nusp"
+                      ? "NUSP"
+                      : column.id === "data_solicitacao"
+                      ? "Data Solicitação"
+                      : column.id === "data_rejeicao"
+                      ? "Data Rejeição"
+                      : column.id === "nome_admin_aprovador"
+                      ? "Rejeitado por"
+                      : column.id === "motivo_rejeicao"
+                      ? "Motivo"
+                      : column.id}
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id} className="bg-red-50/30">
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  Nenhum resultado encontrado.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-end space-x-2">
+        <div className="space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Anterior
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Próxima
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function PendingRegistrationsPage() {
@@ -288,111 +1230,34 @@ export default function PendingRegistrationsPage() {
     setRejectReason("");
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "-";
-    const date = new Date(dateString);
-    return date.toLocaleString("pt-BR");
-  };
-
   return (
-    <Layout
-      messages={message ? [message] : undefined}
-      mainClass="w-full max-w-full p-0 flex-1"
-    >
-      <div className="w-full px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">
+    <Layout messages={message ? [message] : undefined}>
+      <div className="space-y-6">
+        <header>
+          <h1 className="text-2xl font-semibold text-gray-900">
             Gerenciamento de Solicitações de Cadastro
           </h1>
-        </div>
+        </header>
 
         {loading ? (
-          <div className="text-center text-gray-500">Carregando...</div>
+          <div className="rounded-lg bg-white p-6 shadow">
+            <div className="text-center text-gray-500">Carregando...</div>
+          </div>
         ) : (
-          <Accordion type="multiple" className="w-full">
+          <div className="rounded-lg bg-white p-6 shadow">
+            <Accordion type="multiple" className="w-full">
             {/* Grid de Pendentes */}
             <AccordionItem value="pendentes">
               <AccordionTrigger className="text-2xl font-semibold text-gray-800">
                 Pendentes ({registrations.length})
               </AccordionTrigger>
               <AccordionContent>
-                {registrations.length > 0 ? (
-                  <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            CPF
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Nome
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Email
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            NUSP
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Data Solicitação
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Ações
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200 bg-white">
-                        {registrations.map((reg) => (
-                          <tr key={reg.id_solicitacao}>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {reg.cpf_pessoa}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {reg.nome}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {reg.email}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {reg.nusp}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {formatDate(reg.data_solicitacao)}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
-                              <button
-                                onClick={() =>
-                                  handleApprove(reg.id_solicitacao)
-                                }
-                                disabled={processingIds.has(reg.id_solicitacao)}
-                                className="mr-2 rounded bg-green-600 px-3 py-1 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {processingIds.has(reg.id_solicitacao)
-                                  ? "Processando..."
-                                  : "Aprovar"}
-                              </button>
-                              <button
-                                onClick={() => handleReject(reg.id_solicitacao)}
-                                disabled={processingIds.has(reg.id_solicitacao)}
-                                className="rounded bg-red-600 px-3 py-1 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                {processingIds.has(reg.id_solicitacao)
-                                  ? "Processando..."
-                                  : "Rejeitar"}
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-gray-200 bg-white p-8 text-center shadow">
-                    <p className="text-gray-500">
-                      Nenhuma solicitação de cadastro pendente.
-                    </p>
-                  </div>
-                )}
+                <PendingRegistrationsTable
+                  registrations={registrations}
+                  processingIds={processingIds}
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                />
               </AccordionContent>
             </AccordionItem>
 
@@ -402,73 +1267,9 @@ export default function PendingRegistrationsPage() {
                 Aprovados ({approvedRegistrations.length})
               </AccordionTrigger>
               <AccordionContent>
-                {approvedRegistrations.length > 0 ? (
-                  <div className="overflow-x-auto rounded-lg border border-green-200 bg-white shadow">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-green-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            CPF
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Nome
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Email
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            NUSP
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Data Solicitação
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Data Aprovação
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Aprovado por
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200 bg-white">
-                        {approvedRegistrations.map((reg) => (
-                          <tr
-                            key={reg.id_solicitacao}
-                            className="bg-green-50/30"
-                          >
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {reg.cpf_pessoa}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {reg.nome}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {reg.email}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {reg.nusp}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {formatDate(reg.data_solicitacao)}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {formatDate(reg.data_aprovacao || "")}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {reg.nome_admin_aprovador || "-"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-green-200 bg-white p-8 text-center shadow">
-                    <p className="text-gray-500">
-                      Nenhuma solicitação aprovada.
-                    </p>
-                  </div>
-                )}
+                <ApprovedRegistrationsTable
+                  registrations={approvedRegistrations}
+                />
               </AccordionContent>
             </AccordionItem>
 
@@ -478,79 +1279,13 @@ export default function PendingRegistrationsPage() {
                 Rejeitados ({rejectedRegistrations.length})
               </AccordionTrigger>
               <AccordionContent>
-                {rejectedRegistrations.length > 0 ? (
-                  <div className="overflow-x-auto rounded-lg border border-red-200 bg-white shadow">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-red-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            CPF
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Nome
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Email
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            NUSP
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Data Solicitação
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Data Rejeição
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Rejeitado por
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                            Motivo
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200 bg-white">
-                        {rejectedRegistrations.map((reg) => (
-                          <tr key={reg.id_solicitacao} className="bg-red-50/30">
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {reg.cpf_pessoa}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {reg.nome}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {reg.email}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {reg.nusp}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {formatDate(reg.data_solicitacao)}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {formatDate(reg.data_rejeicao || "")}
-                            </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                              {reg.nome_admin_aprovador || "-"}
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-900">
-                              {reg.motivo_rejeicao || "-"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-red-200 bg-white p-8 text-center shadow">
-                    <p className="text-gray-500">
-                      Nenhuma solicitação rejeitada.
-                    </p>
-                  </div>
-                )}
+                <RejectedRegistrationsTable
+                  registrations={rejectedRegistrations}
+                />
               </AccordionContent>
             </AccordionItem>
           </Accordion>
+          </div>
         )}
 
         {/* Dialog de Rejeição */}

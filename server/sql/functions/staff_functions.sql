@@ -9,15 +9,15 @@ RETURNS TABLE (
 )
 AS $$
 BEGIN
-    RETURN QUERY    
-    SELECT 
+    RETURN QUERY
+    SELECT
         a.id_atividade,
         a.nome AS nome_atividade,
         a.vagas_limite,
         a.data_inicio_periodo AS data_inicio,
         a.data_fim_periodo AS data_fim
     FROM conduz_atividade ca
-    JOIN atividade a 
+    JOIN atividade a
         ON a.id_atividade = ca.id_atividade
     WHERE ca.cpf_educador_fisico = cpf_educador
     ORDER BY a.data_inicio_periodo;
@@ -95,11 +95,20 @@ $$;
 CREATE OR REPLACE PROCEDURE deletar_atividade(p_id_atividade INT)
 LANGUAGE plpgsql AS $$
 BEGIN
-    DELETE FROM ATIVIDADE WHERE ID_ATIVIDADE = p_id_atividade;
-    
-    IF NOT FOUND THEN
+    -- Verificar se a atividade existe
+    IF NOT EXISTS (SELECT 1 FROM ATIVIDADE WHERE ID_ATIVIDADE = p_id_atividade) THEN
         RAISE EXCEPTION 'Atividade % não encontrada.', p_id_atividade;
     END IF;
+
+    -- Deletar dependências em cascata (na ordem correta)
+    DELETE FROM CONVITE_EXTERNO WHERE ID_ATIVIDADE = p_id_atividade;
+    DELETE FROM PARTICIPACAO_ATIVIDADE WHERE ID_ATIVIDADE = p_id_atividade;
+    DELETE FROM CONDUZ_ATIVIDADE WHERE ID_ATIVIDADE = p_id_atividade;
+    DELETE FROM ATIVIDADE_GRUPO_EXTENSAO WHERE ID_ATIVIDADE = p_id_atividade;
+    DELETE FROM OCORRENCIA_SEMANAL WHERE ID_ATIVIDADE = p_id_atividade;
+
+    -- Deletar a atividade principal
+    DELETE FROM ATIVIDADE WHERE ID_ATIVIDADE = p_id_atividade;
 END;
 $$;
 
@@ -139,9 +148,9 @@ CREATE OR REPLACE PROCEDURE reservar_equipamento(
 ) LANGUAGE plpgsql AS $$
 BEGIN
     -- Verifica se o equipamento é reservável (Regra de Negócio)
-    PERFORM 1 FROM EQUIPAMENTO 
+    PERFORM 1 FROM EQUIPAMENTO
     WHERE ID_PATRIMONIO = p_id_equipamento AND EH_RESERVAVEL = 'N';
-    
+
     IF FOUND THEN
         RAISE EXCEPTION 'O equipamento % não é reservável (uso livre ou interno).', p_id_equipamento;
     END IF;
@@ -156,7 +165,7 @@ CREATE OR REPLACE PROCEDURE cancelar_reserva_equipamento(p_id_reserva_equip INT)
 LANGUAGE plpgsql AS $$
 BEGIN
     DELETE FROM RESERVA_EQUIPAMENTO WHERE ID_RESERVA_EQUIP = p_id_reserva_equip;
-    
+
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Reserva de equipamento % não encontrada.', p_id_reserva_equip;
     END IF;
