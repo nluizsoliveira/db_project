@@ -63,9 +63,9 @@
   - Faltante: Documentação final do projeto ainda não concluída.
 
 
-- ver erro no http://localhost:3000/staff/participants que nao esta dando para cancelar participantes
+- ✅ ver erro no http://localhost:3000/staff/participants que nao esta dando para cancelar participantes
 - ✅ melhorar tela de http://localhost:3000/internal/reservations minhas reservas, ja puxar direto pelo cpf logado
 - criar atividades com vaga para testar entrar nelas http://localhost:3000/internal/activities
-- para o interno coloque direto os itens de navegacao no navbar
+- ✅ para o interno coloque direto os itens de navegacao no navbar
 - ✅ ver se a tela de convidado ta funcionando
 - mostra participantes de atividade que sao externos

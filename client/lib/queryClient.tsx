@@ -13,6 +13,13 @@ export function QueryProvider({ children }: { children: ReactNode }) {
             refetchOnWindowFocus: false,
             retry: 1,
           },
+          mutations: {
+            // Não logar erros automaticamente no console
+            // Os componentes devem tratar os erros manualmente
+            onError: () => {
+              // Erros são tratados nos componentes, não precisamos logar aqui
+            },
+          },
         },
       })
   );

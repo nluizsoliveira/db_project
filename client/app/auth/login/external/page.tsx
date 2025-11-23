@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import Layout from '@/components/Layout';
-import { apiPost } from '@/lib/api';
+import { apiPost, ApiError } from '@/lib/api';
 import { useAuthStore } from '@/lib/authStore';
 
 function ExternalLoginContent() {
@@ -46,18 +46,23 @@ function ExternalLoginContent() {
         setError(data.message || 'Token inválido');
       }
     } catch (err: unknown) {
-      let errorMessage = 'Erro ao fazer login. Tente novamente.';
-
-      if (err instanceof Error) {
+      // Para ApiError (erros esperados como token inválido),
+      // não logar no console para evitar poluição de logs
+      if (err && typeof err === 'object' && 'isApiError' in err) {
+        const apiError = err as ApiError;
+        setError(apiError.message || 'Erro ao fazer login. Tente novamente.');
+      } else if (err instanceof Error) {
+        // Para erros inesperados, logar no console
+        console.error('Login externo error:', err);
         try {
           const errorData = JSON.parse(err.message);
-          errorMessage = errorData.message || errorData.error || err.message;
+          setError(errorData.message || errorData.error || err.message || 'Erro ao fazer login. Tente novamente.');
         } catch {
-          errorMessage = err.message;
+          setError(err.message || 'Erro ao fazer login. Tente novamente.');
         }
+      } else {
+        setError('Erro ao fazer login. Tente novamente.');
       }
-
-      setError(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -1,30 +1,87 @@
--- Enable pgcrypto extension for password hashing
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
 -- FUNCTION: hash_password
--- Generates bcrypt hash for a plain password
+-- Generates MD5 hash for a plain password (conforme especificação do PF)
 -- Parameters:
 --   plain_password: The plain text password to hash
--- Returns: Hashed password string
+-- Returns: Hashed password string (MD5)
 CREATE OR REPLACE FUNCTION hash_password(plain_password TEXT)
 RETURNS TEXT
 AS $$
 BEGIN
-    RETURN crypt(plain_password, gen_salt('bf', 10));
+    RETURN md5(plain_password);
 END;
 $$ LANGUAGE plpgsql;
 
 -- FUNCTION: verify_password
--- Verifies if a plain password matches the hashed password
+-- Verifies if a plain password matches the hashed password (MD5)
 -- Parameters:
 --   plain_password: The plain text password to verify
---   hashed_password: The stored hash to compare against
+--   hashed_password: The stored MD5 hash to compare against
 -- Returns: TRUE if password matches, FALSE otherwise
 CREATE OR REPLACE FUNCTION verify_password(plain_password TEXT, hashed_password TEXT)
 RETURNS BOOLEAN
 AS $$
 BEGIN
-    RETURN hashed_password = crypt(plain_password, hashed_password);
+    RETURN hashed_password = md5(plain_password);
+END;
+$$ LANGUAGE plpgsql;
+
+-- FUNCTION: get_user_type
+-- Determines the primary user type (conforme especificação do PF)
+-- Parameters:
+--   cpf_pessoa: CPF of the user
+-- Returns: VARCHAR with user type ('Administrador', 'Staff', 'Interno', 'Externo')
+CREATE OR REPLACE FUNCTION get_user_type(cpf_pessoa VARCHAR)
+RETURNS VARCHAR
+AS $$
+DECLARE
+    user_type VARCHAR(50);
+BEGIN
+    -- Check priority: Administrador > Staff > Interno > Externo
+    -- Check if user is admin
+    IF EXISTS(
+        SELECT 1
+        FROM funcionario_atribuicao fa
+        JOIN funcionario f ON fa.cpf_funcionario = f.cpf_interno
+        WHERE f.cpf_interno = get_user_type.cpf_pessoa
+        AND fa.atribuicao LIKE '%Administrador%'
+    ) THEN
+        RETURN 'Administrador';
+    END IF;
+
+    -- Check if user is staff
+    IF EXISTS(
+        SELECT 1
+        FROM funcionario f
+        WHERE f.cpf_interno = get_user_type.cpf_pessoa
+    ) THEN
+        RETURN 'Staff';
+    END IF;
+
+    -- Check if user is internal
+    IF EXISTS(
+        SELECT 1
+        FROM interno_usp i
+        WHERE i.cpf_pessoa = get_user_type.cpf_pessoa
+    ) THEN
+        RETURN 'Interno';
+    END IF;
+
+    -- Check if user is external
+    IF EXISTS(
+        SELECT 1
+        FROM pessoa p
+        WHERE p.cpf = get_user_type.cpf_pessoa
+        AND NOT EXISTS (
+            SELECT 1 FROM interno_usp i WHERE i.cpf_pessoa = p.cpf
+        )
+        AND EXISTS (
+            SELECT 1 FROM convite_externo ce WHERE ce.email_convidado = p.email
+        )
+    ) THEN
+        RETURN 'Externo';
+    END IF;
+
+    RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -174,7 +231,7 @@ BEGIN
     END IF;
 
     -- Check if user already has account
-    IF EXISTS(SELECT 1 FROM usuario_senha us WHERE us.cpf_pessoa = request_registration.cpf_pessoa) THEN
+    IF EXISTS(SELECT 1 FROM usuario_senha us WHERE us.cpf = request_registration.cpf_pessoa) THEN
         RETURN json_build_object(
             'success', FALSE,
             'message', 'User already has an account'
@@ -209,6 +266,8 @@ DECLARE
     password_hash TEXT;
     plain_password TEXT;
     admin_exists BOOLEAN;
+    user_email VARCHAR(255);
+    user_type VARCHAR(50);
 BEGIN
     -- Get solicitation record
     SELECT * INTO solicitation_record
@@ -262,11 +321,30 @@ BEGIN
     -- Hash the password
     password_hash := hash_password(plain_password);
 
-    -- Create user account
-    INSERT INTO usuario_senha (cpf_pessoa, senha_hash, data_criacao)
-    VALUES (solicitation_record.cpf_pessoa, password_hash, CURRENT_TIMESTAMP)
-    ON CONFLICT (cpf_pessoa) DO UPDATE
-    SET senha_hash = EXCLUDED.senha_hash,
+    -- Get user email and type
+    SELECT p.email INTO user_email
+    FROM pessoa p
+    WHERE p.cpf = solicitation_record.cpf_pessoa;
+
+    user_type := get_user_type(solicitation_record.cpf_pessoa);
+
+    -- Create user account (conforme estrutura USERS do PF)
+    INSERT INTO usuario_senha (
+        cpf, login, senha, tipo,
+        senha_hash, data_criacao
+    )
+    VALUES (
+        solicitation_record.cpf_pessoa,  -- CPF
+        user_email,                      -- Login = Email
+        password_hash,                   -- Senha = Hash MD5
+        user_type,                       -- Tipo
+        password_hash,                   -- SENHA_HASH (compatibilidade)
+        CURRENT_TIMESTAMP
+    )
+    ON CONFLICT (cpf) DO UPDATE
+    SET senha = EXCLUDED.senha,
+        senha_hash = EXCLUDED.senha_hash,
+        tipo = COALESCE(EXCLUDED.tipo, usuario_senha.tipo),
         data_ultima_alteracao = CURRENT_TIMESTAMP;
 
     -- Update solicitation status
@@ -373,9 +451,15 @@ BEGIN
     WHERE email = email_or_cpf OR cpf = email_or_cpf;
 
     IF NOT FOUND THEN
-        -- Log failed attempt
-        INSERT INTO auditoria_login (email_usuario, ip_origem, status, mensagem)
-        VALUES (email_or_cpf, ip_origin, 'FAILURE', 'User not found');
+        -- Log failed attempt (sem CPF pois usuário não existe)
+        INSERT INTO auditoria_login (
+            cpf, data_hora_login,
+            timestamp_evento, email_usuario, ip_origem, status, mensagem
+        )
+        VALUES (
+            NULL, CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP, email_or_cpf, ip_origin, 'FAILURE', 'User not found'
+        );
 
         RETURN json_build_object(
             'success', FALSE,
@@ -386,12 +470,18 @@ BEGIN
     -- Get password record
     SELECT * INTO password_record
     FROM usuario_senha
-    WHERE cpf_pessoa = user_record.cpf;
+    WHERE cpf = user_record.cpf;
 
     IF NOT FOUND THEN
-        -- Log failed attempt
-        INSERT INTO auditoria_login (email_usuario, ip_origem, status, mensagem)
-        VALUES (user_record.email, ip_origin, 'FAILURE', 'User account not found');
+        -- Log failed attempt (sem CPF pois conta não existe)
+        INSERT INTO auditoria_login (
+            cpf, data_hora_login,
+            timestamp_evento, email_usuario, ip_origem, status, mensagem
+        )
+        VALUES (
+            NULL, CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP, user_record.email, ip_origin, 'FAILURE', 'User account not found'
+        );
 
         RETURN json_build_object(
             'success', FALSE,
@@ -401,8 +491,14 @@ BEGIN
 
     -- Check if account is blocked
     IF password_record.bloqueado THEN
-        INSERT INTO auditoria_login (email_usuario, ip_origem, status, mensagem)
-        VALUES (user_record.email, ip_origin, 'LOCKED', 'Account is blocked');
+        INSERT INTO auditoria_login (
+            cpf, data_hora_login,
+            timestamp_evento, email_usuario, ip_origem, status, mensagem
+        )
+        VALUES (
+            password_record.cpf, CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP, user_record.email, ip_origin, 'LOCKED', 'Account is blocked'
+        );
 
         RETURN json_build_object(
             'success', FALSE,
@@ -417,18 +513,24 @@ BEGIN
         -- Increment failed attempts
         UPDATE usuario_senha
         SET tentativas_login = tentativas_login + 1
-        WHERE cpf_pessoa = user_record.cpf;
+        WHERE cpf = user_record.cpf;
 
         -- Block account after 5 failed attempts
         IF password_record.tentativas_login + 1 >= 5 THEN
             UPDATE usuario_senha
             SET bloqueado = TRUE
-            WHERE cpf_pessoa = user_record.cpf;
+            WHERE cpf = user_record.cpf;
         END IF;
 
         -- Log failed attempt
-        INSERT INTO auditoria_login (email_usuario, ip_origem, status, mensagem)
-        VALUES (user_record.email, ip_origin, 'FAILURE', 'Invalid password');
+        INSERT INTO auditoria_login (
+            cpf, data_hora_login,
+            timestamp_evento, email_usuario, ip_origem, status, mensagem
+        )
+        VALUES (
+            password_record.cpf, CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP, user_record.email, ip_origin, 'FAILURE', 'Invalid password'
+        );
 
         RETURN json_build_object(
             'success', FALSE,
@@ -440,14 +542,20 @@ BEGIN
     UPDATE usuario_senha
     SET tentativas_login = 0,
         data_ultimo_login = CURRENT_TIMESTAMP
-    WHERE cpf_pessoa = user_record.cpf;
+    WHERE cpf = user_record.cpf;
 
     -- Get user roles
     roles_json := get_user_roles(user_record.cpf);
 
     -- Log successful login
-    INSERT INTO auditoria_login (email_usuario, ip_origem, status, mensagem)
-    VALUES (user_record.email, ip_origin, 'SUCCESS', 'Login successful');
+    INSERT INTO auditoria_login (
+        cpf, data_hora_login,
+        timestamp_evento, email_usuario, ip_origem, status, mensagem
+    )
+    VALUES (
+        password_record.cpf, CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP, user_record.email, ip_origin, 'SUCCESS', 'Login successful'
+    );
 
     -- Build result
     result := json_build_object(
@@ -745,7 +853,7 @@ DECLARE
 BEGIN
     -- Check if user exists in usuario_senha table
     SELECT EXISTS(
-        SELECT 1 FROM usuario_senha us WHERE us.cpf_pessoa = unblock_user.cpf_pessoa
+        SELECT 1 FROM usuario_senha us WHERE us.cpf = unblock_user.cpf_pessoa
     ) INTO user_exists;
 
     IF NOT user_exists THEN
@@ -758,13 +866,13 @@ BEGIN
     -- Check if user was blocked
     SELECT bloqueado INTO was_blocked
     FROM usuario_senha
-    WHERE cpf_pessoa = unblock_user.cpf_pessoa;
+    WHERE cpf = unblock_user.cpf_pessoa;
 
     -- Unblock user and reset failed attempts
     UPDATE usuario_senha
     SET bloqueado = FALSE,
         tentativas_login = 0
-    WHERE cpf_pessoa = unblock_user.cpf_pessoa;
+    WHERE cpf = unblock_user.cpf_pessoa;
 
     RETURN json_build_object(
         'success', TRUE,

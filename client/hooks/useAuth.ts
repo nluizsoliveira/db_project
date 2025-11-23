@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiGet, apiPost } from '@/lib/api';
+import { apiGet, apiPost, ApiError } from '@/lib/api';
 import { getApiBaseUrl } from '@/lib/utils';
 
 const API_BASE_URL = getApiBaseUrl();
@@ -62,13 +62,33 @@ export function useLogin() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: { email: string; password: string }) => {
-      const data = await apiPost<AuthResponse>('/auth/login', payload);
-      if (!data.success) throw new Error(data.message || 'Failed to login');
-      return data;
+      try {
+        const data = await apiPost<AuthResponse>('/auth/login', payload);
+        if (!data.success) {
+          const error: ApiError = {
+            message: data.message || 'Failed to login',
+            status: 400,
+            isApiError: true,
+          };
+          throw error;
+        }
+        return data;
+      } catch (error) {
+        // Re-lançar ApiError sem modificação (não gera log de erro no console)
+        if (error && typeof error === 'object' && 'isApiError' in error) {
+          throw error;
+        }
+        // Re-lançar outros erros
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
     },
+    // Não propagar erro para error boundary (evita crash da aplicação)
+    useErrorBoundary: false,
+    // Não retry em erros de autenticação
+    retry: false,
   });
 }
 

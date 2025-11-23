@@ -12,12 +12,24 @@ interface AvailableInstallation {
   nome: string;
   tipo: string;
   capacidade: number;
+  status_disponibilidade: string;
+  proxima_reserva_data: string | null;
+  proxima_reserva_inicio: string | null;
+  proxima_reserva_fim: string | null;
+  reserva_anterior_data: string | null;
+  reserva_anterior_fim: string | null;
 }
 
 interface AvailableEquipment {
   id_patrimonio: string;
   nome: string;
   local: string;
+  status_disponibilidade: string;
+  proxima_reserva_data: string | null;
+  proxima_reserva_inicio: string | null;
+  proxima_reserva_fim: string | null;
+  reserva_anterior_data: string | null;
+  reserva_anterior_fim: string | null;
 }
 
 type TabType = 'installations' | 'equipment';

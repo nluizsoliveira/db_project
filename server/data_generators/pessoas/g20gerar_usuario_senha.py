@@ -15,7 +15,7 @@ EMAILS_TESTE = ["admin@usp.br", "interno@usp.br", "funcionario@usp.br"]
 def gerar_usuario_senha(dbsession):
     """
     Gera senhas para todos os internos USP (pessoas que podem fazer login).
-    Usa a função hash_password()  para gerar hashes bcrypt.
+    Usa a função hash_password() para gerar hashes MD5 (conforme especificação do PF).
     """
     # Verificar se a tabela USUARIO_SENHA existe
     table_check = dbsession.fetch_one("""
@@ -46,9 +46,14 @@ def gerar_usuario_senha(dbsession):
             "Certifique-se de que as funções SQL (auth_functions.sql) foram aplicadas corretamente."
         )
 
-    # Buscar todos os internos USP
-    internos_result = dbsession.fetch_all("SELECT CPF_PESSOA FROM INTERNO_USP")
-    cpfs_internos = [row["cpf_pessoa"] for row in internos_result]
+    # Buscar todos os internos USP com seus emails
+    internos_result = dbsession.fetch_all("""
+        SELECT I.CPF_PESSOA, P.EMAIL
+        FROM INTERNO_USP I
+        JOIN PESSOA P ON I.CPF_PESSOA = P.CPF
+    """)
+    internos_dict = {row["cpf_pessoa"]: row["email"] for row in internos_result}
+    cpfs_internos = list(internos_dict.keys())
 
     # Verificar se os usuários de teste existem e criar conjunto de CPFs de teste
     usuarios_teste_encontrados = []
@@ -109,11 +114,15 @@ def gerar_usuario_senha(dbsession):
         else:
             data_ultimo_login = None
 
+        # Obter email da pessoa
+        email_pessoa = internos_dict.get(cpf_pessoa, f"{cpf_pessoa}@usp.br")
+
         # Usar função PostgreSQL hash_password() para gerar o hash
         # A senha padrão será "senha123" para facilitar testes
         usuarios_data.append(
             (
-                cpf_pessoa,
+                cpf_pessoa,  # CPF para buscar dados
+                email_pessoa,  # Email para Login
                 data_criacao,
                 data_ultima_alteracao,
                 bloqueado,
@@ -143,32 +152,45 @@ def gerar_usuario_senha(dbsession):
 
     print("   ✅ Hash gerado com sucesso!")
 
+    # Buscar tipos de usuário usando função get_user_type
+    print("   Determinando tipos de usuário...")
+    tipos_usuarios = {}
+    with dbsession.connection.cursor() as cursor:
+        for cpf in cpfs_internos:
+            cursor.execute("SELECT get_user_type(%s) as tipo", (cpf,))
+            result = cursor.fetchone()
+            tipos_usuarios[cpf] = result[0] if result and result[0] else 'Interno'
+
+    print("   ✅ Tipos determinados!")
+
     # Inserir usando hash pré-gerado (muito mais rápido)
     query = """
         INSERT INTO USUARIO_SENHA (
-            CPF_PESSOA,
+            CPF, LOGIN, SENHA, TIPO,
             SENHA_HASH,
-            DATA_CRIACAO,
-            DATA_ULTIMA_ALTERACAO,
-            BLOQUEADO,
-            TENTATIVAS_LOGIN,
-            DATA_ULTIMO_LOGIN
+            DATA_CRIACAO, DATA_ULTIMA_ALTERACAO,
+            BLOQUEADO, TENTATIVAS_LOGIN, DATA_ULTIMO_LOGIN
         )
         VALUES (
+            %s, %s, %s, %s,
             %s,
-            %s,
-            %s,
-            %s,
-            %s,
-            %s,
-            %s
+            %s, %s,
+            %s, %s, %s
         )
     """
 
-    # Preparar dados com hash pré-gerado
+    # Preparar dados com hash pré-gerado e novos campos do PF
     dados_com_hash = [
-        (cpf, senha_hash, data_criacao, data_alt, bloqueado, tentativas, data_login)
-        for cpf, data_criacao, data_alt, bloqueado, tentativas, data_login in usuarios_data
+        (
+            cpf,  # CPF
+            email,  # LOGIN
+            senha_hash,  # SENHA
+            tipos_usuarios.get(cpf, 'Interno'),  # TIPO
+            senha_hash,  # SENHA_HASH (compatibilidade)
+            data_criacao, data_alt,  # DATAS
+            bloqueado, tentativas, data_login  # STATUS
+        )
+        for cpf, email, data_criacao, data_alt, bloqueado, tentativas, data_login in usuarios_data
     ]
 
     try:

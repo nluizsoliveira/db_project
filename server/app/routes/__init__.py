@@ -12,6 +12,7 @@ from app.routes.home import home_blueprint
 from app.routes.internal import internal_blueprint, init_app as init_internal_routes
 from app.routes.staff import staff_blueprint, init_app as init_staff_routes
 from app.routes.reports import reports_blueprint, init_app as init_reports_routes
+from app.routes.views import views_blueprint, init_app as init_views_routes
 
 
 def register_routes(app: Flask) -> None:
@@ -22,11 +23,13 @@ def register_routes(app: Flask) -> None:
     init_external_routes()
     init_extension_group_routes()
     init_debug_routes()
+    init_views_routes()
     app.register_blueprint(external_blueprint)
     app.register_blueprint(extension_group_blueprint)
     app.register_blueprint(internal_blueprint)
     app.register_blueprint(staff_blueprint)
     app.register_blueprint(reports_blueprint)
+    app.register_blueprint(views_blueprint)
     app.register_blueprint(admin_blueprint)
     app.register_blueprint(home_blueprint)
     app.register_blueprint(auth_blueprint)

@@ -137,7 +137,7 @@ const Navbar = memo(function Navbar() {
   const staffItems: NavItem[] = [
     {
       href: "/staff/activities",
-      label: "Agenda da Equipe",
+      label: "Atividades da Equipe",
       description: "Filtros e criação de atividades do dia a dia",
       icon: CalendarClock,
     },
@@ -148,15 +148,21 @@ const Navbar = memo(function Navbar() {
       icon: UserRound,
     },
     {
-      href: "/staff/installations",
-      label: "Instalações",
-      description: "Reservas e ajustes de espaços esportivos",
-      icon: Building2,
+      href: "/staff/active-reservations",
+      label: "Reservas Ativas",
+      description: "Gerenciar reservas de instalações e equipamentos",
+      icon: CalendarClock,
     },
     {
-      href: "/staff/equipment",
-      label: "Equipamentos",
-      description: "Empréstimos e reservas de materiais",
+      href: "/staff/reservations",
+      label: "Reservas Completas",
+      description: "Visualização consolidada de todas as reservas do sistema",
+      icon: CalendarRange,
+    },
+    {
+      href: "/staff/resources",
+      label: "Recursos Disponíveis",
+      description: "Instalações e equipamentos disponíveis no sistema",
       icon: Package,
     },
   ];
@@ -171,7 +177,8 @@ const Navbar = memo(function Navbar() {
     {
       href: "/internal/installations",
       label: "Recursos Disponíveis",
-      description: "Consultar disponibilidade de instalações e equipamentos por data e horário",
+      description:
+        "Consultar disponibilidade de instalações e equipamentos por data e horário",
       icon: Building2,
     },
     {

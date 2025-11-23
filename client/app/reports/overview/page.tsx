@@ -1,35 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import {
-  ColumnDef,
-  ColumnFiltersState,
-  SortingState,
-  VisibilityState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import { apiGet } from "@/lib/api";
 import ReservationRollupChart from "@/components/reports/ReservationRollupChart";
@@ -37,6 +8,12 @@ import ActivitiesCubeChart from "@/components/reports/ActivitiesCubeChart";
 import ParticipantsTotalsChart from "@/components/reports/ParticipantsTotalsChart";
 import InstallationRankingChart from "@/components/reports/InstallationRankingChart";
 import InstallationsMostReservedChart from "@/components/reports/InstallationsMostReservedChart";
+import ReservationsRowNumberChart from "@/components/reports/ReservationsRowNumberChart";
+import ActivitiesDenseRankChart from "@/components/reports/ActivitiesDenseRankChart";
+import ReservationsMonthlyGrowthChart from "@/components/reports/ReservationsMonthlyGrowthChart";
+import ReservationsCumulativeChart from "@/components/reports/ReservationsCumulativeChart";
+import ActivitiesMovingAverageChart from "@/components/reports/ActivitiesMovingAverageChart";
+import EducatorActivitiesCountChart from "@/components/reports/EducatorActivitiesCountChart";
 
 interface ReservationRollup {
   installation_name: string | null;
@@ -61,1206 +38,57 @@ interface InstallationRanking {
   total_reservations: number;
 }
 
-interface ActivityOccurrence {
-  atividade: string;
-  local: string;
-  tipo_local: string;
-  dia_semana: string;
-  horario_inicio: string;
-  horario_fim: string;
-  educador_responsavel: string;
-}
-
 interface InstallationMostReserved {
   nome: string;
   tipo: string;
   total_reservas: number;
 }
 
-function ReservationRollupTable({ data }: { data: ReservationRollup[] }) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-
-  const columns: ColumnDef<ReservationRollup>[] = useMemo(
-    () => [
-      {
-        accessorKey: 'installation_name',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Instalação
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => (
-          <div>{row.getValue('installation_name') || 'Total'}</div>
-        ),
-      },
-      {
-        accessorKey: 'month_number',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Mês
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => <div>{row.getValue('month_number') || '—'}</div>,
-      },
-      {
-        accessorKey: 'total_reservations',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Total
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => (
-          <div className="font-semibold">{row.getValue('total_reservations')}</div>
-        ),
-      },
-    ],
-    []
-  );
-
-  const table = useReactTable({
-    data,
-    columns,
-    getRowId: (row, index) => `rollup-${index}`,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-    },
-  });
-
-  if (data.length === 0) {
-    return (
-      <div className="p-8 text-center text-gray-500">
-        Nenhum dado de reserva disponível.
-      </div>
-    );
-  }
-
-  return (
-    <div className="w-full space-y-4">
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder="Filtrar por instalação..."
-          value={(table.getColumn('installation_name')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
-            table.getColumn('installation_name')?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Colunas <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id === 'installation_name'
-                      ? 'Instalação'
-                      : column.id === 'month_number'
-                      ? 'Mês'
-                      : column.id === 'total_reservations'
-                      ? 'Total'
-                      : column.id}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      <div className="max-h-96 overflow-x-auto overflow-y-auto rounded-md border">
-        <Table>
-          <TableHeader className="sticky top-0 bg-white z-10">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  Nenhum resultado encontrado.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="flex items-center justify-end space-x-2">
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Anterior
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Próxima
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+interface ReservationRowNumber {
+  id_reserva: number;
+  installation_name: string;
+  data_reserva: string;
+  horario_inicio: string;
+  horario_fim: string;
+  responsible_name: string;
+  reservation_sequence: number;
 }
 
-function ActivitiesCubeTable({ data }: { data: ActivitiesCube[] }) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-
-  const columns: ColumnDef<ActivitiesCube>[] = useMemo(
-    () => [
-      {
-        accessorKey: 'council_number',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Conselho
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => <div>{row.getValue('council_number') || 'Todos'}</div>,
-      },
-      {
-        accessorKey: 'category',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Categoria
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => <div>{row.getValue('category') || 'Todos'}</div>,
-      },
-      {
-        accessorKey: 'total_activities',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Total
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => (
-          <div className="font-semibold">{row.getValue('total_activities')}</div>
-        ),
-      },
-    ],
-    []
-  );
-
-  const table = useReactTable({
-    data,
-    columns,
-    getRowId: (row, index) => `cube-${index}`,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-    },
-  });
-
-  if (data.length === 0) {
-    return (
-      <div className="p-8 text-center text-gray-500">
-        Nenhum dado de atividade disponível.
-      </div>
-    );
-  }
-
-  return (
-    <div className="w-full space-y-4">
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder="Filtrar por conselho..."
-          value={(table.getColumn('council_number')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
-            table.getColumn('council_number')?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Colunas <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id === 'council_number'
-                      ? 'Conselho'
-                      : column.id === 'category'
-                      ? 'Categoria'
-                      : column.id === 'total_activities'
-                      ? 'Total'
-                      : column.id}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      <div className="max-h-96 overflow-x-auto overflow-y-auto rounded-md border">
-        <Table>
-          <TableHeader className="sticky top-0 bg-white z-10">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  Nenhum resultado encontrado.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="flex items-center justify-end space-x-2">
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Anterior
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Próxima
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+interface ActivityDenseRank {
+  activity_name: string;
+  total_participants: number;
+  dense_ranking: number;
 }
 
-function ParticipantsTotalsTable({ data }: { data: ParticipantsTotal[] }) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-
-  const columns: ColumnDef<ParticipantsTotal>[] = useMemo(
-    () => [
-      {
-        accessorKey: 'activity_name',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Atividade
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => (
-          <div>{row.getValue('activity_name') || 'Total'}</div>
-        ),
-      },
-      {
-        accessorKey: 'total_participants',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Participantes
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => (
-          <div className="font-semibold">{row.getValue('total_participants')}</div>
-        ),
-      },
-    ],
-    []
-  );
-
-  const table = useReactTable({
-    data,
-    columns,
-    getRowId: (row, index) => `participants-${index}`,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-    },
-  });
-
-  if (data.length === 0) {
-    return (
-      <div className="p-8 text-center text-gray-500">
-        Nenhum dado de participante disponível.
-      </div>
-    );
-  }
-
-  return (
-    <div className="w-full space-y-4">
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder="Filtrar por atividade..."
-          value={(table.getColumn('activity_name')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
-            table.getColumn('activity_name')?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Colunas <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id === 'activity_name'
-                      ? 'Atividade'
-                      : column.id === 'total_participants'
-                      ? 'Participantes'
-                      : column.id}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      <div className="max-h-96 overflow-x-auto overflow-y-auto rounded-md border">
-        <Table>
-          <TableHeader className="sticky top-0 bg-white z-10">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  Nenhum resultado encontrado.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="flex items-center justify-end space-x-2">
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Anterior
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Próxima
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+interface ReservationMonthlyGrowth {
+  year: number;
+  month: number;
+  current_month_reservations: number;
+  previous_month_reservations: number | null;
+  growth_absolute: number | null;
+  growth_percentage: number | null;
 }
 
-function InstallationRankingTable({ data }: { data: InstallationRanking[] }) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
-  const columns: ColumnDef<InstallationRanking>[] = useMemo(
-    () => [
-      {
-        accessorKey: 'ranking',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Posição
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => (
-          <div className="font-semibold">#{row.getValue('ranking')}</div>
-        ),
-      },
-      {
-        accessorKey: 'installation_name',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Instalação
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => <div>{row.getValue('installation_name')}</div>,
-      },
-      {
-        accessorKey: 'total_reservations',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Reservas
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => <div>{row.getValue('total_reservations')}</div>,
-      },
-    ],
-    []
-  );
-
-  const table = useReactTable({
-    data,
-    columns,
-    getRowId: (row, index) => `ranking-${index}`,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-    },
-  });
-
-  if (data.length === 0) {
-    return (
-      <div className="p-8 text-center text-gray-500">
-        Nenhum ranking disponível.
-      </div>
-    );
-  }
-
-  return (
-    <div className="w-full space-y-4">
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder="Filtrar por instalação..."
-          value={(table.getColumn('installation_name')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
-            table.getColumn('installation_name')?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Colunas <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id === 'ranking'
-                      ? 'Posição'
-                      : column.id === 'installation_name'
-                      ? 'Instalação'
-                      : column.id === 'total_reservations'
-                      ? 'Reservas'
-                      : column.id}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      <div className="max-h-96 overflow-x-auto overflow-y-auto rounded-md border">
-        <Table>
-          <TableHeader className="sticky top-0 bg-white z-10">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  Nenhum resultado encontrado.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="flex items-center justify-end space-x-2">
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Anterior
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Próxima
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+interface ReservationCumulative {
+  reservation_date: string;
+  daily_count: number;
+  cumulative_total: number;
 }
 
-function ActivityOccurrencesTable({ data }: { data: ActivityOccurrence[] }) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-
-  const sortedData = useMemo(() => {
-    return [...data].sort((a, b) => {
-      const dayOrder: Record<string, number> = {
-        SEGUNDA: 1,
-        TERÇA: 2,
-        TERCA: 2,
-        QUARTA: 3,
-        QUINTA: 4,
-        SEXTA: 5,
-        SÁBADO: 6,
-        SABADO: 6,
-        DOMINGO: 7,
-      };
-      const dayA = dayOrder[a.dia_semana.toUpperCase()] || 99;
-      const dayB = dayOrder[b.dia_semana.toUpperCase()] || 99;
-      if (dayA !== dayB) return dayA - dayB;
-      return a.horario_inicio.localeCompare(b.horario_inicio);
-    });
-  }, [data]);
-
-  const columns: ColumnDef<ActivityOccurrence>[] = useMemo(
-    () => [
-      {
-        accessorKey: 'atividade',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Atividade
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => <div>{row.getValue('atividade')}</div>,
-      },
-      {
-        accessorKey: 'local',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Local
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => <div>{row.getValue('local')}</div>,
-      },
-      {
-        accessorKey: 'tipo_local',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Tipo
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => <div>{row.getValue('tipo_local')}</div>,
-      },
-      {
-        accessorKey: 'dia_semana',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Dia da Semana
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => <div>{row.getValue('dia_semana')}</div>,
-      },
-      {
-        id: 'horario',
-        header: 'Horário',
-        cell: ({ row }) => {
-          return (
-            <div>
-              {row.original.horario_inicio.substring(0, 5)} - {row.original.horario_fim.substring(0, 5)}
-            </div>
-          );
-        },
-      },
-      {
-        accessorKey: 'educador_responsavel',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Educador
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => <div>{row.getValue('educador_responsavel')}</div>,
-      },
-    ],
-    []
-  );
-
-  const table = useReactTable({
-    data: sortedData,
-    columns,
-    getRowId: (row, index) => `occurrence-${index}`,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-    },
-  });
-
-  if (data.length === 0) {
-    return (
-      <div className="p-8 text-center text-gray-500">
-        Nenhuma ocorrência de atividade disponível.
-      </div>
-    );
-  }
-
-  return (
-    <div className="w-full space-y-4">
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder="Filtrar por atividade..."
-          value={(table.getColumn('atividade')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
-            table.getColumn('atividade')?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Colunas <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id === 'atividade'
-                      ? 'Atividade'
-                      : column.id === 'local'
-                      ? 'Local'
-                      : column.id === 'tipo_local'
-                      ? 'Tipo'
-                      : column.id === 'dia_semana'
-                      ? 'Dia da Semana'
-                      : column.id === 'horario'
-                      ? 'Horário'
-                      : column.id === 'educador_responsavel'
-                      ? 'Educador'
-                      : column.id}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      <div className="max-h-96 overflow-x-auto overflow-y-auto rounded-md border">
-        <Table>
-          <TableHeader className="sticky top-0 bg-white z-10">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  Nenhum resultado encontrado.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="flex items-center justify-end space-x-2">
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Anterior
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Próxima
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+interface ActivityMovingAverage {
+  activity_name: string;
+  enrollment_date: string;
+  daily_participants: number;
+  moving_average_7_days: number;
 }
 
-function InstallationsMostReservedTable({ data }: { data: InstallationMostReserved[] }) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-
-  const sortedData = useMemo(() => {
-    return [...data].sort((a, b) => b.total_reservas - a.total_reservas);
-  }, [data]);
-
-  const columns: ColumnDef<InstallationMostReserved>[] = useMemo(
-    () => [
-      {
-        accessorKey: 'nome',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Instalação
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => (
-          <div className="font-semibold">{row.getValue('nome')}</div>
-        ),
-      },
-      {
-        accessorKey: 'tipo',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Tipo
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => <div>{row.getValue('tipo')}</div>,
-      },
-      {
-        accessorKey: 'total_reservas',
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-            >
-              Total de Reservas
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => (
-          <div className="font-semibold">{row.getValue('total_reservas')}</div>
-        ),
-      },
-    ],
-    []
-  );
-
-  const table = useReactTable({
-    data: sortedData,
-    columns,
-    getRowId: (row, index) => `most-reserved-${index}`,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-    },
-  });
-
-  if (data.length === 0) {
-    return (
-      <div className="p-8 text-center text-gray-500">
-        Nenhuma instalação mais reservada disponível.
-      </div>
-    );
-  }
-
-  return (
-    <div className="w-full space-y-4">
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder="Filtrar por instalação..."
-          value={(table.getColumn('nome')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
-            table.getColumn('nome')?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Colunas <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                  >
-                    {column.id === 'nome'
-                      ? 'Instalação'
-                      : column.id === 'tipo'
-                      ? 'Tipo'
-                      : column.id === 'total_reservas'
-                      ? 'Total de Reservas'
-                      : column.id}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      <div className="max-h-96 overflow-x-auto overflow-y-auto rounded-md border">
-        <Table>
-          <TableHeader className="sticky top-0 bg-white z-10">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  Nenhum resultado encontrado.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="flex items-center justify-end space-x-2">
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Anterior
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Próxima
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+interface EducatorActivityCount {
+  educator_name: string;
+  council_number: string;
+  activity_name: string;
+  activity_start_date: string;
+  cumulative_activities_count: number;
 }
 
 export default function ReportsOverviewPage() {
@@ -1274,11 +102,26 @@ export default function ReportsOverviewPage() {
   const [installationRanking, setInstallationRanking] = useState<
     InstallationRanking[]
   >([]);
-  const [activityOccurrences, setActivityOccurrences] = useState<
-    ActivityOccurrence[]
-  >([]);
   const [installationsMostReserved, setInstallationsMostReserved] = useState<
     InstallationMostReserved[]
+  >([]);
+  const [reservationsRowNumber, setReservationsRowNumber] = useState<
+    ReservationRowNumber[]
+  >([]);
+  const [activitiesDenseRank, setActivitiesDenseRank] = useState<
+    ActivityDenseRank[]
+  >([]);
+  const [reservationsMonthlyGrowth, setReservationsMonthlyGrowth] = useState<
+    ReservationMonthlyGrowth[]
+  >([]);
+  const [reservationsCumulative, setReservationsCumulative] = useState<
+    ReservationCumulative[]
+  >([]);
+  const [activitiesMovingAverage, setActivitiesMovingAverage] = useState<
+    ActivityMovingAverage[]
+  >([]);
+  const [educatorActivitiesCount, setEducatorActivitiesCount] = useState<
+    EducatorActivityCount[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1296,8 +139,13 @@ export default function ReportsOverviewPage() {
         activities_cube: ActivitiesCube[];
         participants_totals: ParticipantsTotal[];
         installation_ranking: InstallationRanking[];
-        activity_occurrences?: ActivityOccurrence[];
         installations_most_reserved?: InstallationMostReserved[];
+        reservations_row_number?: ReservationRowNumber[];
+        activities_dense_rank?: ActivityDenseRank[];
+        reservations_monthly_growth?: ReservationMonthlyGrowth[];
+        reservations_cumulative?: ReservationCumulative[];
+        activities_moving_average?: ActivityMovingAverage[];
+        educator_activities_count?: EducatorActivityCount[];
       }>("/reports/overview");
 
       if (data.success) {
@@ -1305,8 +153,13 @@ export default function ReportsOverviewPage() {
         setActivitiesCube(data.activities_cube || []);
         setParticipantsTotals(data.participants_totals || []);
         setInstallationRanking(data.installation_ranking || []);
-        setActivityOccurrences(data.activity_occurrences || []);
         setInstallationsMostReserved(data.installations_most_reserved || []);
+        setReservationsRowNumber(data.reservations_row_number || []);
+        setActivitiesDenseRank(data.activities_dense_rank || []);
+        setReservationsMonthlyGrowth(data.reservations_monthly_growth || []);
+        setReservationsCumulative(data.reservations_cumulative || []);
+        setActivitiesMovingAverage(data.activities_moving_average || []);
+        setEducatorActivitiesCount(data.educator_activities_count || []);
       }
     } catch (err) {
       console.error("Erro ao carregar relatórios:", err);
@@ -1319,8 +172,13 @@ export default function ReportsOverviewPage() {
       setActivitiesCube([]);
       setParticipantsTotals([]);
       setInstallationRanking([]);
-      setActivityOccurrences([]);
       setInstallationsMostReserved([]);
+      setReservationsRowNumber([]);
+      setActivitiesDenseRank([]);
+      setReservationsMonthlyGrowth([]);
+      setReservationsCumulative([]);
+      setActivitiesMovingAverage([]);
+      setEducatorActivitiesCount([]);
     } finally {
       setLoading(false);
     }
@@ -1384,9 +242,6 @@ export default function ReportsOverviewPage() {
               Consolidado de reservas
             </h2>
             <ReservationRollupChart data={reservationRollup} />
-            <div className="mt-4">
-              <ReservationRollupTable data={reservationRollup} />
-            </div>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow">
@@ -1394,9 +249,6 @@ export default function ReportsOverviewPage() {
               Atividades por educador
             </h2>
             <ActivitiesCubeChart data={activitiesCube} />
-            <div className="mt-4">
-              <ActivitiesCubeTable data={activitiesCube} />
-            </div>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow">
@@ -1404,9 +256,6 @@ export default function ReportsOverviewPage() {
               Participantes por atividade
             </h2>
             <ParticipantsTotalsChart data={participantsTotals} />
-            <div className="mt-4">
-              <ParticipantsTotalsTable data={participantsTotals} />
-            </div>
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow">
@@ -1414,34 +263,71 @@ export default function ReportsOverviewPage() {
               Ranking de instalações
             </h2>
             <InstallationRankingChart data={installationRanking} />
-            <div className="mt-4">
-              <InstallationRankingTable data={installationRanking} />
-            </div>
           </div>
+
+          {installationsMostReserved.length > 0 && (
+            <div className="rounded-lg bg-white p-4 shadow">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Instalações Mais Reservadas
+              </h2>
+              <InstallationsMostReservedChart data={installationsMostReserved} />
+            </div>
+          )}
+
+          {reservationsRowNumber.length > 0 && (
+            <div className="rounded-lg bg-white p-4 shadow">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Reservas Sequenciais por Instalação
+              </h2>
+              <ReservationsRowNumberChart data={reservationsRowNumber} />
+            </div>
+          )}
+
+          {activitiesDenseRank.length > 0 && (
+            <div className="rounded-lg bg-white p-4 shadow">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Ranking de Atividades por Participantes
+              </h2>
+              <ActivitiesDenseRankChart data={activitiesDenseRank} />
+            </div>
+          )}
+
+          {reservationsMonthlyGrowth.length > 0 && (
+            <div className="rounded-lg bg-white p-4 shadow">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Crescimento Mês a Mês de Reservas
+              </h2>
+              <ReservationsMonthlyGrowthChart data={reservationsMonthlyGrowth} />
+            </div>
+          )}
+
+          {reservationsCumulative.length > 0 && (
+            <div className="rounded-lg bg-white p-4 shadow">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Total Acumulado de Reservas
+              </h2>
+              <ReservationsCumulativeChart data={reservationsCumulative} />
+            </div>
+          )}
+
+          {activitiesMovingAverage.length > 0 && (
+            <div className="rounded-lg bg-white p-4 shadow">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Média Móvel de Participantes
+              </h2>
+              <ActivitiesMovingAverageChart data={activitiesMovingAverage} />
+            </div>
+          )}
+
+          {educatorActivitiesCount.length > 0 && (
+            <div className="rounded-lg bg-white p-4 shadow">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Contagem Acumulada de Atividades por Educador
+              </h2>
+              <EducatorActivitiesCountChart data={educatorActivitiesCount} />
+            </div>
+          )}
         </div>
-
-        {activityOccurrences.length > 0 && (
-          <div className="rounded-lg bg-white p-4 shadow">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Ocorrências Semanais de Atividades
-            </h2>
-            <div className="mt-4">
-              <ActivityOccurrencesTable data={activityOccurrences} />
-            </div>
-          </div>
-        )}
-
-        {installationsMostReserved.length > 0 && (
-          <div className="rounded-lg bg-white p-4 shadow">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Instalações Mais Reservadas
-            </h2>
-            <InstallationsMostReservedChart data={installationsMostReserved} />
-            <div className="mt-4">
-              <InstallationsMostReservedTable data={installationsMostReserved} />
-            </div>
-          </div>
-        )}
       </section>
     </Layout>
   );

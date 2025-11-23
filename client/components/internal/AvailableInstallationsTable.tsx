@@ -35,6 +35,12 @@ interface AvailableInstallation {
   nome: string;
   tipo: string;
   capacidade: number;
+  status_disponibilidade: string;
+  proxima_reserva_data: string | null;
+  proxima_reserva_inicio: string | null;
+  proxima_reserva_fim: string | null;
+  reserva_anterior_data: string | null;
+  reserva_anterior_fim: string | null;
 }
 
 export default function AvailableInstallationsTable({ installations, loading, hasFilters }: { installations: AvailableInstallation[]; loading: boolean; hasFilters: boolean }) {
@@ -90,6 +96,70 @@ export default function AvailableInstallationsTable({ installations, loading, ha
           );
         },
         cell: ({ row }) => <div>{row.getValue('capacidade')}</div>,
+      },
+      {
+        accessorKey: 'status_disponibilidade',
+        header: 'Status',
+        cell: ({ row }) => {
+          const status = row.getValue('status_disponibilidade') as string;
+          return (
+            <div
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                status === 'Disponível'
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800'
+              }`}
+            >
+              {status}
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: 'proxima_reserva_data',
+        header: 'Próxima Reserva',
+        cell: ({ row }) => {
+          const data = row.original.proxima_reserva_data;
+          const inicio = row.original.proxima_reserva_inicio;
+          const fim = row.original.proxima_reserva_fim;
+
+          if (!data || !inicio || !fim) {
+            return <div className="text-gray-400">Nenhuma</div>;
+          }
+
+          const dataFormatada = new Date(data).toLocaleDateString('pt-BR');
+          const inicioFormatado = inicio.substring(0, 5);
+          const fimFormatado = fim.substring(0, 5);
+
+          return (
+            <div className="text-sm">
+              <div className="font-medium">{dataFormatada}</div>
+              <div className="text-gray-600">{inicioFormatado} - {fimFormatado}</div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: 'reserva_anterior_data',
+        header: 'Reserva Anterior',
+        cell: ({ row }) => {
+          const data = row.original.reserva_anterior_data;
+          const fim = row.original.reserva_anterior_fim;
+
+          if (!data || !fim) {
+            return <div className="text-gray-400">Nenhuma</div>;
+          }
+
+          const dataFormatada = new Date(data).toLocaleDateString('pt-BR');
+          const fimFormatado = fim.substring(0, 5);
+
+          return (
+            <div className="text-sm">
+              <div className="font-medium">{dataFormatada}</div>
+              <div className="text-gray-600">Até {fimFormatado}</div>
+            </div>
+          );
+        },
       },
     ],
     []
@@ -164,6 +234,12 @@ export default function AvailableInstallationsTable({ installations, loading, ha
                       ? 'Tipo'
                       : column.id === 'capacidade'
                       ? 'Capacidade'
+                      : column.id === 'status_disponibilidade'
+                      ? 'Status'
+                      : column.id === 'proxima_reserva_data'
+                      ? 'Próxima Reserva'
+                      : column.id === 'reserva_anterior_data'
+                      ? 'Reserva Anterior'
                       : column.id}
                   </DropdownMenuCheckboxItem>
                 );

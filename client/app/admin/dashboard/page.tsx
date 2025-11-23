@@ -46,6 +46,8 @@ interface Reservation {
   horario_inicio: string;
   horario_fim: string;
   responsible_name: string;
+  next_reservation_date: string | null;
+  next_reservation_time: string | null;
 }
 
 interface Activity {
@@ -123,6 +125,23 @@ function UpcomingReservationsTable({ reservations }: { reservations: Reservation
           );
         },
         cell: ({ row }) => <div>{row.getValue('responsible_name')}</div>,
+      },
+      {
+        id: 'next_reservation',
+        header: 'Próxima Reserva',
+        cell: ({ row }) => {
+          const nextDate = row.original.next_reservation_date;
+          const nextTime = row.original.next_reservation_time;
+          if (nextDate) {
+            const date = new Date(nextDate);
+            return (
+              <div className="text-sm text-gray-600">
+                {date.toLocaleDateString('pt-BR')} {nextTime ? `às ${nextTime}` : ''}
+              </div>
+            );
+          }
+          return <div className="text-gray-400 text-sm">N/A</div>;
+        },
       },
     ],
     []
