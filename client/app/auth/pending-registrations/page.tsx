@@ -12,12 +12,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
-import {
   ColumnDef,
   ColumnFiltersState,
   SortingState,
@@ -993,6 +987,7 @@ export default function PendingRegistrationsPage() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [activeTab, setActiveTab] = useState<"pendentes" | "aprovados" | "rejeitados">("pendentes");
 
   useEffect(() => {
     loadAllRegistrations();
@@ -1246,48 +1241,63 @@ export default function PendingRegistrationsPage() {
             <div className="text-center text-gray-500">Carregando...</div>
           </div>
         ) : (
-          <div className="rounded-lg bg-white p-6 shadow">
-            <Accordion type="multiple" className="w-full">
-            {/* Grid de Pendentes */}
-            <AccordionItem value="pendentes">
-              <AccordionTrigger className="text-2xl font-semibold text-gray-800">
-                Pendentes ({registrations.length})
-              </AccordionTrigger>
-              <AccordionContent>
+          <>
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setActiveTab("pendentes")}
+                  className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
+                    activeTab === "pendentes"
+                      ? "border-[#1094ab] text-[#1094ab]"
+                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  }`}
+                >
+                  Pendentes ({registrations.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab("aprovados")}
+                  className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
+                    activeTab === "aprovados"
+                      ? "border-[#1094ab] text-[#1094ab]"
+                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  }`}
+                >
+                  Aprovados ({approvedRegistrations.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab("rejeitados")}
+                  className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
+                    activeTab === "rejeitados"
+                      ? "border-[#1094ab] text-[#1094ab]"
+                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  }`}
+                >
+                  Rejeitados ({rejectedRegistrations.length})
+                </button>
+              </nav>
+            </div>
+
+            <div className="rounded-lg bg-white p-6 shadow">
+              {activeTab === "pendentes" && (
                 <PendingRegistrationsTable
                   registrations={registrations}
                   processingIds={processingIds}
                   onApprove={handleApprove}
                   onReject={handleReject}
                 />
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Grid de Aprovados */}
-            <AccordionItem value="aprovados">
-              <AccordionTrigger className="text-2xl font-semibold text-green-700">
-                Aprovados ({approvedRegistrations.length})
-              </AccordionTrigger>
-              <AccordionContent>
+              )}
+              {activeTab === "aprovados" && (
                 <ApprovedRegistrationsTable
                   registrations={approvedRegistrations}
                 />
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Grid de Rejeitados */}
-            <AccordionItem value="rejeitados">
-              <AccordionTrigger className="text-2xl font-semibold text-red-700">
-                Rejeitados ({rejectedRegistrations.length})
-              </AccordionTrigger>
-              <AccordionContent>
+              )}
+              {activeTab === "rejeitados" && (
                 <RejectedRegistrationsTable
                   registrations={rejectedRegistrations}
                 />
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-          </div>
+              )}
+            </div>
+          </>
         )}
 
         {/* Dialog de Rejeição */}
