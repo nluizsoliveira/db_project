@@ -1,7 +1,47 @@
-'use client';
+"use client";
 
-import { useState, FormEvent } from 'react';
-import { useEquipmentReservations, useDeleteEquipmentReservation } from '@/hooks/useReservations';
+import { apiGet, apiDelete } from "@/lib/api";
+import { useState, FormEvent, useEffect, useMemo } from "react";
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { ArrowUpDown, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useAlertDialog } from "@/hooks/useAlertDialog";
 
 interface EquipmentReservation {
   id_reserva_equip: number;
@@ -17,23 +57,32 @@ interface EquipmentReservation {
 export default function EquipmentReservationsManager() {
   const [reservations, setReservations] = useState<EquipmentReservation[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const alertDialog = useAlertDialog();
   const [filters, setFilters] = useState({
-    data_inicio: '',
-    data_fim: '',
-    id_equipamento: '',
-    cpf_responsavel: '',
+    data_inicio: "",
+    data_fim: "",
+    id_equipamento: "",
+    cpf_responsavel: "",
   });
+
+  // TanStack Table states
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   const loadReservations = async () => {
     setLoading(true);
-    setError('');
+    setError("");
     try {
       const params = new URLSearchParams();
-      if (filters.data_inicio) params.append('data_inicio', filters.data_inicio);
-      if (filters.data_fim) params.append('data_fim', filters.data_fim);
-      if (filters.id_equipamento) params.append('id_equipamento', filters.id_equipamento);
-      if (filters.cpf_responsavel) params.append('cpf_responsavel', filters.cpf_responsavel);
+      if (filters.data_inicio)
+        params.append("data_inicio", filters.data_inicio);
+      if (filters.data_fim) params.append("data_fim", filters.data_fim);
+      if (filters.id_equipamento)
+        params.append("id_equipamento", filters.id_equipamento);
+      if (filters.cpf_responsavel)
+        params.append("cpf_responsavel", filters.cpf_responsavel);
 
       const data = await apiGet<{
         success: boolean;
@@ -44,8 +93,8 @@ export default function EquipmentReservationsManager() {
         setReservations(data.reservations || []);
       }
     } catch (err) {
-      console.error('Erro ao carregar reservas:', err);
-      setError('Erro ao carregar reservas');
+      console.error("Erro ao carregar reservas:", err);
+      setError("Erro ao carregar reservas");
       setReservations([]);
     } finally {
       setLoading(false);
@@ -62,31 +111,156 @@ export default function EquipmentReservationsManager() {
   };
 
   const handleCancelReservation = async (id: number) => {
-    if (!confirm('Deseja realmente cancelar esta reserva?')) {
-      return;
-    }
+    alertDialog.showConfirm(
+      "Deseja realmente cancelar esta reserva?",
+      "Confirmar Cancelamento",
+      async () => {
+        try {
+          const data = await apiDelete<{
+            success: boolean;
+            message?: string;
+          }>(`/staff/equipment/reservations/${id}`);
 
-    try {
-      const data = await apiDelete<{
-        success: boolean;
-        message?: string;
-      }>(`/staff/equipment/reservations/${id}`);
-
-      if (data.success) {
-        alert(data.message || 'Reserva cancelada com sucesso!');
-        loadReservations();
-      } else {
-        alert(data.message || 'Erro ao cancelar reserva');
+          if (data.success) {
+            alertDialog.showAlert(data.message || "Reserva cancelada com sucesso!", "Sucesso");
+            loadReservations();
+          } else {
+            alertDialog.showAlert(data.message || "Erro ao cancelar reserva", "Erro");
+          }
+        } catch (err: any) {
+          console.error("Erro ao cancelar reserva:", err);
+          alertDialog.showAlert(err.message || "Erro ao cancelar reserva", "Erro");
+        }
       }
-    } catch (err: any) {
-      console.error('Erro ao cancelar reserva:', err);
-      alert(err.message || 'Erro ao cancelar reserva');
-    }
+    );
   };
+
+  // Define columns
+  const columns: ColumnDef<EquipmentReservation>[] = useMemo(
+    () => [
+      {
+        id: "equipamento",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Equipamento
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div className="font-medium">
+            {row.original.nome_equipamento} ({row.original.id_equipamento})
+          </div>
+        ),
+        sortingFn: (rowA, rowB) => {
+          return rowA.original.nome_equipamento.localeCompare(
+            rowB.original.nome_equipamento
+          );
+        },
+      },
+      {
+        id: "responsavel",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Responsável
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div>
+            {row.original.nome_responsavel} ({row.original.cpf_responsavel_interno})
+          </div>
+        ),
+        sortingFn: (rowA, rowB) => {
+          return rowA.original.nome_responsavel.localeCompare(
+            rowB.original.nome_responsavel
+          );
+        },
+      },
+      {
+        accessorKey: "data_reserva",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Data
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue("data_reserva")}</div>,
+      },
+      {
+        id: "horario",
+        header: "Horário",
+        cell: ({ row }) => {
+          return (
+            <div>
+              {row.original.horario_inicio} - {row.original.horario_fim}
+            </div>
+          );
+        },
+      },
+      {
+        id: "actions",
+        enableHiding: false,
+        cell: ({ row }) => {
+          const reservation = row.original;
+          return (
+            <Button
+              onClick={() => handleCancelReservation(reservation.id_reserva_equip)}
+              className="bg-red-600 text-white hover:bg-red-700"
+              size="sm"
+            >
+              Cancelar
+            </Button>
+          );
+        },
+      },
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: reservations,
+    columns,
+    getRowId: (row) => row.id_reserva_equip.toString(),
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+    },
+  });
 
   return (
     <div className="rounded-lg bg-white p-6 shadow">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">Gerenciar Reservas de Equipamentos</h2>
+      <h2 className="mb-4 text-lg font-semibold text-gray-900">
+        Gerenciar Reservas de Equipamentos
+      </h2>
 
       <form onSubmit={handleSubmit} className="mb-4 grid gap-4 sm:grid-cols-4">
         <label className="text-sm text-gray-600">
@@ -94,7 +268,9 @@ export default function EquipmentReservationsManager() {
           <input
             type="date"
             value={filters.data_inicio}
-            onChange={(e) => setFilters({ ...filters, data_inicio: e.target.value })}
+            onChange={(e) =>
+              setFilters({ ...filters, data_inicio: e.target.value })
+            }
             className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
           />
         </label>
@@ -103,7 +279,9 @@ export default function EquipmentReservationsManager() {
           <input
             type="date"
             value={filters.data_fim}
-            onChange={(e) => setFilters({ ...filters, data_fim: e.target.value })}
+            onChange={(e) =>
+              setFilters({ ...filters, data_fim: e.target.value })
+            }
             className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
           />
         </label>
@@ -112,7 +290,9 @@ export default function EquipmentReservationsManager() {
           <input
             type="text"
             value={filters.id_equipamento}
-            onChange={(e) => setFilters({ ...filters, id_equipamento: e.target.value })}
+            onChange={(e) =>
+              setFilters({ ...filters, id_equipamento: e.target.value })
+            }
             placeholder="Filtrar por equipamento"
             className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
           />
@@ -122,7 +302,9 @@ export default function EquipmentReservationsManager() {
           <input
             type="text"
             value={filters.cpf_responsavel}
-            onChange={(e) => setFilters({ ...filters, cpf_responsavel: e.target.value })}
+            onChange={(e) =>
+              setFilters({ ...filters, cpf_responsavel: e.target.value })
+            }
             placeholder="Filtrar por CPF"
             className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
           />
@@ -131,7 +313,12 @@ export default function EquipmentReservationsManager() {
           <button
             type="button"
             onClick={() => {
-              setFilters({ data_inicio: '', data_fim: '', id_equipamento: '', cpf_responsavel: '' });
+              setFilters({
+                data_inicio: "",
+                data_fim: "",
+                id_equipamento: "",
+                cpf_responsavel: "",
+              });
               loadReservations();
             }}
             className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
@@ -147,57 +334,159 @@ export default function EquipmentReservationsManager() {
         </div>
       </form>
 
-      {error && <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">{error}</div>}
-
-      {loading ? (
-        <div className="py-8 text-center text-gray-500">Carregando reservas...</div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="border-b text-left text-gray-500">
-              <tr>
-                <th className="px-3 py-2">Equipamento</th>
-                <th className="px-3 py-2">Responsável</th>
-                <th className="px-3 py-2">Data</th>
-                <th className="px-3 py-2">Horário</th>
-                <th className="px-3 py-2">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {reservations.length > 0 ? (
-                reservations.map((reservation) => (
-                  <tr key={reservation.id_reserva_equip}>
-                    <td className="px-3 py-2 font-medium text-gray-900">
-                      {reservation.nome_equipamento} ({reservation.id_equipamento})
-                    </td>
-                    <td className="px-3 py-2">
-                      {reservation.nome_responsavel} ({reservation.cpf_responsavel_interno})
-                    </td>
-                    <td className="px-3 py-2">{reservation.data_reserva}</td>
-                    <td className="px-3 py-2">
-                      {reservation.horario_inicio} - {reservation.horario_fim}
-                    </td>
-                    <td className="px-3 py-2">
-                      <button
-                        onClick={() => handleCancelReservation(reservation.id_reserva_equip)}
-                        className="rounded bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700"
-                      >
-                        Cancelar
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td className="px-3 py-4 text-gray-500" colSpan={5}>
-                    Nenhuma reserva encontrada com os filtros selecionados.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">
+          {error}
         </div>
       )}
+
+      {loading ? (
+        <div className="py-8 text-center text-gray-500">
+          Carregando reservas...
+        </div>
+      ) : reservations.length === 0 ? (
+        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center shadow">
+          <p className="text-gray-500">
+            Nenhuma reserva encontrada com os filtros selecionados.
+          </p>
+        </div>
+      ) : (
+        <div className="w-full space-y-4">
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Filtrar por equipamento..."
+              value={
+                (table.getColumn("equipamento")?.getFilterValue() as string) ??
+                ""
+              }
+              onChange={(event) =>
+                table.getColumn("equipamento")?.setFilterValue(event.target.value)
+              }
+              className="max-w-sm"
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Colunas <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(!!value)
+                        }
+                      >
+                        {column.id === "equipamento"
+                          ? "Equipamento"
+                          : column.id === "responsavel"
+                          ? "Responsável"
+                          : column.id === "data_reserva"
+                          ? "Data"
+                          : column.id === "horario"
+                          ? "Horário"
+                          : column.id}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </TableHead>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      Nenhum resultado encontrado.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex items-center justify-end space-x-2">
+            <div className="space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                Próxima
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {alertDialog.type === "confirm" ? (
+              <>
+                <AlertDialogCancel onClick={alertDialog.handleCancel}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={alertDialog.handleConfirm}>Confirmar</AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

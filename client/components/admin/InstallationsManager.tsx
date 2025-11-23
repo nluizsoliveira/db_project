@@ -16,7 +16,6 @@ import {
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -35,7 +34,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 
 interface Installation {
   id_instalacao: number;
@@ -58,12 +68,12 @@ export default function InstallationsManager() {
     eh_reservavel: 'N',
   });
   const [submitting, setSubmitting] = useState(false);
+  const alertDialog = useAlertDialog();
 
   // TanStack Table states
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
 
   const loadInstallations = async () => {
     setLoading(true);
@@ -115,31 +125,33 @@ export default function InstallationsManager() {
       }
     } catch (err) {
       console.error('Erro ao carregar instalação:', err);
-      alert('Erro ao carregar instalação');
+      alertDialog.showAlert('Erro ao carregar instalação', 'Erro');
     }
   };
 
   const handleDelete = async (installationId: number) => {
-    if (!confirm('Deseja realmente deletar esta instalação? Esta ação não pode ser desfeita.')) {
-      return;
-    }
+    alertDialog.showConfirm(
+      'Deseja realmente deletar esta instalação? Esta ação não pode ser desfeita.',
+      'Confirmar Exclusão',
+      async () => {
+        try {
+          const data = await apiDelete<{
+            success: boolean;
+            message?: string;
+          }>(`/admin/installations/${installationId}`);
 
-    try {
-      const data = await apiDelete<{
-        success: boolean;
-        message?: string;
-      }>(`/admin/installations/${installationId}`);
-
-      if (data.success) {
-        alert(data.message || 'Instalação deletada com sucesso!');
-        loadInstallations();
-      } else {
-        alert(data.message || 'Erro ao deletar instalação');
+          if (data.success) {
+            alertDialog.showAlert(data.message || 'Instalação deletada com sucesso!', 'Sucesso');
+            loadInstallations();
+          } else {
+            alertDialog.showAlert(data.message || 'Erro ao deletar instalação', 'Erro');
+          }
+        } catch (err: any) {
+          console.error('Erro ao deletar instalação:', err);
+          alertDialog.showAlert(err.message || 'Erro ao deletar instalação', 'Erro');
+        }
       }
-    } catch (err: any) {
-      console.error('Erro ao deletar instalação:', err);
-      alert(err.message || 'Erro ao deletar instalação');
-    }
+    );
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -160,7 +172,7 @@ export default function InstallationsManager() {
         });
 
         if (data.success) {
-          alert(data.message || 'Instalação atualizada com sucesso!');
+          alertDialog.showAlert(data.message || 'Instalação atualizada com sucesso!', 'Sucesso');
           setShowForm(false);
           loadInstallations();
         } else {
@@ -179,7 +191,7 @@ export default function InstallationsManager() {
         });
 
         if (data.success) {
-          alert(data.message || 'Instalação criada com sucesso!');
+          alertDialog.showAlert(data.message || 'Instalação criada com sucesso!', 'Sucesso');
           setShowForm(false);
           loadInstallations();
         } else {
@@ -197,28 +209,6 @@ export default function InstallationsManager() {
   // Define columns
   const columns: ColumnDef<Installation>[] = useMemo(
     () => [
-      {
-        id: 'select',
-        header: ({ table }) => (
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && 'indeterminate')
-            }
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Selecionar todos"
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Selecionar linha"
-          />
-        ),
-        enableSorting: false,
-        enableHiding: false,
-      },
       {
         accessorKey: 'nome',
         header: ({ column }) => {
@@ -325,12 +315,10 @@ export default function InstallationsManager() {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
-      rowSelection,
     },
   });
 
@@ -489,7 +477,6 @@ export default function InstallationsManager() {
                   table.getRowModel().rows.map((row) => (
                     <TableRow
                       key={row.id}
-                      data-state={row.getIsSelected() && 'selected'}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
@@ -509,10 +496,6 @@ export default function InstallationsManager() {
             </Table>
           </div>
           <div className="flex items-center justify-end space-x-2">
-            <div className="flex-1 text-sm text-muted-foreground">
-              {table.getFilteredSelectedRowModel().rows.length} de{' '}
-              {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
-            </div>
             <div className="space-x-2">
               <Button
                 variant="outline"
@@ -534,6 +517,25 @@ export default function InstallationsManager() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {alertDialog.type === 'confirm' ? (
+              <>
+                <AlertDialogCancel onClick={alertDialog.handleCancel}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={alertDialog.handleConfirm}>Confirmar</AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

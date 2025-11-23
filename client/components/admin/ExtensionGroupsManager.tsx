@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, FormEvent, useMemo } from 'react';
+import { useState, FormEvent, useMemo } from 'react';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -45,26 +45,25 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  useAdminActivities,
-  useAdminActivity,
-  useCreateAdminActivity,
-  useUpdateAdminActivity,
-  useDeleteAdminActivity,
-  type Activity,
-  type ActivityDetail,
-} from '@/hooks/useActivities';
+  useExtensionGroups,
+  useCreateExtensionGroup,
+  useUpdateExtensionGroup,
+  useDeleteExtensionGroup,
+  type ExtensionGroup,
+} from '@/hooks/useExtensionGroups';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 
-export default function ActivitiesManager() {
+export default function ExtensionGroupsManager() {
   const [error, setError] = useState('');
-  const [editingActivityId, setEditingActivityId] = useState<number | null>(null);
+  const [editingGroup, setEditingGroup] = useState<ExtensionGroup | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
-    nome: '',
-    vagas: '',
-    data_inicio: '',
-    data_fim: '',
+    group_name: '',
+    description: '',
+    cpf_responsible: '',
   });
+
+  const alertDialog = useAlertDialog();
 
   // TanStack Table states
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -72,49 +71,40 @@ export default function ActivitiesManager() {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   // Queries
-  const { data: activities = [], isLoading: loading, error: queryError } = useAdminActivities();
-  const { data: editingActivity } = useAdminActivity(editingActivityId || 0);
+  const { data: groups = [], isLoading: loading, error: queryError } = useExtensionGroups();
 
   // Mutations
-  const createMutation = useCreateAdminActivity();
-  const updateMutation = useUpdateAdminActivity();
-  const deleteMutation = useDeleteAdminActivity();
-  const alertDialog = useAlertDialog();
-
-  // Update form when editing activity loads
-  useEffect(() => {
-    if (editingActivity && editingActivityId) {
-      setFormData({
-        nome: editingActivity.nome,
-        vagas: editingActivity.vagas_limite.toString(),
-        data_inicio: editingActivity.data_inicio_periodo,
-        data_fim: editingActivity.data_fim_periodo,
-      });
-    }
-  }, [editingActivity, editingActivityId]);
+  const createMutation = useCreateExtensionGroup();
+  const updateMutation = useUpdateExtensionGroup();
+  const deleteMutation = useDeleteExtensionGroup();
 
   const handleCreate = () => {
-    setEditingActivityId(null);
-    setFormData({ nome: '', vagas: '', data_inicio: '', data_fim: '' });
+    setEditingGroup(null);
+    setFormData({ group_name: '', description: '', cpf_responsible: '' });
     setShowForm(true);
   };
 
-  const handleEdit = (activityId: number) => {
-    setEditingActivityId(activityId);
+  const handleEdit = (group: ExtensionGroup) => {
+    setEditingGroup(group);
+    setFormData({
+      group_name: group.nome_grupo,
+      description: group.descricao,
+      cpf_responsible: group.cpf_responsavel_interno,
+    });
     setShowForm(true);
   };
 
-  const handleDelete = async (activityId: number) => {
+  const handleDelete = async (groupName: string) => {
     alertDialog.showConfirm(
-      'Deseja realmente deletar esta atividade? Esta ação não pode ser desfeita.',
+      `Tem certeza que deseja deletar o grupo "${groupName}"?`,
       'Confirmar Exclusão',
       async () => {
         try {
-          const data = await deleteMutation.mutateAsync(activityId);
-          alertDialog.showAlert(data.message || 'Atividade deletada com sucesso!', 'Sucesso');
+          const data = await deleteMutation.mutateAsync(groupName);
+          alertDialog.showAlert(data.message || 'Grupo de extensão deletado com sucesso!', 'Sucesso');
         } catch (err: any) {
-          console.error('Erro ao deletar atividade:', err);
-          alertDialog.showAlert(err.message || 'Erro ao deletar atividade', 'Erro');
+          console.error('Erro ao deletar grupo:', err);
+          alertDialog.showAlert(err.message || 'Erro ao deletar grupo de extensão', 'Erro');
         }
       }
     );
@@ -125,32 +115,36 @@ export default function ActivitiesManager() {
     setError('');
 
     try {
-      if (editingActivityId && editingActivity) {
+      if (editingGroup) {
         // Update
         const data = await updateMutation.mutateAsync({
-          activityId: editingActivityId,
-          payload: {
-            nome: formData.nome,
-            vagas: parseInt(formData.vagas),
-          },
+          old_group_name: editingGroup.nome_grupo,
+          new_group_name: formData.group_name,
+          description: formData.description,
+          cpf_responsible: formData.cpf_responsible,
         });
-        alertDialog.showAlert(data.message || 'Atividade atualizada com sucesso!', 'Sucesso');
+        alertDialog.showAlert(data.message || 'Grupo de extensão atualizado com sucesso!', 'Sucesso');
         setShowForm(false);
-        setEditingActivityId(null);
+        setEditingGroup(null);
       } else {
         // Create
         const data = await createMutation.mutateAsync({
-          nome: formData.nome,
-          vagas: parseInt(formData.vagas),
-          data_inicio: formData.data_inicio,
-          data_fim: formData.data_fim,
+          group_name: formData.group_name,
+          description: formData.description,
+          cpf_responsible: formData.cpf_responsible,
         });
-        alertDialog.showAlert(data.message || 'Atividade criada com sucesso!', 'Sucesso');
+        alertDialog.showAlert(data.message || 'Grupo de extensão criado com sucesso!', 'Sucesso');
         setShowForm(false);
       }
     } catch (err: any) {
-      console.error('Erro ao salvar atividade:', err);
-      setError(err.message || 'Erro ao salvar atividade');
+      console.error('Erro ao salvar grupo:', err);
+      const errorMessage = err.message || 'Erro ao processar solicitação';
+      try {
+        const errorData = JSON.parse(errorMessage);
+        setError(errorData.message || 'Erro ao salvar grupo de extensão');
+      } catch {
+        setError(errorMessage);
+      }
     }
   };
 
@@ -158,97 +152,75 @@ export default function ActivitiesManager() {
   const submitting = createMutation.isPending || updateMutation.isPending;
 
   // Define columns
-  const columns: ColumnDef<Activity>[] = useMemo(
+  const columns: ColumnDef<ExtensionGroup>[] = useMemo(
     () => [
       {
-        accessorKey: 'nome_atividade',
+        accessorKey: 'nome_grupo',
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              Atividade
+              Nome do Grupo
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
         cell: ({ row }) => (
-          <div className="font-medium">{row.getValue('nome_atividade')}</div>
+          <div className="font-medium">{row.getValue('nome_grupo')}</div>
         ),
       },
       {
-        accessorKey: 'grupo_extensao',
+        accessorKey: 'descricao',
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              Grupo
+              Descrição
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
-        cell: ({ row }) => <div>{row.getValue('grupo_extensao') || '—'}</div>,
+        cell: ({ row }) => <div>{row.getValue('descricao') || '—'}</div>,
       },
       {
-        accessorKey: 'weekday',
+        accessorKey: 'cpf_responsavel_interno',
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              Dia
+              CPF Responsável
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
-        cell: ({ row }) => <div>{row.getValue('weekday')}</div>,
+        cell: ({ row }) => <div>{row.getValue('cpf_responsavel_interno')}</div>,
       },
       {
-        id: 'horario',
-        header: 'Horário',
-        cell: ({ row }) => {
-          return (
-            <div>
-              {row.original.horario_inicio} - {row.original.horario_fim}
-            </div>
-          );
-        },
-      },
-      {
-        id: 'vagas',
+        accessorKey: 'nome_responsavel',
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              Vagas
+              Nome Responsável
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
-        cell: ({ row }) => {
-          return (
-            <div>
-              {row.original.vagas_ocupadas} / {row.original.vagas_limite}
-            </div>
-          );
-        },
-        sortingFn: (rowA, rowB) => {
-          const a = rowA.original.vagas_ocupadas;
-          const b = rowB.original.vagas_ocupadas;
-          return a - b;
-        },
+        cell: ({ row }) => <div>{row.getValue('nome_responsavel')}</div>,
       },
       {
         id: 'actions',
         enableHiding: false,
         cell: ({ row }) => {
-          const activity = row.original;
+          const group = row.original;
 
           return (
             <DropdownMenu>
@@ -260,12 +232,12 @@ export default function ActivitiesManager() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => handleEdit(activity.id_atividade)}>
+                <DropdownMenuItem onClick={() => handleEdit(group)}>
                   Editar
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={() => handleDelete(activity.id_atividade)}
+                  onClick={() => handleDelete(group.nome_grupo)}
                   className="text-destructive"
                 >
                   Deletar
@@ -279,18 +251,10 @@ export default function ActivitiesManager() {
     []
   );
 
-  // Create unique keys for rows
-  const activitiesWithKeys = useMemo(() => {
-    return activities.map((activity, index) => ({
-      ...activity,
-      uniqueKey: `${activity.id_atividade}-${activity.weekday || 'no-day'}-${activity.horario_inicio || 'no-time'}-${index}`,
-    }));
-  }, [activities]);
-
   const table = useReactTable({
-    data: activitiesWithKeys,
+    data: groups,
     columns,
-    getRowId: (row) => row.uniqueKey,
+    getRowId: (row) => row.nome_grupo,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -308,69 +272,69 @@ export default function ActivitiesManager() {
   return (
     <div className="rounded-lg bg-white p-6 shadow">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Gerenciar Atividades</h2>
+        <h2 className="text-lg font-semibold text-gray-900">Gerenciar Grupos de Extensão</h2>
         <Button
           onClick={handleCreate}
           className="bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab]"
         >
-          Nova Atividade
+          Novo Grupo
         </Button>
       </div>
 
       {showForm && (
         <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
           <h3 className="mb-4 text-md font-semibold text-gray-900">
-            {editingActivityId ? 'Editar Atividade' : 'Nova Atividade'}
+            {editingGroup ? 'Editar Grupo de Extensão' : 'Novo Grupo de Extensão'}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm text-gray-600">
-                <span className="mb-1 block font-medium">Nome da Atividade</span>
+                <span className="mb-1 block font-medium">Nome do Grupo</span>
                 <input
                   type="text"
-                  value={formData.nome}
-                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                  value={formData.group_name}
+                  onChange={(e) => setFormData({ ...formData, group_name: e.target.value })}
                   required
                   className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
+                  placeholder="Nome do grupo"
                 />
               </label>
               <label className="text-sm text-gray-600">
-                <span className="mb-1 block font-medium">Vagas</span>
+                <span className="mb-1 block font-medium">CPF do Responsável</span>
                 <input
-                  type="number"
-                  value={formData.vagas}
-                  onChange={(e) => setFormData({ ...formData, vagas: e.target.value })}
+                  type="text"
+                  value={formData.cpf_responsible}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      cpf_responsible: e.target.value.replace(/\D/g, ''),
+                    })
+                  }
                   required
-                  min="1"
+                  maxLength={11}
                   className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
+                  placeholder="Apenas números"
                 />
               </label>
-              {!editingActivityId && (
-                <>
-                  <label className="text-sm text-gray-600">
-                    <span className="mb-1 block font-medium">Data Início</span>
-                    <input
-                      type="date"
-                      value={formData.data_inicio}
-                      onChange={(e) => setFormData({ ...formData, data_inicio: e.target.value })}
-                      required
-                      className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
-                    />
-                  </label>
-                  <label className="text-sm text-gray-600">
-                    <span className="mb-1 block font-medium">Data Fim</span>
-                    <input
-                      type="date"
-                      value={formData.data_fim}
-                      onChange={(e) => setFormData({ ...formData, data_fim: e.target.value })}
-                      required
-                      className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
-                    />
-                  </label>
-                </>
-              )}
             </div>
-            {displayError && <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">{displayError}</div>}
+            <div>
+              <label className="text-sm text-gray-600">
+                <span className="mb-1 block font-medium">Descrição</span>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  required
+                  rows={3}
+                  className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
+                  placeholder="Descrição do grupo de extensão"
+                />
+              </label>
+            </div>
+            {displayError && (
+              <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">{displayError}</div>
+            )}
             <div className="flex justify-end gap-2">
               <Button
                 type="button"
@@ -378,6 +342,7 @@ export default function ActivitiesManager() {
                 onClick={() => {
                   setShowForm(false);
                   setError('');
+                  setEditingGroup(null);
                 }}
               >
                 Cancelar
@@ -387,7 +352,7 @@ export default function ActivitiesManager() {
                 disabled={submitting}
                 className="bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab] disabled:opacity-50"
               >
-                {submitting ? 'Salvando...' : editingActivity ? 'Atualizar' : 'Criar'}
+                {submitting ? 'Salvando...' : editingGroup ? 'Atualizar' : 'Criar'}
               </Button>
             </div>
           </form>
@@ -399,15 +364,15 @@ export default function ActivitiesManager() {
       )}
 
       {loading ? (
-        <div className="py-8 text-center text-gray-500">Carregando atividades...</div>
+        <div className="py-8 text-center text-gray-500">Carregando grupos de extensão...</div>
       ) : (
         <div className="w-full space-y-4">
           <div className="flex items-center gap-2">
             <Input
-              placeholder="Filtrar por atividade..."
-              value={(table.getColumn('nome_atividade')?.getFilterValue() as string) ?? ''}
+              placeholder="Filtrar por nome do grupo..."
+              value={(table.getColumn('nome_grupo')?.getFilterValue() as string) ?? ''}
               onChange={(event) =>
-                table.getColumn('nome_atividade')?.setFilterValue(event.target.value)
+                table.getColumn('nome_grupo')?.setFilterValue(event.target.value)
               }
               className="max-w-sm"
             />
@@ -429,16 +394,14 @@ export default function ActivitiesManager() {
                         checked={column.getIsVisible()}
                         onCheckedChange={(value) => column.toggleVisibility(!!value)}
                       >
-                        {column.id === 'nome_atividade'
-                          ? 'Atividade'
-                          : column.id === 'grupo_extensao'
-                          ? 'Grupo'
-                          : column.id === 'weekday'
-                          ? 'Dia'
-                          : column.id === 'horario'
-                          ? 'Horário'
-                          : column.id === 'vagas'
-                          ? 'Vagas'
+                        {column.id === 'nome_grupo'
+                          ? 'Nome do Grupo'
+                          : column.id === 'descricao'
+                          ? 'Descrição'
+                          : column.id === 'cpf_responsavel_interno'
+                          ? 'CPF Responsável'
+                          : column.id === 'nome_responsavel'
+                          ? 'Nome Responsável'
                           : column.id}
                       </DropdownMenuCheckboxItem>
                     );
@@ -479,7 +442,7 @@ export default function ActivitiesManager() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={columns.length} className="h-24 text-center">
-                      Nenhuma atividade encontrada.
+                      Nenhum grupo de extensão encontrado.
                     </TableCell>
                   </TableRow>
                 )}

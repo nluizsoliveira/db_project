@@ -9,15 +9,15 @@ RETURNS TABLE (
 )
 AS $$
 BEGIN
-    RETURN QUERY    
-    SELECT 
+    RETURN QUERY
+    SELECT
         a.id_atividade,
         a.nome AS nome_atividade,
         a.vagas_limite,
         a.data_inicio_periodo AS data_inicio,
         a.data_fim_periodo AS data_fim
     FROM conduz_atividade ca
-    JOIN atividade a 
+    JOIN atividade a
         ON a.id_atividade = ca.id_atividade
     WHERE ca.cpf_educador_fisico = cpf_educador
     ORDER BY a.data_inicio_periodo;
@@ -94,12 +94,48 @@ $$;
 -- PROCEDURE para deletar uma atividade
 CREATE OR REPLACE PROCEDURE deletar_atividade(p_id_atividade INT)
 LANGUAGE plpgsql AS $$
+DECLARE
+    v_count INT;
 BEGIN
-    DELETE FROM ATIVIDADE WHERE ID_ATIVIDADE = p_id_atividade;
-    
-    IF NOT FOUND THEN
+    RAISE NOTICE 'deletar_atividade: Iniciando deleção da atividade %', p_id_atividade;
+
+    -- Verificar se a atividade existe
+    IF NOT EXISTS (SELECT 1 FROM ATIVIDADE WHERE ID_ATIVIDADE = p_id_atividade) THEN
         RAISE EXCEPTION 'Atividade % não encontrada.', p_id_atividade;
     END IF;
+    RAISE NOTICE 'deletar_atividade: Atividade % encontrada', p_id_atividade;
+
+    -- Deletar dependências em cascata (na ordem correta)
+    RAISE NOTICE 'deletar_atividade: Deletando CONVITE_EXTERNO';
+    DELETE FROM CONVITE_EXTERNO WHERE ID_ATIVIDADE = p_id_atividade;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_atividade: % convite(s) externo(s) deletado(s)', v_count;
+
+    RAISE NOTICE 'deletar_atividade: Deletando PARTICIPACAO_ATIVIDADE';
+    DELETE FROM PARTICIPACAO_ATIVIDADE WHERE ID_ATIVIDADE = p_id_atividade;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_atividade: % participação(ões) deletada(s)', v_count;
+
+    RAISE NOTICE 'deletar_atividade: Deletando CONDUZ_ATIVIDADE';
+    DELETE FROM CONDUZ_ATIVIDADE WHERE ID_ATIVIDADE = p_id_atividade;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_atividade: % condução(ões) deletada(s)', v_count;
+
+    RAISE NOTICE 'deletar_atividade: Deletando ATIVIDADE_GRUPO_EXTENSAO';
+    DELETE FROM ATIVIDADE_GRUPO_EXTENSAO WHERE ID_ATIVIDADE = p_id_atividade;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_atividade: % associação(ões) com grupo(s) deletada(s)', v_count;
+
+    RAISE NOTICE 'deletar_atividade: Deletando OCORRENCIA_SEMANAL';
+    DELETE FROM OCORRENCIA_SEMANAL WHERE ID_ATIVIDADE = p_id_atividade;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_atividade: % ocorrência(s) semanal(is) deletada(s)', v_count;
+
+    -- Deletar a atividade principal
+    RAISE NOTICE 'deletar_atividade: Deletando ATIVIDADE principal';
+    DELETE FROM ATIVIDADE WHERE ID_ATIVIDADE = p_id_atividade;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_atividade: % atividade(s) deletada(s). Concluído.', v_count;
 END;
 $$;
 
@@ -139,9 +175,9 @@ CREATE OR REPLACE PROCEDURE reservar_equipamento(
 ) LANGUAGE plpgsql AS $$
 BEGIN
     -- Verifica se o equipamento é reservável (Regra de Negócio)
-    PERFORM 1 FROM EQUIPAMENTO 
+    PERFORM 1 FROM EQUIPAMENTO
     WHERE ID_PATRIMONIO = p_id_equipamento AND EH_RESERVAVEL = 'N';
-    
+
     IF FOUND THEN
         RAISE EXCEPTION 'O equipamento % não é reservável (uso livre ou interno).', p_id_equipamento;
     END IF;
@@ -156,7 +192,7 @@ CREATE OR REPLACE PROCEDURE cancelar_reserva_equipamento(p_id_reserva_equip INT)
 LANGUAGE plpgsql AS $$
 BEGIN
     DELETE FROM RESERVA_EQUIPAMENTO WHERE ID_RESERVA_EQUIP = p_id_reserva_equip;
-    
+
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Reserva de equipamento % não encontrada.', p_id_reserva_equip;
     END IF;

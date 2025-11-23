@@ -50,8 +50,9 @@ def gerar_usuario_senha(dbsession):
     internos_result = dbsession.fetch_all("SELECT CPF_PESSOA FROM INTERNO_USP")
     cpfs_internos = [row["cpf_pessoa"] for row in internos_result]
 
-    # Verificar se os usuários de teste existem
+    # Verificar se os usuários de teste existem e criar conjunto de CPFs de teste
     usuarios_teste_encontrados = []
+    cpfs_usuarios_teste = set()
     for email_teste in EMAILS_TESTE:
         pessoa_teste_result = dbsession.fetch_one(f"""
             SELECT P.CPF
@@ -62,6 +63,7 @@ def gerar_usuario_senha(dbsession):
         if pessoa_teste_result:
             cpf_teste = pessoa_teste_result["cpf"]
             usuarios_teste_encontrados.append((email_teste, cpf_teste))
+            cpfs_usuarios_teste.add(cpf_teste)
             print(f"   📧 Usuário de teste encontrado: {email_teste} (CPF: {cpf_teste})")
 
     if not cpfs_internos:
@@ -74,6 +76,9 @@ def gerar_usuario_senha(dbsession):
     data_base = datetime.now() - timedelta(days=180)
 
     for cpf_pessoa in cpfs_internos:
+        # Verificar se é usuário de teste
+        eh_usuario_teste = cpf_pessoa in cpfs_usuarios_teste
+
         # Gerar data de criação aleatória nos últimos 6 meses
         dias_aleatorios = random.randint(2, 180)
         data_criacao = data_base + timedelta(days=dias_aleatorios)
@@ -85,14 +90,17 @@ def gerar_usuario_senha(dbsession):
         else:
             data_ultima_alteracao = None
 
-        # 5% de chance de estar bloqueado
-        bloqueado = random.random() < 0.05
-
-        # Tentativas de login (0-4, se bloqueado pode ter 5+)
-        if bloqueado:
-            tentativas_login = random.randint(5, 10)
+        # 5% de chance de estar bloqueado (mas usuários de teste NUNCA são bloqueados)
+        if eh_usuario_teste:
+            bloqueado = False
+            tentativas_login = 0
         else:
-            tentativas_login = random.randint(0, 3)
+            bloqueado = random.random() < 0.05
+            # Tentativas de login (0-4, se bloqueado pode ter 5+)
+            if bloqueado:
+                tentativas_login = random.randint(5, 10)
+            else:
+                tentativas_login = random.randint(0, 3)
 
         # Data do último login (se não bloqueado e teve tentativas)
         if not bloqueado and tentativas_login > 0:

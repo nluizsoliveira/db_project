@@ -3,6 +3,16 @@
 import { useState, FormEvent } from 'react';
 import { useInternalActivities } from '@/hooks/useActivities';
 import { useCreateInvite } from '@/hooks/useInvites';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 
 interface Activity {
   id_atividade: number;
@@ -28,6 +38,7 @@ export default function InviteForm({ onSuccess }: InviteFormProps) {
 
   const { data: activitiesData = [], isLoading: loading } = useInternalActivities();
   const createMutation = useCreateInvite();
+  const alertDialog = useAlertDialog();
 
   // Get unique activities by id_atividade
   const activities = Array.from(
@@ -81,7 +92,7 @@ export default function InviteForm({ onSuccess }: InviteFormProps) {
   const copyToken = () => {
     if (createdToken) {
       navigator.clipboard.writeText(createdToken);
-      alert('Token copiado para a área de transferência!');
+      alertDialog.showAlert('Token copiado para a área de transferência!', 'Sucesso');
     }
   };
 
@@ -222,6 +233,18 @@ export default function InviteForm({ onSuccess }: InviteFormProps) {
           </button>
         </div>
       </form>
+
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

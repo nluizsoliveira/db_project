@@ -1,6 +1,35 @@
 'use client';
 
-import { useState, useEffect, FormEvent, Suspense } from 'react';
+import { useState, useEffect, FormEvent, Suspense, useMemo } from 'react';
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+import { ArrowUpDown, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -17,6 +46,394 @@ interface AvailableInstallation {
   nome: string;
   tipo: string;
   capacidade: number;
+}
+
+function ReservationsTable({ reservations, loading, hasCpfFilter }: { reservations: Reservation[]; loading: boolean; hasCpfFilter: boolean }) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  const columns: ColumnDef<Reservation>[] = useMemo(
+    () => [
+      {
+        accessorKey: 'nome_instalacao',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Instalação
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div className="font-medium">{row.getValue('nome_instalacao')}</div>
+        ),
+      },
+      {
+        accessorKey: 'data_reserva',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Data
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue('data_reserva')}</div>,
+      },
+      {
+        id: 'horario',
+        header: 'Horário',
+        cell: ({ row }) => {
+          return (
+            <div>
+              {row.original.horario_inicio} - {row.original.horario_fim}
+            </div>
+          );
+        },
+      },
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: reservations,
+    columns,
+    getRowId: (row, index) => `reservation-${index}`,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+    },
+  });
+
+  if (loading) {
+    return (
+      <div className="py-8 text-center text-gray-500">Carregando...</div>
+    );
+  }
+
+  if (reservations.length === 0) {
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white p-8 text-center shadow">
+        <p className="text-gray-500">
+          {hasCpfFilter ? 'Nenhuma reserva foi retornada para o CPF informado.' : 'Nenhuma reserva agendada.'}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full space-y-4">
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="Filtrar por instalação..."
+          value={(table.getColumn('nome_instalacao')?.getFilterValue() as string) ?? ''}
+          onChange={(event) =>
+            table.getColumn('nome_instalacao')?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="ml-auto">
+              Colunas <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                  >
+                    {column.id === 'nome_instalacao'
+                      ? 'Instalação'
+                      : column.id === 'data_reserva'
+                      ? 'Data'
+                      : column.id === 'horario'
+                      ? 'Horário'
+                      : column.id}
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  Nenhum resultado encontrado.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-end space-x-2">
+        <div className="space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Anterior
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Próxima
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AvailableInstallationsTable({ installations, loading, hasFilters }: { installations: AvailableInstallation[]; loading: boolean; hasFilters: boolean }) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  const columns: ColumnDef<AvailableInstallation>[] = useMemo(
+    () => [
+      {
+        accessorKey: 'nome',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Instalação
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div className="font-medium">{row.getValue('nome')}</div>
+        ),
+      },
+      {
+        accessorKey: 'tipo',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Tipo
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue('tipo')}</div>,
+      },
+      {
+        accessorKey: 'capacidade',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Capacidade
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue('capacidade')}</div>,
+      },
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: installations,
+    columns,
+    getRowId: (row, index) => `installation-${index}`,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+    },
+  });
+
+  if (loading) {
+    return (
+      <div className="py-8 text-center text-gray-500">Carregando...</div>
+    );
+  }
+
+  if (installations.length === 0) {
+    return (
+      <div className="rounded-lg border border-gray-200 bg-white p-8 text-center shadow">
+        <p className="text-gray-500">
+          {hasFilters ? 'Nenhuma instalação disponível no período selecionado.' : 'Selecione data e horário para ver disponibilidade.'}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full space-y-4">
+      <div className="flex items-center gap-2">
+        <Input
+          placeholder="Filtrar por instalação..."
+          value={(table.getColumn('nome')?.getFilterValue() as string) ?? ''}
+          onChange={(event) =>
+            table.getColumn('nome')?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="ml-auto">
+              Colunas <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                  >
+                    {column.id === 'nome'
+                      ? 'Instalação'
+                      : column.id === 'tipo'
+                      ? 'Tipo'
+                      : column.id === 'capacidade'
+                      ? 'Capacidade'
+                      : column.id}
+                  </DropdownMenuCheckboxItem>
+                );
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => {
+                  return (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  Nenhum resultado encontrado.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-end space-x-2">
+        <div className="space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Anterior
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Próxima
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function InternalReservationsContent() {
@@ -186,81 +603,21 @@ function InternalReservationsContent() {
 
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="rounded-lg bg-white p-4 shadow">
-            <h3 className="text-lg font-semibold text-gray-900">Reservas registradas</h3>
-            <div className="mt-4 overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="border-b text-left text-gray-500">
-                  <tr>
-                    <th className="px-3 py-2">Instalação</th>
-                    <th className="px-3 py-2">Data</th>
-                    <th className="px-3 py-2">Horário</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {loading ? (
-                    <tr>
-                      <td className="px-3 py-4 text-center text-gray-500" colSpan={3}>
-                        Carregando...
-                      </td>
-                    </tr>
-                  ) : reservas.length > 0 ? (
-                    reservas.map((reserva, index) => (
-                      <tr key={index}>
-                        <td className="px-3 py-2 font-medium text-gray-900">{reserva.nome_instalacao}</td>
-                        <td className="px-3 py-2">{reserva.data_reserva}</td>
-                        <td className="px-3 py-2">
-                          {reserva.horario_inicio} - {reserva.horario_fim}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td className="px-3 py-4 text-gray-500" colSpan={3}>
-                        {filters.cpf ? 'Nenhuma reserva foi retornada para o CPF informado.' : 'Nenhuma reserva agendada.'}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <h3 className="mb-4 text-lg font-semibold text-gray-900">Reservas registradas</h3>
+            <ReservationsTable
+              reservations={reservas}
+              loading={loading}
+              hasCpfFilter={!!filters.cpf}
+            />
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow">
-            <h3 className="text-lg font-semibold text-gray-900">Instalações disponíveis</h3>
-            <div className="mt-4 overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="border-b text-left text-gray-500">
-                  <tr>
-                    <th className="px-3 py-2">Instalação</th>
-                    <th className="px-3 py-2">Tipo</th>
-                    <th className="px-3 py-2">Capacidade</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {loading ? (
-                    <tr>
-                      <td className="px-3 py-4 text-center text-gray-500" colSpan={3}>
-                        Carregando...
-                      </td>
-                    </tr>
-                  ) : availableInstalls.length > 0 ? (
-                    availableInstalls.map((item, index) => (
-                      <tr key={index}>
-                        <td className="px-3 py-2 font-medium text-gray-900">{item.nome}</td>
-                        <td className="px-3 py-2">{item.tipo}</td>
-                        <td className="px-3 py-2">{item.capacidade}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td className="px-3 py-4 text-gray-500" colSpan={3}>
-                        {filters.date && filters.start && filters.end ? 'Nenhuma instalação disponível no período selecionado.' : 'Selecione data e horário para ver disponibilidade.'}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+            <h3 className="mb-4 text-lg font-semibold text-gray-900">Instalações disponíveis</h3>
+            <AvailableInstallationsTable
+              installations={availableInstalls}
+              loading={loading}
+              hasFilters={!!(filters.date && filters.start && filters.end)}
+            />
           </div>
         </div>
       </section>

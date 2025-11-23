@@ -16,7 +16,6 @@ import {
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -35,7 +34,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 
 interface Event {
   id_evento: number;
@@ -69,12 +79,12 @@ export default function EventsManager() {
     id_reserva: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const alertDialog = useAlertDialog();
 
   // TanStack Table states
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
 
   const loadEvents = async () => {
     setLoading(true);
@@ -141,31 +151,33 @@ export default function EventsManager() {
       }
     } catch (err) {
       console.error('Erro ao carregar evento:', err);
-      alert('Erro ao carregar evento');
+      alertDialog.showAlert('Erro ao carregar evento', 'Erro');
     }
   };
 
   const handleDelete = async (eventId: number) => {
-    if (!confirm('Deseja realmente deletar este evento? Esta ação não pode ser desfeita.')) {
-      return;
-    }
+    alertDialog.showConfirm(
+      'Deseja realmente deletar este evento? Esta ação não pode ser desfeita.',
+      'Confirmar Exclusão',
+      async () => {
+        try {
+          const data = await apiDelete<{
+            success: boolean;
+            message?: string;
+          }>(`/admin/events/${eventId}`);
 
-    try {
-      const data = await apiDelete<{
-        success: boolean;
-        message?: string;
-      }>(`/admin/events/${eventId}`);
-
-      if (data.success) {
-        alert(data.message || 'Evento deletado com sucesso!');
-        loadEvents();
-      } else {
-        alert(data.message || 'Erro ao deletar evento');
+          if (data.success) {
+            alertDialog.showAlert(data.message || 'Evento deletado com sucesso!', 'Sucesso');
+            loadEvents();
+          } else {
+            alertDialog.showAlert(data.message || 'Erro ao deletar evento', 'Erro');
+          }
+        } catch (err: any) {
+          console.error('Erro ao deletar evento:', err);
+          alertDialog.showAlert(err.message || 'Erro ao deletar evento', 'Erro');
+        }
       }
-    } catch (err: any) {
-      console.error('Erro ao deletar evento:', err);
-      alert(err.message || 'Erro ao deletar evento');
-    }
+    );
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -185,7 +197,7 @@ export default function EventsManager() {
         });
 
         if (data.success) {
-          alert(data.message || 'Evento atualizado com sucesso!');
+          alertDialog.showAlert(data.message || 'Evento atualizado com sucesso!', 'Sucesso');
           setShowForm(false);
           loadEvents();
         } else {
@@ -203,7 +215,7 @@ export default function EventsManager() {
         });
 
         if (data.success) {
-          alert(data.message || 'Evento criado com sucesso!');
+          alertDialog.showAlert(data.message || 'Evento criado com sucesso!', 'Sucesso');
           setShowForm(false);
           loadEvents();
         } else {
@@ -222,28 +234,6 @@ export default function EventsManager() {
   const columns: ColumnDef<Event>[] = useMemo(
     () => [
       {
-        id: 'select',
-        header: ({ table }) => (
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && 'indeterminate')
-            }
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Selecionar todos"
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Selecionar linha"
-          />
-        ),
-        enableSorting: false,
-        enableHiding: false,
-      },
-      {
         accessorKey: 'nome',
         header: ({ column }) => {
           return (
@@ -260,7 +250,17 @@ export default function EventsManager() {
       },
       {
         accessorKey: 'descricao',
-        header: 'Descrição',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Descrição
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
         cell: ({ row }) => <div>{row.getValue('descricao') || '—'}</div>,
       },
       {
@@ -348,12 +348,10 @@ export default function EventsManager() {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
-      rowSelection,
     },
   });
 
@@ -506,7 +504,6 @@ export default function EventsManager() {
                   table.getRowModel().rows.map((row) => (
                     <TableRow
                       key={row.id}
-                      data-state={row.getIsSelected() && 'selected'}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
@@ -526,10 +523,6 @@ export default function EventsManager() {
             </Table>
           </div>
           <div className="flex items-center justify-end space-x-2">
-            <div className="flex-1 text-sm text-muted-foreground">
-              {table.getFilteredSelectedRowModel().rows.length} de{' '}
-              {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
-            </div>
             <div className="space-x-2">
               <Button
                 variant="outline"
@@ -551,6 +544,25 @@ export default function EventsManager() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {alertDialog.type === 'confirm' ? (
+              <>
+                <AlertDialogCancel onClick={alertDialog.handleCancel}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={alertDialog.handleConfirm}>Confirmar</AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

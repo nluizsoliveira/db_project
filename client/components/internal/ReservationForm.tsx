@@ -7,6 +7,16 @@ import {
   useCreateEquipmentReservation,
   useReservationFormData,
 } from '@/hooks/useReservations';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 
 interface Installation {
   id_instalacao: number;
@@ -49,6 +59,7 @@ export default function ReservationForm({ onSuccess }: ReservationFormProps) {
   const equipment = equipmentData.data || [];
   const createInstallationMutation = useCreateInstallationReservation();
   const createEquipmentMutation = useCreateEquipmentReservation();
+  const alertDialog = useAlertDialog();
 
   const loading = type === 'installation' ? loadingInstallations : equipmentData.isLoading;
 
@@ -70,7 +81,7 @@ export default function ReservationForm({ onSuccess }: ReservationFormProps) {
           hora_fim: formData.hora_fim,
         });
 
-        alert(data.message || 'Reserva realizada com sucesso!');
+        alertDialog.showAlert(data.message || 'Reserva realizada com sucesso!', 'Sucesso');
         if (onSuccess) {
           onSuccess();
         }
@@ -97,7 +108,7 @@ export default function ReservationForm({ onSuccess }: ReservationFormProps) {
           hora_fim: formData.hora_fim,
         });
 
-        alert(data.message || 'Reserva de equipamento realizada com sucesso!');
+        alertDialog.showAlert(data.message || 'Reserva de equipamento realizada com sucesso!', 'Sucesso');
         if (onSuccess) {
           onSuccess();
         }
@@ -312,6 +323,18 @@ export default function ReservationForm({ onSuccess }: ReservationFormProps) {
           </button>
         </div>
       </form>
+
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

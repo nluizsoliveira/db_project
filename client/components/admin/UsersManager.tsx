@@ -16,7 +16,6 @@ import {
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -35,7 +34,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 
 interface User {
   cpf: string;
@@ -69,12 +79,12 @@ export default function UsersManager() {
     numero_conselho: '',
   });
   const [submitting, setSubmitting] = useState(false);
+  const alertDialog = useAlertDialog();
 
   // TanStack Table states
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = useState({});
 
   const loadUsers = async () => {
     setLoading(true);
@@ -143,31 +153,33 @@ export default function UsersManager() {
       }
     } catch (err) {
       console.error('Erro ao carregar usuário:', err);
-      alert('Erro ao carregar usuário');
+      alertDialog.showAlert('Erro ao carregar usuário', 'Erro');
     }
   };
 
   const handleDelete = async (cpf: string) => {
-    if (!confirm('Deseja realmente deletar este usuário? Esta ação não pode ser desfeita.')) {
-      return;
-    }
+    alertDialog.showConfirm(
+      'Deseja realmente deletar este usuário? Esta ação não pode ser desfeita.',
+      'Confirmar Exclusão',
+      async () => {
+        try {
+          const data = await apiDelete<{
+            success: boolean;
+            message?: string;
+          }>(`/admin/users/${cpf}`);
 
-    try {
-      const data = await apiDelete<{
-        success: boolean;
-        message?: string;
-      }>(`/admin/users/${cpf}`);
-
-      if (data.success) {
-        alert(data.message || 'Usuário deletado com sucesso!');
-        loadUsers();
-      } else {
-        alert(data.message || 'Erro ao deletar usuário');
+          if (data.success) {
+            alertDialog.showAlert(data.message || 'Usuário deletado com sucesso!', 'Sucesso');
+            loadUsers();
+          } else {
+            alertDialog.showAlert(data.message || 'Erro ao deletar usuário', 'Erro');
+          }
+        } catch (err: any) {
+          console.error('Erro ao deletar usuário:', err);
+          alertDialog.showAlert(err.message || 'Erro ao deletar usuário', 'Erro');
+        }
       }
-    } catch (err: any) {
-      console.error('Erro ao deletar usuário:', err);
-      alert(err.message || 'Erro ao deletar usuário');
-    }
+    );
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -191,7 +203,7 @@ export default function UsersManager() {
         });
 
         if (data.success) {
-          alert(data.message || 'Usuário atualizado com sucesso!');
+          alertDialog.showAlert(data.message || 'Usuário atualizado com sucesso!', 'Sucesso');
           setShowForm(false);
           loadUsers();
         } else {
@@ -216,7 +228,7 @@ export default function UsersManager() {
         });
 
         if (data.success) {
-          alert(data.message || 'Usuário criado com sucesso!');
+          alertDialog.showAlert(data.message || 'Usuário criado com sucesso!', 'Sucesso');
           setShowForm(false);
           loadUsers();
         } else {
@@ -234,28 +246,6 @@ export default function UsersManager() {
   // Define columns
   const columns: ColumnDef<User>[] = useMemo(
     () => [
-      {
-        id: 'select',
-        header: ({ table }) => (
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && 'indeterminate')
-            }
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Selecionar todos"
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Selecionar linha"
-          />
-        ),
-        enableSorting: false,
-        enableHiding: false,
-      },
       {
         accessorKey: 'cpf',
         header: ({ column }) => {
@@ -384,6 +374,7 @@ export default function UsersManager() {
   const table = useReactTable({
     data: users,
     columns,
+    getRowId: (row) => row.cpf.toString(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -391,12 +382,10 @@ export default function UsersManager() {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
-      rowSelection,
     },
   });
 
@@ -632,7 +621,6 @@ export default function UsersManager() {
                   table.getRowModel().rows.map((row) => (
                     <TableRow
                       key={row.id}
-                      data-state={row.getIsSelected() && 'selected'}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
@@ -652,10 +640,6 @@ export default function UsersManager() {
             </Table>
           </div>
           <div className="flex items-center justify-end space-x-2">
-            <div className="flex-1 text-sm text-muted-foreground">
-              {table.getFilteredSelectedRowModel().rows.length} de{' '}
-              {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
-            </div>
             <div className="space-x-2">
               <Button
                 variant="outline"
@@ -677,6 +661,25 @@ export default function UsersManager() {
           </div>
         </div>
       )}
+
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            {alertDialog.type === 'confirm' ? (
+              <>
+                <AlertDialogCancel onClick={alertDialog.handleCancel}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={alertDialog.handleConfirm}>Confirmar</AlertDialogAction>
+              </>
+            ) : (
+              <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
