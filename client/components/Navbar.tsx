@@ -105,10 +105,7 @@ const Navbar = memo(function Navbar() {
       hasRole(user, "staff") ||
       hasRole(user, "admin"),
     showExternal: hasRole(user, "external"),
-    showReports:
-      hasRole(user, "admin") ||
-      hasRole(user, "staff") ||
-      hasRole(user, "internal"),
+    showReports: hasRole(user, "admin") || hasRole(user, "staff"),
   };
 
   const adminItems: NavItem[] = [
