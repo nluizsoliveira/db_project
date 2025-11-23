@@ -27,9 +27,6 @@ Projeto acadêmico - Sistema de gerenciamento de reservas e atividades para inst
       - [Opção 2: Manual](#opção-2-manual)
     - [Reverter/limpar o banco](#reverterlimpar-o-banco)
     - [Acessar o PostgreSQL via psql](#acessar-o-postgresql-via-psql)
-  - [🧪 Testes](#-testes)
-    - [Rodar testes do backend](#rodar-testes-do-backend)
-    - [Rodar testes específicos](#rodar-testes-específicos)
   - [👤 Logins de Teste](#-logins-de-teste)
   - [📝 Scripts Úteis](#-scripts-úteis)
     - [Backend](#backend)
@@ -61,8 +58,7 @@ db_project/
 ├── server/          # Backend Flask
 │   ├── app/         # Aplicação Flask (rotas, serviços)
 │   ├── data_generators/  # Geradores de dados sintéticos
-│   ├── sql/         # Scripts SQL (migrações, views, funções)
-│   └── tests/       # Testes automatizados
+│   └── sql/         # Scripts SQL (migrações, views, funções)
 ├── docs/            # Documentação do projeto
 └── docker-compose.yml
 ```
@@ -231,23 +227,6 @@ psql
 
 # Ou diretamente
 docker exec -it postgres17 psql -U postgres -d public
-```
-
-## 🧪 Testes
-
-### Rodar testes do backend
-
-```bash
-cd server
-source venv/bin/activate
-pytest -s
-```
-
-### Rodar testes específicos
-
-```bash
-pytest tests/test_schema_migration.py -s
-pytest tests/test_populate_minimal_db_migration.py -s
 ```
 
 ## 👤 Logins de Teste

@@ -1,6 +1,4 @@
 Flask
 flask-cors
 psycopg2-binary
-pytest
-pytest-timeout
 Faker
