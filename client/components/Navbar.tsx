@@ -235,12 +235,27 @@ const Navbar = memo(function Navbar() {
                       isActiveRoute("/external/dashboard") ? "true" : "false"
                     }
                   >
-                    <Link
-                      href="/external/dashboard"
-                      className="flex items-center gap-2"
-                    >
-                      <ExternalLink className="size-4" />
-                      Convidado
+                    <Link href="/external/dashboard">
+                      <div className="flex items-center gap-2">
+                        <ExternalLink
+                          className={cn(
+                            "size-4 transition-colors duration-300",
+                            isActiveRoute("/external/dashboard")
+                              ? "text-white"
+                              : "text-muted-foreground"
+                          )}
+                        />
+                        <span
+                          className={cn(
+                            "text-sm font-medium transition-colors",
+                            isActiveRoute("/external/dashboard")
+                              ? "text-white"
+                              : "text-muted-foreground"
+                          )}
+                        >
+                          Convidado
+                        </span>
+                      </div>
                     </Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
