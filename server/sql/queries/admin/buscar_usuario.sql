@@ -6,8 +6,7 @@ SELECT
     p.data_nascimento,
     CASE
         WHEN i.cpf_pessoa IS NOT NULL THEN 'interno'
-        WHEN EXISTS (SELECT 1 FROM externo_usp e WHERE e.cpf_pessoa = p.cpf) THEN 'externo'
-        ELSE 'pessoa'
+        ELSE 'externo'
     END AS tipo_usuario,
     i.nusp,
     i.categoria,

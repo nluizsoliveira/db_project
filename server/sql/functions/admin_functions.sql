@@ -48,13 +48,13 @@ BEGIN
     v_cmd := v_cmd || ' WHERE cpf = ''' || p_cpf || '''';
 
     EXECUTE v_cmd;
-    
+
     IF NOT FOUND THEN RAISE EXCEPTION 'Pessoa com CPF % não encontrada.', p_cpf; END IF;
 END;
 $$;
 
 -- DELETE
-CREATE OR REPLACE PROCEDURE deletar_pessoa(p_cpf VARCHAR) 
+CREATE OR REPLACE PROCEDURE deletar_pessoa(p_cpf VARCHAR)
 LANGUAGE plpgsql AS $$
 BEGIN
     DELETE FROM PESSOA WHERE CPF = p_cpf;
@@ -87,7 +87,7 @@ $$;
 CREATE OR REPLACE FUNCTION listar_internos()
 RETURNS TABLE(cpf VARCHAR, nome VARCHAR, nusp VARCHAR, categoria VARCHAR) AS $$
 BEGIN
-    RETURN QUERY 
+    RETURN QUERY
     SELECT P.CPF, P.NOME, I.NUSP, I.CATEGORIA
     FROM PESSOA P
     INNER JOIN INTERNO_USP I ON P.CPF = I.CPF_PESSOA;
@@ -113,7 +113,7 @@ BEGIN
     v_cmd := v_cmd || ' WHERE cpf = ''' || p_cpf || '''';
 
     EXECUTE v_cmd;
-    
+
     IF NOT FOUND THEN RAISE EXCEPTION 'Interno não encontrado.'; END IF;
 END;
 $$;
@@ -145,7 +145,7 @@ $$;
 CREATE OR REPLACE FUNCTION listar_funcionarios()
 RETURNS TABLE(cpf VARCHAR, nome VARCHAR, nusp VARCHAR, formacao VARCHAR) AS $$
 BEGIN
-    RETURN QUERY 
+    RETURN QUERY
     SELECT P.CPF, P.NOME, I.NUSP, F.FORMACAO
     FROM PESSOA P
     INNER JOIN INTERNO_USP I ON P.CPF = I.CPF_PESSOA
@@ -172,7 +172,7 @@ BEGIN
     v_cmd := v_cmd || ' WHERE cpf = ''' || p_cpf || '''';
 
     EXECUTE v_cmd;
-    
+
     IF NOT FOUND THEN RAISE EXCEPTION 'Funcionário não encontrado.'; END IF;
 END;
 $$;
@@ -205,7 +205,7 @@ $$;
 CREATE OR REPLACE FUNCTION listar_educadores()
 RETURNS TABLE(cpf VARCHAR, nome VARCHAR, nusp VARCHAR, conselho VARCHAR) AS $$
 BEGIN
-    RETURN QUERY 
+    RETURN QUERY
     SELECT P.CPF, P.NOME, I.NUSP, E.NUMERO_CONSELHO
     FROM PESSOA P
     INNER JOIN INTERNO_USP I ON P.CPF = I.CPF_PESSOA
@@ -239,7 +239,7 @@ END;
 $$;
 
 -- Grupos de extensão
--- CREATE 
+-- CREATE
 CREATE OR REPLACE PROCEDURE criar_grupo_extensao(
     p_nome VARCHAR,
     p_descricao TEXT,
@@ -256,7 +256,7 @@ CREATE OR REPLACE PROCEDURE atualizar_grupo_extensao(
     p_nome_antigo VARCHAR,
     p_nome_novo VARCHAR,
     p_descricao_nova TEXT,
-    p_cpf_responsavel_novo VARCHAR 
+    p_cpf_responsavel_novo VARCHAR
 ) LANGUAGE plpgsql AS $$
 DECLARE
     v_cmd TEXT;
@@ -282,7 +282,7 @@ END;
 $$;
 
 -- DELETE
-CREATE OR REPLACE PROCEDURE deletar_grupo_extensao(p_nome VARCHAR) 
+CREATE OR REPLACE PROCEDURE deletar_grupo_extensao(p_nome VARCHAR)
 LANGUAGE plpgsql AS $$
 BEGIN
     DELETE FROM GRUPO_EXTENSAO WHERE NOME_GRUPO = p_nome;
@@ -332,13 +332,13 @@ BEGIN
     v_cmd := v_cmd || ' WHERE id_patrimonio = ''' || p_id_patrimonio || '''';
 
     EXECUTE v_cmd;
-    
+
     IF NOT FOUND THEN RAISE EXCEPTION 'Equipamento não encontrado.'; END IF;
 END;
 $$;
 
 -- DELETE
-CREATE OR REPLACE PROCEDURE deletar_equipamento(p_id VARCHAR) 
+CREATE OR REPLACE PROCEDURE deletar_equipamento(p_id VARCHAR)
 LANGUAGE plpgsql AS $$
 BEGIN
     DELETE FROM EQUIPAMENTO WHERE ID_PATRIMONIO = p_id;
@@ -362,9 +362,9 @@ $$;
 
 -- READ
 CREATE OR REPLACE FUNCTION listar_instalacoes()
-RETURNS TABLE(id INT, nome VARCHAR, tipo VARCHAR, capacidade INT, reservavel CHAR) AS $$
+RETURNS TABLE(id_instalacao INT, nome VARCHAR, tipo VARCHAR, capacidade INT, eh_reservavel CHAR) AS $$
 BEGIN
-    RETURN QUERY SELECT ID_INSTALACAO, NOME, TIPO, CAPACIDADE, EH_RESERVAVEL FROM INSTALACAO;
+    RETURN QUERY SELECT I.ID_INSTALACAO, I.NOME, I.TIPO, I.CAPACIDADE, I.EH_RESERVAVEL FROM INSTALACAO I;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -395,13 +395,13 @@ BEGIN
     v_cmd := v_cmd || ' WHERE id_instalacao = ''' || p_id || '''';
 
     EXECUTE v_cmd;
-    
+
     IF NOT FOUND THEN RAISE EXCEPTION 'Instalação não encontrada.'; END IF;
 END;
 $$;
 
 -- DELETE
-CREATE OR REPLACE PROCEDURE deletar_instalacao(p_id INT) 
+CREATE OR REPLACE PROCEDURE deletar_instalacao(p_id INT)
 LANGUAGE plpgsql AS $$
 BEGIN
     DELETE FROM INSTALACAO WHERE ID_INSTALACAO = p_id;

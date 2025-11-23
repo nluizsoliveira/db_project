@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect, FormEvent, useMemo } from 'react';
+import { useState, useEffect, FormEvent, useMemo } from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -12,11 +12,11 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
+} from "@tanstack/react-table";
+import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -25,8 +25,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -34,8 +34,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
+} from "@/components/ui/table";
+import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
 
 interface Equipment {
   id_patrimonio: string;
@@ -56,16 +56,18 @@ export default function EquipmentManager() {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [installations, setInstallations] = useState<Installation[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
+  const [error, setError] = useState("");
+  const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(
+    null
+  );
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
-    id_patrimonio: '',
-    nome: '',
-    id_instalacao: '',
-    preco: '',
-    data_aquisicao: '',
-    eh_reservavel: 'N',
+    id_patrimonio: "",
+    nome: "",
+    id_instalacao: "",
+    preco: "",
+    data_aquisicao: "",
+    eh_reservavel: "N",
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -77,19 +79,19 @@ export default function EquipmentManager() {
 
   const loadEquipment = async () => {
     setLoading(true);
-    setError('');
+    setError("");
     try {
       const data = await apiGet<{
         success: boolean;
         equipment: Equipment[];
-      }>('/admin/equipment');
+      }>("/admin/equipment");
 
       if (data.success) {
         setEquipment(data.equipment || []);
       }
     } catch (err) {
-      console.error('Erro ao carregar equipamentos:', err);
-      setError('Erro ao carregar equipamentos');
+      console.error("Erro ao carregar equipamentos:", err);
+      setError("Erro ao carregar equipamentos");
       setEquipment([]);
     } finally {
       setLoading(false);
@@ -101,13 +103,13 @@ export default function EquipmentManager() {
       const data = await apiGet<{
         success: boolean;
         installations: Installation[];
-      }>('/admin/installations');
+      }>("/admin/installations");
 
       if (data.success) {
         setInstallations(data.installations || []);
       }
     } catch (err) {
-      console.error('Erro ao carregar instalações:', err);
+      console.error("Erro ao carregar instalações:", err);
     }
   };
 
@@ -119,12 +121,12 @@ export default function EquipmentManager() {
   const handleCreate = () => {
     setEditingEquipment(null);
     setFormData({
-      id_patrimonio: '',
-      nome: '',
-      id_instalacao: '',
-      preco: '',
-      data_aquisicao: '',
-      eh_reservavel: 'N',
+      id_patrimonio: "",
+      nome: "",
+      id_instalacao: "",
+      preco: "",
+      data_aquisicao: "",
+      eh_reservavel: "N",
     });
     setShowForm(true);
   };
@@ -141,21 +143,25 @@ export default function EquipmentManager() {
         setFormData({
           id_patrimonio: data.equipment.id_patrimonio,
           nome: data.equipment.nome,
-          id_instalacao: data.equipment.id_instalacao_local?.toString() || '',
-          preco: data.equipment.preco_aquisicao?.toString() || '',
-          data_aquisicao: data.equipment.data_aquisicao || '',
+          id_instalacao: data.equipment.id_instalacao_local?.toString() || "",
+          preco: data.equipment.preco_aquisicao?.toString() || "",
+          data_aquisicao: data.equipment.data_aquisicao || "",
           eh_reservavel: data.equipment.eh_reservavel,
         });
         setShowForm(true);
       }
     } catch (err) {
-      console.error('Erro ao carregar equipamento:', err);
-      alert('Erro ao carregar equipamento');
+      console.error("Erro ao carregar equipamento:", err);
+      alert("Erro ao carregar equipamento");
     }
   };
 
   const handleDelete = async (equipmentId: string) => {
-    if (!confirm('Deseja realmente deletar este equipamento? Esta ação não pode ser desfeita.')) {
+    if (
+      !confirm(
+        "Deseja realmente deletar este equipamento? Esta ação não pode ser desfeita."
+      )
+    ) {
       return;
     }
 
@@ -166,21 +172,21 @@ export default function EquipmentManager() {
       }>(`/admin/equipment/${equipmentId}`);
 
       if (data.success) {
-        alert(data.message || 'Equipamento deletado com sucesso!');
+        alert(data.message || "Equipamento deletado com sucesso!");
         loadEquipment();
       } else {
-        alert(data.message || 'Erro ao deletar equipamento');
+        alert(data.message || "Erro ao deletar equipamento");
       }
     } catch (err: any) {
-      console.error('Erro ao deletar equipamento:', err);
-      alert(err.message || 'Erro ao deletar equipamento');
+      console.error("Erro ao deletar equipamento:", err);
+      alert(err.message || "Erro ao deletar equipamento");
     }
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    setError('');
+    setError("");
 
     try {
       if (editingEquipment) {
@@ -190,42 +196,46 @@ export default function EquipmentManager() {
           message?: string;
         }>(`/admin/equipment/${editingEquipment.id_patrimonio}`, {
           nome: formData.nome,
-          id_instalacao: formData.id_instalacao ? parseInt(formData.id_instalacao) : null,
+          id_instalacao: formData.id_instalacao
+            ? parseInt(formData.id_instalacao)
+            : null,
           eh_reservavel: formData.eh_reservavel,
         });
 
         if (data.success) {
-          alert(data.message || 'Equipamento atualizado com sucesso!');
+          alert(data.message || "Equipamento atualizado com sucesso!");
           setShowForm(false);
           loadEquipment();
         } else {
-          setError(data.message || 'Erro ao atualizar equipamento');
+          setError(data.message || "Erro ao atualizar equipamento");
         }
       } else {
         // Create
         const data = await apiPost<{
           success: boolean;
           message?: string;
-        }>('/admin/equipment', {
+        }>("/admin/equipment", {
           id_patrimonio: formData.id_patrimonio,
           nome: formData.nome,
-          id_instalacao: formData.id_instalacao ? parseInt(formData.id_instalacao) : null,
+          id_instalacao: formData.id_instalacao
+            ? parseInt(formData.id_instalacao)
+            : null,
           preco: formData.preco ? parseFloat(formData.preco) : null,
           data_aquisicao: formData.data_aquisicao || null,
           eh_reservavel: formData.eh_reservavel,
         });
 
         if (data.success) {
-          alert(data.message || 'Equipamento criado com sucesso!');
+          alert(data.message || "Equipamento criado com sucesso!");
           setShowForm(false);
           loadEquipment();
         } else {
-          setError(data.message || 'Erro ao criar equipamento');
+          setError(data.message || "Erro ao criar equipamento");
         }
       }
     } catch (err: any) {
-      console.error('Erro ao salvar equipamento:', err);
-      setError(err.message || 'Erro ao salvar equipamento');
+      console.error("Erro ao salvar equipamento:", err);
+      setError(err.message || "Erro ao salvar equipamento");
     } finally {
       setSubmitting(false);
     }
@@ -235,14 +245,16 @@ export default function EquipmentManager() {
   const columns: ColumnDef<Equipment>[] = useMemo(
     () => [
       {
-        id: 'select',
+        id: "select",
         header: ({ table }) => (
           <Checkbox
             checked={
               table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && 'indeterminate')
+              (table.getIsSomePageRowsSelected() && "indeterminate")
             }
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            onCheckedChange={(value) =>
+              table.toggleAllPageRowsSelected(!!value)
+            }
             aria-label="Selecionar todos"
           />
         ),
@@ -257,57 +269,67 @@ export default function EquipmentManager() {
         enableHiding: false,
       },
       {
-        accessorKey: 'id_patrimonio',
+        accessorKey: "id_patrimonio",
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
             >
               ID Patrimônio
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
-        cell: ({ row }) => <div className="font-medium">{row.getValue('id_patrimonio')}</div>,
+        cell: ({ row }) => (
+          <div className="font-medium">{row.getValue("id_patrimonio")}</div>
+        ),
       },
       {
-        accessorKey: 'nome',
+        accessorKey: "nome",
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
             >
               Nome
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
-        cell: ({ row }) => <div>{row.getValue('nome')}</div>,
+        cell: ({ row }) => <div>{row.getValue("nome")}</div>,
       },
       {
-        accessorKey: 'nome_instalacao',
+        accessorKey: "nome_instalacao",
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
             >
               Instalação
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
-        cell: ({ row }) => <div>{row.getValue('nome_instalacao') || '—'}</div>,
+        cell: ({ row }) => <div>{row.getValue("nome_instalacao") || "—"}</div>,
       },
       {
-        id: 'preco',
+        id: "preco",
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
             >
               Preço
               <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -316,31 +338,47 @@ export default function EquipmentManager() {
         },
         cell: ({ row }) => {
           const preco = row.original.preco_aquisicao;
-          return <div>{preco ? `R$ ${preco.toFixed(2)}` : '—'}</div>;
+          const precoNum =
+            typeof preco === "string" ? parseFloat(preco) : preco;
+          return (
+            <div>
+              {precoNum && !isNaN(precoNum) ? `R$ ${precoNum.toFixed(2)}` : "—"}
+            </div>
+          );
         },
         sortingFn: (rowA, rowB) => {
-          const a = rowA.original.preco_aquisicao || 0;
-          const b = rowB.original.preco_aquisicao || 0;
+          const a =
+            typeof rowA.original.preco_aquisicao === "string"
+              ? parseFloat(rowA.original.preco_aquisicao) || 0
+              : rowA.original.preco_aquisicao || 0;
+          const b =
+            typeof rowB.original.preco_aquisicao === "string"
+              ? parseFloat(rowB.original.preco_aquisicao) || 0
+              : rowB.original.preco_aquisicao || 0;
           return a - b;
         },
       },
       {
-        accessorKey: 'eh_reservavel',
+        accessorKey: "eh_reservavel",
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
             >
               Reservável
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
-        cell: ({ row }) => <div>{row.getValue('eh_reservavel') === 'S' ? 'Sim' : 'Não'}</div>,
+        cell: ({ row }) => (
+          <div>{row.getValue("eh_reservavel") === "S" ? "Sim" : "Não"}</div>
+        ),
       },
       {
-        id: 'actions',
+        id: "actions",
         enableHiding: false,
         cell: ({ row }) => {
           const equipment = row.original;
@@ -355,7 +393,9 @@ export default function EquipmentManager() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => handleEdit(equipment.id_patrimonio)}>
+                <DropdownMenuItem
+                  onClick={() => handleEdit(equipment.id_patrimonio)}
+                >
                   Editar
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -397,7 +437,9 @@ export default function EquipmentManager() {
   return (
     <div className="rounded-lg bg-white p-6 shadow">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Gerenciar Equipamentos</h2>
+        <h2 className="text-lg font-semibold text-gray-900">
+          Gerenciar Equipamentos
+        </h2>
         <Button
           onClick={handleCreate}
           className="bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab]"
@@ -409,7 +451,7 @@ export default function EquipmentManager() {
       {showForm && (
         <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
           <h3 className="mb-4 text-md font-semibold text-gray-900">
-            {editingEquipment ? 'Editar Equipamento' : 'Novo Equipamento'}
+            {editingEquipment ? "Editar Equipamento" : "Novo Equipamento"}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -419,7 +461,12 @@ export default function EquipmentManager() {
                   <input
                     type="text"
                     value={formData.id_patrimonio}
-                    onChange={(e) => setFormData({ ...formData, id_patrimonio: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        id_patrimonio: e.target.value,
+                      })
+                    }
                     required
                     className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                   />
@@ -430,7 +477,9 @@ export default function EquipmentManager() {
                 <input
                   type="text"
                   value={formData.nome}
-                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, nome: e.target.value })
+                  }
                   required
                   className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                 />
@@ -439,7 +488,9 @@ export default function EquipmentManager() {
                 <span className="mb-1 block font-medium">Instalação</span>
                 <select
                   value={formData.id_instalacao}
-                  onChange={(e) => setFormData({ ...formData, id_instalacao: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, id_instalacao: e.target.value })
+                  }
                   className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                 >
                   <option value="">Nenhuma</option>
@@ -453,21 +504,32 @@ export default function EquipmentManager() {
               {!editingEquipment && (
                 <>
                   <label className="text-sm text-gray-600">
-                    <span className="mb-1 block font-medium">Preço de Aquisição</span>
+                    <span className="mb-1 block font-medium">
+                      Preço de Aquisição
+                    </span>
                     <input
                       type="number"
                       step="0.01"
                       value={formData.preco}
-                      onChange={(e) => setFormData({ ...formData, preco: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, preco: e.target.value })
+                      }
                       className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                     />
                   </label>
                   <label className="text-sm text-gray-600">
-                    <span className="mb-1 block font-medium">Data de Aquisição</span>
+                    <span className="mb-1 block font-medium">
+                      Data de Aquisição
+                    </span>
                     <input
                       type="date"
                       value={formData.data_aquisicao}
-                      onChange={(e) => setFormData({ ...formData, data_aquisicao: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          data_aquisicao: e.target.value,
+                        })
+                      }
                       className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                     />
                   </label>
@@ -477,7 +539,9 @@ export default function EquipmentManager() {
                 <span className="mb-1 block font-medium">Reservável</span>
                 <select
                   value={formData.eh_reservavel}
-                  onChange={(e) => setFormData({ ...formData, eh_reservavel: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, eh_reservavel: e.target.value })
+                  }
                   required
                   className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                 >
@@ -486,14 +550,18 @@ export default function EquipmentManager() {
                 </select>
               </label>
             </div>
-            {error && <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">{error}</div>}
+            {error && (
+              <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">
+                {error}
+              </div>
+            )}
             <div className="flex justify-end gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => {
                   setShowForm(false);
-                  setError('');
+                  setError("");
                 }}
               >
                 Cancelar
@@ -503,7 +571,11 @@ export default function EquipmentManager() {
                 disabled={submitting}
                 className="bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab] disabled:opacity-50"
               >
-                {submitting ? 'Salvando...' : editingEquipment ? 'Atualizar' : 'Criar'}
+                {submitting
+                  ? "Salvando..."
+                  : editingEquipment
+                  ? "Atualizar"
+                  : "Criar"}
               </Button>
             </div>
           </form>
@@ -511,18 +583,26 @@ export default function EquipmentManager() {
       )}
 
       {error && !showForm && (
-        <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">{error}</div>
+        <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">
+          {error}
+        </div>
       )}
 
       {loading ? (
-        <div className="py-8 text-center text-gray-500">Carregando equipamentos...</div>
+        <div className="py-8 text-center text-gray-500">
+          Carregando equipamentos...
+        </div>
       ) : (
         <div className="w-full space-y-4">
           <div className="flex items-center gap-2">
             <Input
               placeholder="Filtrar por nome..."
-              value={(table.getColumn('nome')?.getFilterValue() as string) ?? ''}
-              onChange={(event) => table.getColumn('nome')?.setFilterValue(event.target.value)}
+              value={
+                (table.getColumn("nome")?.getFilterValue() as string) ?? ""
+              }
+              onChange={(event) =>
+                table.getColumn("nome")?.setFilterValue(event.target.value)
+              }
               className="max-w-sm"
             />
             <DropdownMenu>
@@ -541,16 +621,18 @@ export default function EquipmentManager() {
                         key={column.id}
                         className="capitalize"
                         checked={column.getIsVisible()}
-                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(!!value)
+                        }
                       >
-                        {column.id === 'id_patrimonio'
-                          ? 'ID Patrimônio'
-                          : column.id === 'nome_instalacao'
-                          ? 'Instalação'
-                          : column.id === 'eh_reservavel'
-                          ? 'Reservável'
-                          : column.id === 'preco'
-                          ? 'Preço'
+                        {column.id === "id_patrimonio"
+                          ? "ID Patrimônio"
+                          : column.id === "nome_instalacao"
+                          ? "Instalação"
+                          : column.id === "eh_reservavel"
+                          ? "Reservável"
+                          : column.id === "preco"
+                          ? "Preço"
                           : column.id}
                       </DropdownMenuCheckboxItem>
                     );
@@ -568,7 +650,10 @@ export default function EquipmentManager() {
                         <TableHead key={header.id}>
                           {header.isPlaceholder
                             ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
                         </TableHead>
                       );
                     })}
@@ -580,18 +665,24 @@ export default function EquipmentManager() {
                   table.getRowModel().rows.map((row) => (
                     <TableRow
                       key={row.id}
-                      data-state={row.getIsSelected() && 'selected'}
+                      data-state={row.getIsSelected() && "selected"}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
                         </TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
                       Nenhum equipamento encontrado.
                     </TableCell>
                   </TableRow>
@@ -601,7 +692,7 @@ export default function EquipmentManager() {
           </div>
           <div className="flex items-center justify-end space-x-2">
             <div className="flex-1 text-sm text-muted-foreground">
-              {table.getFilteredSelectedRowModel().rows.length} de{' '}
+              {table.getFilteredSelectedRowModel().rows.length} de{" "}
               {table.getFilteredRowModel().rows.length} linha(s) selecionada(s).
             </div>
             <div className="space-x-2">
