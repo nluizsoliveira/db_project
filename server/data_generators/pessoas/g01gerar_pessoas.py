@@ -37,8 +37,13 @@ EMAIL_TESTE_CADASTRO = "cadastro@usp.br"
 
 
 def gerar_pessoas(dbsession, quantidade):
-    cpfs_gerados = set()  # Garante CPFs únicos
-    emails_usados = set()  # Garante emails únicos
+    # Verificar quais CPFs e emails já existem no banco
+    pessoas_existentes = dbsession.fetch_all("SELECT CPF, EMAIL FROM PESSOA")
+    cpfs_existentes = {row['cpf'] for row in pessoas_existentes}
+    emails_existentes = {row['email'] for row in pessoas_existentes}
+
+    cpfs_gerados = set()  # Garante CPFs únicos no batch atual
+    emails_usados = set()  # Garante emails únicos no batch atual
 
     pessoas_data = []
 
@@ -54,12 +59,12 @@ def gerar_pessoas(dbsession, quantidade):
     ]
 
     for email_teste, nome_teste, cpf_fixo in usuarios_teste:
-        if cpf_fixo:
-            cpf_teste = cpf_fixo
-        else:
-            cpf_teste = gerar_cpf()
-            while cpf_teste in cpfs_gerados:
-                cpf_teste = gerar_cpf()
+        # Verificar se já existe no banco
+        if cpf_fixo in cpfs_existentes or email_teste in emails_existentes:
+            print(f"   ⚠️  Usuário de teste já existe: {email_teste} (CPF: {cpf_fixo})")
+            continue
+
+        cpf_teste = cpf_fixo
         cpfs_gerados.add(cpf_teste)
 
         celular_teste = (
@@ -79,19 +84,35 @@ def gerar_pessoas(dbsession, quantidade):
         emails_usados.add(email_teste)
         print(f"   📧 Email fixo para login: {email_teste} (CPF: {cpf_teste})")
 
-    for i in range(len(usuarios_teste), quantidade):
-        # Gera CPF único
+    # Calcular quantas pessoas ainda precisam ser geradas
+    pessoas_restantes = quantidade - len(pessoas_data)
+
+    for i in range(pessoas_restantes):
+        # Gera CPF único (não existe no banco nem no batch atual)
         cpf = gerar_cpf()
-        while cpf in cpfs_gerados:
+        tentativas_cpf = 0
+        while cpf in cpfs_existentes or cpf in cpfs_gerados:
             cpf = gerar_cpf()
+            tentativas_cpf += 1
+            if tentativas_cpf > 1000:
+                # Se não conseguir gerar após muitas tentativas, pular esta pessoa
+                print(f"   ⚠️  Não foi possível gerar CPF único após 1000 tentativas. Pulando pessoa {i+1}.")
+                continue
+
         cpfs_gerados.add(cpf)
 
         nome = fake.name()
 
-        # Gera email único
+        # Gera email único (não existe no banco nem no batch atual)
         email = fake.email()
-        while email in emails_usados:
+        tentativas_email = 0
+        while email in emails_existentes or email in emails_usados:
             email = fake.email()
+            tentativas_email += 1
+            if tentativas_email > 1000:
+                # Se não conseguir gerar após muitas tentativas, usar CPF como base
+                email = f"{cpf}@usp.br"
+                break
         emails_usados.add(email)
 
         celular = f"(11) 9{random.randint(1000, 9999)}-{random.randint(1000, 9999)}"
@@ -99,10 +120,15 @@ def gerar_pessoas(dbsession, quantidade):
 
         pessoas_data.append((cpf, nome, email, celular, data_nascimento))
 
-    # Inserir diretamente no banco usando executemany
+    if not pessoas_data:
+        print("⚠️  Nenhuma pessoa nova para inserir. Todas já existem no banco.")
+        return
+
+    # Inserir diretamente no banco usando executemany com ON CONFLICT
     query = """
         INSERT INTO PESSOA (CPF, NOME, EMAIL, CELULAR, DATA_NASCIMENTO)
         VALUES (%s, %s, %s, %s, %s)
+        ON CONFLICT (CPF) DO NOTHING
     """
 
     print(f"Inserindo {len(pessoas_data)} pessoas no banco...")
