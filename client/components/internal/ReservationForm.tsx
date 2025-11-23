@@ -34,9 +34,11 @@ interface Equipment {
 
 interface ReservationFormProps {
   onSuccess?: () => void;
+  hideTitle?: boolean;
+  hideWrapper?: boolean;
 }
 
-export default function ReservationForm({ onSuccess }: ReservationFormProps) {
+export default function ReservationForm({ onSuccess, hideTitle = false, hideWrapper = false }: ReservationFormProps) {
   const [type, setType] = useState<'installation' | 'equipment'>('installation');
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -131,9 +133,9 @@ export default function ReservationForm({ onSuccess }: ReservationFormProps) {
 
   const submitting = createInstallationMutation.isPending || createEquipmentMutation.isPending;
 
-  return (
-    <div className="rounded-lg bg-white p-6 shadow">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">Fazer Reserva</h2>
+  const content = (
+    <>
+      {!hideTitle && <h2 className="mb-4 text-lg font-semibold text-gray-900">Fazer Reserva</h2>}
 
       <div className="mb-4 flex gap-4">
         <button
@@ -335,6 +337,16 @@ export default function ReservationForm({ onSuccess }: ReservationFormProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </>
+  );
+
+  if (hideWrapper) {
+    return content;
+  }
+
+  return (
+    <div className="rounded-lg bg-white p-6 shadow">
+      {content}
     </div>
   );
 }

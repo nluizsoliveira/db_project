@@ -1,6 +1,7 @@
 -- Remover funções utilitárias
 DROP FUNCTION IF EXISTS get_reservas_interno(VARCHAR);
 DROP FUNCTION IF EXISTS get_instalacoes_disponiveis_horario(DATE, TIME, TIME);
+DROP FUNCTION IF EXISTS get_equipamentos_disponiveis_horario(DATE, TIME, TIME);
 DROP FUNCTION IF EXISTS get_atividades_educador(VARCHAR);
 DROP FUNCTION IF EXISTS total_acessos_cefer(DATE, DATE);
 DROP FUNCTION IF EXISTS listar_atividades(DATE, DIA_SEMANA, VARCHAR(100), VARCHAR(100));

@@ -179,6 +179,40 @@ export function useAvailableInstallations(date?: string, start?: string, end?: s
   });
 }
 
+export function useDeleteInternalInstallationReservation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (reservationId: number) => {
+      const data = await apiDelete<{
+        success: boolean;
+        message?: string;
+      }>(`/internal/reservations/installation/${reservationId}`);
+      if (!data.success) throw new Error(data.message || 'Failed to delete reservation');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['internal'] });
+    },
+  });
+}
+
+export function useDeleteInternalEquipmentReservation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (reservationId: number) => {
+      const data = await apiDelete<{
+        success: boolean;
+        message?: string;
+      }>(`/internal/reservations/equipment/${reservationId}`);
+      if (!data.success) throw new Error(data.message || 'Failed to delete reservation');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['internal'] });
+    },
+  });
+}
+
 export function useReservationFormData() {
   const installations = useQuery({
     queryKey: ['internal', 'installations'],

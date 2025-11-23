@@ -7,7 +7,6 @@ import type { LucideIcon } from "lucide-react";
 import {
   Building2,
   CalendarClock,
-  CalendarPlus,
   CalendarRange,
   ChartBar,
   ClipboardCheck,
@@ -165,16 +164,16 @@ const Navbar = memo(function Navbar() {
       icon: CalendarRange,
     },
     {
+      href: "/internal/installations",
+      label: "Recursos Disponíveis",
+      description: "Consultar disponibilidade de instalações e equipamentos por data e horário",
+      icon: Building2,
+    },
+    {
       href: "/internal/activities",
       label: "Atividades USP",
       description: "Visualizar turmas disponíveis e se inscrever",
       icon: Users,
-    },
-    {
-      href: "/internal/new-reservation",
-      label: "Nova Reserva",
-      description: "Solicitar instalação ou equipamento para uso próprio",
-      icon: CalendarPlus,
     },
     {
       href: "/internal/invites",

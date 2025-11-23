@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -221,11 +221,12 @@ export default function ActivityParticipantsManager({
           const participant = row.original;
           return (
             <Button
-              onClick={() => handleRemoveParticipant(participant.cpf_participante)}
-              className="bg-red-600 text-white hover:bg-red-700"
+              variant="ghost"
               size="sm"
+              onClick={() => handleRemoveParticipant(participant.cpf_participante)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
             >
-              Remover
+              <Trash2 className="h-4 w-4" />
             </Button>
           );
         },

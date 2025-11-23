@@ -10,10 +10,15 @@ from app.services.auth.decorators import require_role
 @require_role("internal", "staff", "admin")
 def dashboard():
     cpf = request.args.get("cpf") or ""
-    reservas = []
+    reservas_instalacoes = []
+    reservas_equipamentos = []
     if cpf:
-        reservas = sql_queries.fetch_all(
+        reservas_instalacoes = sql_queries.fetch_all(
             "queries/internal/reservas_por_interno.sql",
+            {"cpf": cpf},
+        )
+        reservas_equipamentos = sql_queries.fetch_all(
+            "queries/internal/reservas_equipamentos_por_interno.sql",
             {"cpf": cpf},
         )
 
@@ -22,9 +27,18 @@ def dashboard():
     end_param = request.args.get("end") or None
 
     available_installs: list[dict[str, str]] = []
+    available_equipment: list[dict[str, str]] = []
     if date_param and start_param and end_param:
         available_installs = sql_queries.fetch_all(
             "queries/internal/instalacoes_disponiveis.sql",
+            {
+                "date": date_param,
+                "start": start_param,
+                "end": end_param,
+            },
+        )
+        available_equipment = sql_queries.fetch_all(
+            "queries/internal/equipamentos_disponiveis.sql",
             {
                 "date": date_param,
                 "start": start_param,
@@ -35,11 +49,13 @@ def dashboard():
     return jsonify({
         "success": True,
         "cpf": cpf,
-        "reservas": reservas,
+        "reservas": reservas_instalacoes,
+        "reservas_equipamentos": reservas_equipamentos,
         "date_filter": date_param,
         "start_filter": start_param,
         "end_filter": end_param,
         "available_installs": available_installs,
+        "available_equipment": available_equipment,
     })
 
 
@@ -315,3 +331,77 @@ def create_invite():
                 pass
 
         return jsonify({"success": False, "message": f"Erro ao criar convite: {error_message}"}), 500
+
+
+@internal_blueprint.delete("/reservations/installation/<int:reservation_id>", endpoint="cancel_installation_reservation")
+@require_role("internal", "staff", "admin")
+def cancel_installation_reservation(reservation_id: int):
+    """Cancel an installation reservation."""
+    cpf_responsavel = session.get("user_id")
+    if not cpf_responsavel:
+        return jsonify({"success": False, "message": "Usuário não autenticado"}), 401
+
+    try:
+        # Verify that the reservation belongs to the current user
+        reservation = sql_queries.fetch_one(
+            "queries/internal/verificar_reserva_instalacao.sql",
+            {
+                "id_reserva": reservation_id,
+                "cpf_responsavel": cpf_responsavel,
+            },
+        )
+
+        if not reservation:
+            return jsonify({"success": False, "message": "Reserva não encontrada ou você não tem permissão para cancelá-la"}), 403
+
+        # Cancel the reservation
+        sql_queries.execute_statement(
+            "queries/staff/cancelar_reserva_instalacao.sql",
+            {"id_reserva": reservation_id},
+        )
+        return jsonify({
+            "success": True,
+            "message": "Reserva de instalação cancelada com sucesso",
+        })
+    except Exception as e:
+        error_message = str(e)
+        if "não encontrada" in error_message.lower():
+            return jsonify({"success": False, "message": "Reserva não encontrada"}), 404
+        return jsonify({"success": False, "message": f"Erro ao cancelar reserva: {error_message}"}), 500
+
+
+@internal_blueprint.delete("/reservations/equipment/<int:reservation_id>", endpoint="cancel_equipment_reservation")
+@require_role("internal", "staff", "admin")
+def cancel_equipment_reservation(reservation_id: int):
+    """Cancel an equipment reservation."""
+    cpf_responsavel = session.get("user_id")
+    if not cpf_responsavel:
+        return jsonify({"success": False, "message": "Usuário não autenticado"}), 401
+
+    try:
+        # Verify that the reservation belongs to the current user
+        reservation = sql_queries.fetch_one(
+            "queries/internal/verificar_reserva_equipamento.sql",
+            {
+                "id_reserva_equip": reservation_id,
+                "cpf_responsavel": cpf_responsavel,
+            },
+        )
+
+        if not reservation:
+            return jsonify({"success": False, "message": "Reserva não encontrada ou você não tem permissão para cancelá-la"}), 403
+
+        # Cancel the reservation
+        sql_queries.execute_statement(
+            "queries/staff/cancelar_reserva_equipamento.sql",
+            {"id_reserva_equip": reservation_id},
+        )
+        return jsonify({
+            "success": True,
+            "message": "Reserva de equipamento cancelada com sucesso",
+        })
+    except Exception as e:
+        error_message = str(e)
+        if "não encontrada" in error_message.lower():
+            return jsonify({"success": False, "message": "Reserva não encontrada"}), 404
+        return jsonify({"success": False, "message": f"Erro ao cancelar reserva: {error_message}"}), 500
