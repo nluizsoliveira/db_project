@@ -44,6 +44,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 
@@ -401,11 +408,13 @@ export default function UsersManager() {
         </Button>
       </div>
 
-      {showForm && (
-        <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <h3 className="mb-4 text-md font-semibold text-gray-900">
-            {editingUser ? 'Editar Usuário' : 'Novo Usuário'}
-          </h3>
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingUser ? 'Editar Usuário' : 'Novo Usuário'}
+            </DialogTitle>
+          </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               {!editingUser && (
@@ -532,7 +541,7 @@ export default function UsersManager() {
               )}
             </div>
             {error && <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">{error}</div>}
-            <div className="flex justify-end gap-2">
+            <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
@@ -550,10 +559,10 @@ export default function UsersManager() {
               >
                 {submitting ? 'Salvando...' : editingUser ? 'Atualizar' : 'Criar'}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {error && !showForm && (
         <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">{error}</div>

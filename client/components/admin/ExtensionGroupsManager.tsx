@@ -45,6 +45,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
   useExtensionGroups,
   useCreateExtensionGroup,
   useUpdateExtensionGroup,
@@ -281,11 +288,13 @@ export default function ExtensionGroupsManager() {
         </Button>
       </div>
 
-      {showForm && (
-        <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <h3 className="mb-4 text-md font-semibold text-gray-900">
-            {editingGroup ? 'Editar Grupo de Extensão' : 'Novo Grupo de Extensão'}
-          </h3>
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingGroup ? 'Editar Grupo de Extensão' : 'Novo Grupo de Extensão'}
+            </DialogTitle>
+          </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm text-gray-600">
@@ -335,7 +344,7 @@ export default function ExtensionGroupsManager() {
             {displayError && (
               <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">{displayError}</div>
             )}
-            <div className="flex justify-end gap-2">
+            <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
@@ -354,10 +363,10 @@ export default function ExtensionGroupsManager() {
               >
                 {submitting ? 'Salvando...' : editingGroup ? 'Atualizar' : 'Criar'}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {displayError && !showForm && (
         <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">{displayError}</div>

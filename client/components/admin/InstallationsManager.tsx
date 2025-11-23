@@ -44,6 +44,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 
@@ -334,11 +341,13 @@ export default function InstallationsManager() {
         </Button>
       </div>
 
-      {showForm && (
-        <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <h3 className="mb-4 text-md font-semibold text-gray-900">
-            {editingInstallation ? 'Editar Instalação' : 'Nova Instalação'}
-          </h3>
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingInstallation ? 'Editar Instalação' : 'Nova Instalação'}
+            </DialogTitle>
+          </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm text-gray-600">
@@ -388,7 +397,7 @@ export default function InstallationsManager() {
               </label>
             </div>
             {error && <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">{error}</div>}
-            <div className="flex justify-end gap-2">
+            <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
@@ -406,10 +415,10 @@ export default function InstallationsManager() {
               >
                 {submitting ? 'Salvando...' : editingInstallation ? 'Atualizar' : 'Criar'}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {error && !showForm && (
         <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">{error}</div>
