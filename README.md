@@ -6,7 +6,7 @@ Projeto acadêmico - Sistema de gerenciamento de reservas e atividades para inst
 
 ## 📑 Sumário
 
-- [db_project](#db_project)
+- [db\_project](#db_project)
   - [📑 Sumário](#-sumário)
   - [📋 Sobre o Projeto](#-sobre-o-projeto)
   - [🏗️ Estrutura do Projeto](#️-estrutura-do-projeto)
@@ -295,8 +295,7 @@ Consulte o arquivo `LOGINS.md` para informações sobre usuários de teste e sen
 ## 📚 Documentação Adicional
 
 - [`relatorio.md`](relatorio.md) - Relatório técnico completo do projeto (Projeto Final - Bases de Dados)
-- `LOGINS.md` - Informações sobre logins de teste
-- `RESPONSABILIDADES.md` - Responsabilidades do projeto
+- [`LOGINS.md`](LOGINS.md)  - Informações sobre logins de teste
 - `docs/` - Documentação técnica e entregas
 
 ## 📄 Sobre
