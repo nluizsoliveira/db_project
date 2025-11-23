@@ -8,8 +8,9 @@ import InstallationsManager from '@/components/admin/InstallationsManager';
 import EquipmentManager from '@/components/admin/EquipmentManager';
 import EventsManager from '@/components/admin/EventsManager';
 import UsersManager from '@/components/admin/UsersManager';
+import ExtensionGroupsManager from '@/components/admin/ExtensionGroupsManager';
 
-type TabType = 'activities' | 'installations' | 'equipment' | 'events' | 'users';
+type TabType = 'activities' | 'installations' | 'equipment' | 'events' | 'users' | 'extension-groups';
 
 export default function AdminManagementPage() {
   const [activeTab, setActiveTab] = useState<TabType>('activities');
@@ -20,6 +21,7 @@ export default function AdminManagementPage() {
     { id: 'equipment' as TabType, label: 'Equipamentos' },
     { id: 'events' as TabType, label: 'Eventos' },
     { id: 'users' as TabType, label: 'Usuários' },
+    { id: 'extension-groups' as TabType, label: 'Grupos de Extensão' },
   ];
 
   return (
@@ -54,6 +56,7 @@ export default function AdminManagementPage() {
             {activeTab === 'equipment' && <EquipmentManager />}
             {activeTab === 'events' && <EventsManager />}
             {activeTab === 'users' && <UsersManager />}
+            {activeTab === 'extension-groups' && <ExtensionGroupsManager />}
           </div>
         </section>
       </Layout>

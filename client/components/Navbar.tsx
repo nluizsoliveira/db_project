@@ -124,14 +124,9 @@ const Navbar = memo(function Navbar() {
     {
       href: "/admin/management",
       label: "Gestão de Recursos",
-      description: "Atividades, instalações, equipamentos, eventos e usuários",
+      description:
+        "Atividades, instalações, equipamentos, eventos, usuários e grupos de extensão",
       icon: Wrench,
-    },
-    {
-      href: "/admin/extension-groups",
-      label: "Grupos de Extensão",
-      description: "Cadastro de grupos e responsáveis pelos projetos",
-      icon: Users,
     },
   ];
 
