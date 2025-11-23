@@ -56,58 +56,81 @@ $$;
 -- DELETE
 CREATE OR REPLACE PROCEDURE deletar_pessoa(p_cpf VARCHAR)
 LANGUAGE plpgsql AS $$
+DECLARE
+    v_count INT;
 BEGIN
+    RAISE NOTICE 'deletar_pessoa: Iniciando deleção da pessoa %', p_cpf;
+
     -- Verificar se a pessoa existe
     IF NOT EXISTS (SELECT 1 FROM PESSOA WHERE CPF = p_cpf) THEN
         RAISE EXCEPTION 'Pessoa não encontrada.';
     END IF;
+    RAISE NOTICE 'deletar_pessoa: Pessoa % encontrada', p_cpf;
+
+    -- Verificar se há dependências que impedem a deleção (RESTRICT) - ANTES de qualquer deleção
+    -- RESERVA será deletada automaticamente pela FK (CASCADE) quando INTERNO_USP for deletado
+    IF EXISTS (SELECT 1 FROM INTERNO_USP WHERE CPF_PESSOA = p_cpf) THEN
+        SELECT COUNT(*) INTO v_count FROM RESERVA WHERE CPF_RESPONSAVEL_INTERNO = p_cpf;
+        IF v_count > 0 THEN
+            RAISE NOTICE 'deletar_pessoa: % reserva(s) serão deletadas automaticamente', v_count;
+        END IF;
+    END IF;
+
+    -- Verificar GRUPO_EXTENSAO (apenas se a pessoa for INTERNO_USP)
+    IF EXISTS (SELECT 1 FROM INTERNO_USP WHERE CPF_PESSOA = p_cpf) THEN
+        SELECT COUNT(*) INTO v_count FROM GRUPO_EXTENSAO WHERE CPF_RESPONSAVEL_INTERNO = p_cpf;
+        IF v_count > 0 THEN
+            RAISE EXCEPTION 'Não é possível deletar a pessoa. Existem % grupo(s) de extensão associado(s) a esta pessoa.', v_count;
+        END IF;
+    END IF;
+
+    -- Verificar DOACAO (qualquer pessoa pode ser doadora)
+    SELECT COUNT(*) INTO v_count FROM DOACAO WHERE CPF_DOADOR = p_cpf;
+    IF v_count > 0 THEN
+        RAISE EXCEPTION 'Não é possível deletar a pessoa. Existem % doação(ões) associada(s) a esta pessoa.', v_count;
+    END IF;
+
+    -- Verificar EMPRESTIMO_EQUIPAMENTO (apenas se a pessoa for INTERNO_USP)
+    IF EXISTS (SELECT 1 FROM INTERNO_USP WHERE CPF_PESSOA = p_cpf) THEN
+        SELECT COUNT(*) INTO v_count FROM EMPRESTIMO_EQUIPAMENTO WHERE CPF_RESPONSAVEL_INTERNO = p_cpf;
+        IF v_count > 0 THEN
+            RAISE EXCEPTION 'Não é possível deletar a pessoa. Existem % empréstimo(s) de equipamento associado(s) a esta pessoa.', v_count;
+        END IF;
+    END IF;
 
     -- Deletar dependências em cascata (na ordem correta)
-    -- Deletar supervisões de eventos
+    RAISE NOTICE 'deletar_pessoa: Deletando SUPERVISAO_EVENTO (como funcionário)';
     DELETE FROM SUPERVISAO_EVENTO WHERE CPF_FUNCIONARIO = p_cpf;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_pessoa: % supervisão(ões) de evento deletada(s)', v_count;
 
-    -- Deletar atividades conduzidas
+    RAISE NOTICE 'deletar_pessoa: Deletando CONDUZ_ATIVIDADE';
     DELETE FROM CONDUZ_ATIVIDADE WHERE CPF_EDUCADOR_FISICO = p_cpf;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_pessoa: % atividade(s) conduzida(s) deletada(s)', v_count;
 
-    -- Deletar participações como convidante
-    DELETE FROM PARTICIPACAO_ATIVIDADE WHERE CPF_CONVIDANTE_INTERNO = p_cpf;
+    -- PARTICIPACAO_ATIVIDADE.CPF_CONVIDANTE_INTERNO será SET NULL automaticamente pela FK
 
-    -- Deletar convites externos criados
+    RAISE NOTICE 'deletar_pessoa: Deletando CONVITE_EXTERNO';
     DELETE FROM CONVITE_EXTERNO WHERE CPF_CONVIDANTE = p_cpf;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_pessoa: % convite(s) externo(s) deletado(s)', v_count;
 
-    -- Deletar empréstimos de equipamentos
-    DELETE FROM EMPRESTIMO_EQUIPAMENTO WHERE CPF_RESPONSAVEL_INTERNO = p_cpf;
-
-    -- Deletar reservas de equipamentos (já tem CASCADE, mas deletar explicitamente)
+    RAISE NOTICE 'deletar_pessoa: Deletando RESERVA_EQUIPAMENTO';
     DELETE FROM RESERVA_EQUIPAMENTO WHERE CPF_RESPONSAVEL_INTERNO = p_cpf;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_pessoa: % reserva(s) de equipamento deletada(s)', v_count;
 
-    -- Deletar eventos que referenciam reservas desta pessoa
-    DELETE FROM SUPERVISAO_EVENTO WHERE ID_EVENTO IN (
-        SELECT ID_EVENTO FROM EVENTO WHERE ID_RESERVA IN (
-            SELECT ID_RESERVA FROM RESERVA WHERE CPF_RESPONSAVEL_INTERNO = p_cpf
-        )
-    );
-    DELETE FROM EVENTO WHERE ID_RESERVA IN (
-        SELECT ID_RESERVA FROM RESERVA WHERE CPF_RESPONSAVEL_INTERNO = p_cpf
-    );
-
-    -- Deletar reservas
-    DELETE FROM RESERVA WHERE CPF_RESPONSAVEL_INTERNO = p_cpf;
-
-    -- Deletar grupos de extensão (primeiro deletar associações com atividades)
-    DELETE FROM ATIVIDADE_GRUPO_EXTENSAO WHERE NOME_GRUPO IN (
-        SELECT NOME_GRUPO FROM GRUPO_EXTENSAO WHERE CPF_RESPONSAVEL_INTERNO = p_cpf
-    );
-    DELETE FROM GRUPO_EXTENSAO WHERE CPF_RESPONSAVEL_INTERNO = p_cpf;
-
-    -- Deletar participações como participante
+    RAISE NOTICE 'deletar_pessoa: Deletando PARTICIPACAO_ATIVIDADE (como participante)';
     DELETE FROM PARTICIPACAO_ATIVIDADE WHERE CPF_PARTICIPANTE = p_cpf;
-
-    -- Deletar doações
-    DELETE FROM DOACAO WHERE CPF_DOADOR = p_cpf;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_pessoa: % participação(ões) como participante deletada(s)', v_count;
 
     -- Deletar a pessoa principal (isso vai deletar automaticamente INTERNO_USP, FUNCIONARIO, EDUCADOR_FISICO, etc. por causa do CASCADE)
+    RAISE NOTICE 'deletar_pessoa: Deletando PESSOA principal';
     DELETE FROM PESSOA WHERE CPF = p_cpf;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_pessoa: % pessoa(s) deletada(s). Concluído.', v_count;
 END;
 $$;
 
@@ -144,6 +167,9 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- UPDATE
+-- Drop old procedure if it exists with different parameter name
+DROP PROCEDURE IF EXISTS atualizar_interno(VARCHAR, VARCHAR);
+
 CREATE OR REPLACE PROCEDURE atualizar_interno(
     p_cpf VARCHAR,
     p_categoria_nova VARCHAR
@@ -333,17 +359,28 @@ $$;
 -- DELETE
 CREATE OR REPLACE PROCEDURE deletar_grupo_extensao(p_nome VARCHAR)
 LANGUAGE plpgsql AS $$
+DECLARE
+    v_count INT;
 BEGIN
+    RAISE NOTICE 'deletar_grupo_extensao: Iniciando deleção do grupo de extensão %', p_nome;
+
     -- Verificar se o grupo de extensão existe
     IF NOT EXISTS (SELECT 1 FROM GRUPO_EXTENSAO WHERE NOME_GRUPO = p_nome) THEN
         RAISE EXCEPTION 'Grupo de extensão não encontrado.';
     END IF;
+    RAISE NOTICE 'deletar_grupo_extensao: Grupo de extensão % encontrado', p_nome;
 
     -- Deletar dependências em cascata
+    RAISE NOTICE 'deletar_grupo_extensao: Deletando ATIVIDADE_GRUPO_EXTENSAO';
     DELETE FROM ATIVIDADE_GRUPO_EXTENSAO WHERE NOME_GRUPO = p_nome;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_grupo_extensao: % associação(ões) com atividade(s) deletada(s)', v_count;
 
     -- Deletar o grupo de extensão principal
+    RAISE NOTICE 'deletar_grupo_extensao: Deletando GRUPO_EXTENSAO principal';
     DELETE FROM GRUPO_EXTENSAO WHERE NOME_GRUPO = p_nome;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_grupo_extensao: % grupo(s) de extensão deletado(s). Concluído.', v_count;
 END;
 $$;
 
@@ -375,13 +412,13 @@ DECLARE
 BEGIN
     v_cmd := 'UPDATE equipamento SET ';
     -- Lógica para adicionar os updates baseado se um valor NULL foi passado
-    IF p_nome IS NOT NULL THEN
+    IF p_nome_novo IS NOT NULL THEN
       v_cmd := v_cmd || ' nome = ''' || p_nome_novo || ''',';
     END IF;
-    IF p_id_instalacao IS NOT NULL THEN
+    IF p_id_instalacao_novo IS NOT NULL THEN
       v_cmd := v_cmd || ' id_instalacao_local = ''' || p_id_instalacao_novo || ''',';
     END IF;
-    IF p_cpf_responsavel_novo IS NOT NULL THEN
+    IF p_eh_reservavel_novo IS NOT NULL THEN
       v_cmd := v_cmd || ' eh_reservavel = ''' || p_eh_reservavel_novo || ''',';
     END IF;
 
@@ -398,20 +435,37 @@ $$;
 -- DELETE
 CREATE OR REPLACE PROCEDURE deletar_equipamento(p_id VARCHAR)
 LANGUAGE plpgsql AS $$
+DECLARE
+    v_count INT;
 BEGIN
+    RAISE NOTICE 'deletar_equipamento: Iniciando deleção do equipamento %', p_id;
+
     -- Verificar se o equipamento existe
     IF NOT EXISTS (SELECT 1 FROM EQUIPAMENTO WHERE ID_PATRIMONIO = p_id) THEN
         RAISE EXCEPTION 'Equipamento não encontrado.';
     END IF;
+    RAISE NOTICE 'deletar_equipamento: Equipamento % encontrado', p_id;
 
-    -- Deletar dependências em cascata (na ordem correta)
-    DELETE FROM EMPRESTIMO_EQUIPAMENTO WHERE ID_EQUIPAMENTO = p_id;
-    DELETE FROM DOACAO WHERE ID_EQUIPAMENTO = p_id;
-    -- RESERVA_EQUIPAMENTO já tem CASCADE, mas deletar explicitamente para garantir
-    DELETE FROM RESERVA_EQUIPAMENTO WHERE ID_EQUIPAMENTO = p_id;
+    -- DOACAO, EMPRESTIMO_EQUIPAMENTO e RESERVA_EQUIPAMENTO serão deletados automaticamente pela FK (CASCADE)
+    SELECT COUNT(*) INTO v_count FROM DOACAO WHERE ID_EQUIPAMENTO = p_id;
+    IF v_count > 0 THEN
+        RAISE NOTICE 'deletar_equipamento: % doação(ões) serão deletadas automaticamente', v_count;
+    END IF;
+    SELECT COUNT(*) INTO v_count FROM EMPRESTIMO_EQUIPAMENTO WHERE ID_EQUIPAMENTO = p_id;
+    IF v_count > 0 THEN
+        RAISE NOTICE 'deletar_equipamento: % empréstimo(s) serão deletados automaticamente', v_count;
+    END IF;
+
+    SELECT COUNT(*) INTO v_count FROM RESERVA_EQUIPAMENTO WHERE ID_EQUIPAMENTO = p_id;
+    IF v_count > 0 THEN
+        RAISE NOTICE 'deletar_equipamento: % reserva(s) de equipamento serão deletadas automaticamente', v_count;
+    END IF;
 
     -- Deletar o equipamento principal
+    RAISE NOTICE 'deletar_equipamento: Deletando EQUIPAMENTO principal';
     DELETE FROM EQUIPAMENTO WHERE ID_PATRIMONIO = p_id;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_equipamento: % equipamento(s) deletado(s). Concluído.', v_count;
 END;
 $$;
 
@@ -449,13 +503,13 @@ DECLARE
 BEGIN
     v_cmd := 'UPDATE instalacao SET ';
     -- Lógica para adicionar os updates baseado se um valor NULL foi passado
-    IF p_nome IS NOT NULL THEN
+    IF p_nome_novo IS NOT NULL THEN
       v_cmd := v_cmd || ' nome = ''' || p_nome_novo || ''',';
     END IF;
-    IF p_capacidade IS NOT NULL THEN
+    IF p_capacidade_novo IS NOT NULL THEN
       v_cmd := v_cmd || ' capacidade = ''' || p_capacidade_novo || ''',';
     END IF;
-    IF p_eh_reservavel IS NOT NULL THEN
+    IF p_eh_reservavel_novo IS NOT NULL THEN
       v_cmd := v_cmd || ' eh_reservavel = ''' || p_eh_reservavel_novo || ''',';
     END IF;
 
@@ -472,49 +526,43 @@ $$;
 -- DELETE
 CREATE OR REPLACE PROCEDURE deletar_instalacao(p_id INT)
 LANGUAGE plpgsql AS $$
+DECLARE
+    v_count INT;
 BEGIN
+    RAISE NOTICE 'deletar_instalacao: Iniciando deleção da instalação %', p_id;
+
     -- Verificar se a instalação existe
     IF NOT EXISTS (SELECT 1 FROM INSTALACAO WHERE ID_INSTALACAO = p_id) THEN
         RAISE EXCEPTION 'Instalação não encontrada.';
     END IF;
+    RAISE NOTICE 'deletar_instalacao: Instalação % encontrada', p_id;
 
-    -- Deletar dependências em cascata (na ordem correta)
-    -- Primeiro deletar ocorrências semanais
+    -- RESERVA será deletada automaticamente pela FK (CASCADE) quando a instalação for deletada
+    SELECT COUNT(*) INTO v_count FROM RESERVA WHERE ID_INSTALACAO = p_id;
+    IF v_count > 0 THEN
+        RAISE NOTICE 'deletar_instalacao: % reserva(s) serão deletadas automaticamente', v_count;
+    END IF;
+
+    -- EQUIPAMENTO.ID_INSTALACAO_LOCAL será SET NULL automaticamente pela FK quando a instalação for deletada
+    SELECT COUNT(*) INTO v_count FROM EQUIPAMENTO WHERE ID_INSTALACAO_LOCAL = p_id;
+    IF v_count > 0 THEN
+        RAISE NOTICE 'deletar_instalacao: % equipamento(s) serão desassociados desta instalação (ID_INSTALACAO_LOCAL será NULL)', v_count;
+    END IF;
+
+    -- Deletar dependências em cascata (OCORRENCIA_SEMANAL tem CASCADE)
+    RAISE NOTICE 'deletar_instalacao: Deletando OCORRENCIA_SEMANAL';
     DELETE FROM OCORRENCIA_SEMANAL WHERE ID_INSTALACAO = p_id;
-
-    -- Deletar eventos que referenciam reservas desta instalação
-    DELETE FROM SUPERVISAO_EVENTO WHERE ID_EVENTO IN (
-        SELECT ID_EVENTO FROM EVENTO WHERE ID_RESERVA IN (
-            SELECT ID_RESERVA FROM RESERVA WHERE ID_INSTALACAO = p_id
-        )
-    );
-    DELETE FROM EVENTO WHERE ID_RESERVA IN (
-        SELECT ID_RESERVA FROM RESERVA WHERE ID_INSTALACAO = p_id
-    );
-
-    -- Deletar reservas
-    DELETE FROM RESERVA WHERE ID_INSTALACAO = p_id;
-
-    -- Deletar empréstimos de equipamentos desta instalação
-    DELETE FROM EMPRESTIMO_EQUIPAMENTO WHERE ID_EQUIPAMENTO IN (
-        SELECT ID_PATRIMONIO FROM EQUIPAMENTO WHERE ID_INSTALACAO_LOCAL = p_id
-    );
-
-    -- Deletar doações de equipamentos desta instalação
-    DELETE FROM DOACAO WHERE ID_EQUIPAMENTO IN (
-        SELECT ID_PATRIMONIO FROM EQUIPAMENTO WHERE ID_INSTALACAO_LOCAL = p_id
-    );
-
-    -- Deletar reservas de equipamentos (já tem CASCADE, mas deletar explicitamente)
-    DELETE FROM RESERVA_EQUIPAMENTO WHERE ID_EQUIPAMENTO IN (
-        SELECT ID_PATRIMONIO FROM EQUIPAMENTO WHERE ID_INSTALACAO_LOCAL = p_id
-    );
-
-    -- Deletar equipamentos
-    DELETE FROM EQUIPAMENTO WHERE ID_INSTALACAO_LOCAL = p_id;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_instalacao: % ocorrência(s) semanal(is) deletada(s)', v_count;
 
     -- Deletar a instalação principal
+    RAISE NOTICE 'deletar_instalacao: Deletando INSTALACAO principal';
     DELETE FROM INSTALACAO WHERE ID_INSTALACAO = p_id;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    IF v_count = 0 THEN
+        RAISE EXCEPTION 'Falha ao deletar a instalação %. Nenhuma linha foi afetada.', p_id;
+    END IF;
+    RAISE NOTICE 'deletar_instalacao: % instalação(ões) deletada(s). Concluído.', v_count;
 END;
 $$;
 
@@ -567,16 +615,27 @@ $$;
 -- DELETE
 CREATE OR REPLACE PROCEDURE deletar_evento(p_id_evento INT)
 LANGUAGE plpgsql AS $$
+DECLARE
+    v_count INT;
 BEGIN
+    RAISE NOTICE 'deletar_evento: Iniciando deleção do evento %', p_id_evento;
+
     -- Verificar se o evento existe
     IF NOT EXISTS (SELECT 1 FROM EVENTO WHERE ID_EVENTO = p_id_evento) THEN
         RAISE EXCEPTION 'Evento não encontrado.';
     END IF;
+    RAISE NOTICE 'deletar_evento: Evento % encontrado', p_id_evento;
 
     -- Deletar dependências em cascata
+    RAISE NOTICE 'deletar_evento: Deletando SUPERVISAO_EVENTO';
     DELETE FROM SUPERVISAO_EVENTO WHERE ID_EVENTO = p_id_evento;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_evento: % supervisão(ões) deletada(s)', v_count;
 
     -- Deletar o evento principal
+    RAISE NOTICE 'deletar_evento: Deletando EVENTO principal';
     DELETE FROM EVENTO WHERE ID_EVENTO = p_id_evento;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_evento: % evento(s) deletado(s). Concluído.', v_count;
 END;
 $$;

@@ -94,21 +94,48 @@ $$;
 -- PROCEDURE para deletar uma atividade
 CREATE OR REPLACE PROCEDURE deletar_atividade(p_id_atividade INT)
 LANGUAGE plpgsql AS $$
+DECLARE
+    v_count INT;
 BEGIN
+    RAISE NOTICE 'deletar_atividade: Iniciando deleção da atividade %', p_id_atividade;
+
     -- Verificar se a atividade existe
     IF NOT EXISTS (SELECT 1 FROM ATIVIDADE WHERE ID_ATIVIDADE = p_id_atividade) THEN
         RAISE EXCEPTION 'Atividade % não encontrada.', p_id_atividade;
     END IF;
+    RAISE NOTICE 'deletar_atividade: Atividade % encontrada', p_id_atividade;
 
     -- Deletar dependências em cascata (na ordem correta)
+    RAISE NOTICE 'deletar_atividade: Deletando CONVITE_EXTERNO';
     DELETE FROM CONVITE_EXTERNO WHERE ID_ATIVIDADE = p_id_atividade;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_atividade: % convite(s) externo(s) deletado(s)', v_count;
+
+    RAISE NOTICE 'deletar_atividade: Deletando PARTICIPACAO_ATIVIDADE';
     DELETE FROM PARTICIPACAO_ATIVIDADE WHERE ID_ATIVIDADE = p_id_atividade;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_atividade: % participação(ões) deletada(s)', v_count;
+
+    RAISE NOTICE 'deletar_atividade: Deletando CONDUZ_ATIVIDADE';
     DELETE FROM CONDUZ_ATIVIDADE WHERE ID_ATIVIDADE = p_id_atividade;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_atividade: % condução(ões) deletada(s)', v_count;
+
+    RAISE NOTICE 'deletar_atividade: Deletando ATIVIDADE_GRUPO_EXTENSAO';
     DELETE FROM ATIVIDADE_GRUPO_EXTENSAO WHERE ID_ATIVIDADE = p_id_atividade;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_atividade: % associação(ões) com grupo(s) deletada(s)', v_count;
+
+    RAISE NOTICE 'deletar_atividade: Deletando OCORRENCIA_SEMANAL';
     DELETE FROM OCORRENCIA_SEMANAL WHERE ID_ATIVIDADE = p_id_atividade;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_atividade: % ocorrência(s) semanal(is) deletada(s)', v_count;
 
     -- Deletar a atividade principal
+    RAISE NOTICE 'deletar_atividade: Deletando ATIVIDADE principal';
     DELETE FROM ATIVIDADE WHERE ID_ATIVIDADE = p_id_atividade;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RAISE NOTICE 'deletar_atividade: % atividade(s) deletada(s). Concluído.', v_count;
 END;
 $$;
 

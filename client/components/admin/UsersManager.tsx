@@ -360,6 +360,7 @@ export default function UsersManager() {
   const table = useReactTable({
     data: users,
     columns,
+    getRowId: (row) => row.cpf.toString(),
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),

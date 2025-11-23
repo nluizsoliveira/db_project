@@ -1,6 +1,35 @@
 'use client';
 
-import { useState, useEffect, FormEvent, Suspense } from 'react';
+import { useState, useEffect, FormEvent, Suspense, useMemo } from 'react';
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+import { ArrowUpDown, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -28,6 +57,11 @@ function StaffActivitiesContent() {
     modality: searchParams.get('modality') || '',
   });
   const [loading, setLoading] = useState(true);
+
+  // TanStack Table states
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   useEffect(() => {
     loadActivities();
@@ -64,6 +98,123 @@ function StaffActivitiesContent() {
     if (filters.modality) params.append('modality', filters.modality);
     router.push(`/staff/activities?${params.toString()}`);
   };
+
+  // Define columns
+  const columns: ColumnDef<Activity>[] = useMemo(
+    () => [
+      {
+        accessorKey: 'nome_atividade',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Atividade
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div className="font-medium">{row.getValue('nome_atividade')}</div>
+        ),
+      },
+      {
+        accessorKey: 'grupo_extensao',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Grupo
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue('grupo_extensao') || '—'}</div>,
+      },
+      {
+        accessorKey: 'weekday',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Dia da semana
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue('weekday')}</div>,
+      },
+      {
+        id: 'horario',
+        header: 'Horário',
+        cell: ({ row }) => {
+          return (
+            <div>
+              {row.original.horario_inicio} - {row.original.horario_fim}
+            </div>
+          );
+        },
+      },
+      {
+        id: 'inscricoes',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Inscrições
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => {
+          return (
+            <div>
+              {row.original.vagas_ocupadas} / {row.original.vagas_limite}
+            </div>
+          );
+        },
+        sortingFn: (rowA, rowB) => {
+          const a = rowA.original.vagas_ocupadas;
+          const b = rowB.original.vagas_ocupadas;
+          return a - b;
+        },
+      },
+    ],
+    []
+  );
+
+  // Create unique keys for rows
+  const activitiesWithKeys = useMemo(() => {
+    return activities.map((activity, index) => ({
+      ...activity,
+      uniqueKey: `${activity.id_atividade}-${activity.weekday || 'no-day'}-${activity.horario_inicio || 'no-time'}-${index}`,
+    }));
+  }, [activities]);
+
+  const table = useReactTable({
+    data: activitiesWithKeys,
+    columns,
+    getRowId: (row) => row.uniqueKey,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+    },
+  });
 
   return (
     <Layout>
@@ -133,51 +284,122 @@ function StaffActivitiesContent() {
           </div>
         </form>
 
-        <div className="overflow-x-auto rounded-lg bg-white shadow">
-          <table className="min-w-full text-sm">
-            <thead className="border-b text-left text-gray-500">
-              <tr>
-                <th className="px-4 py-3">Atividade</th>
-                <th className="px-4 py-3">Grupo</th>
-                <th className="px-4 py-3">Dia da semana</th>
-                <th className="px-4 py-3">Horário</th>
-                <th className="px-4 py-3">Inscrições</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {loading ? (
-                <tr>
-                  <td className="px-4 py-6 text-center text-gray-500" colSpan={5}>
-                    Carregando...
-                  </td>
-                </tr>
-              ) : activities.length > 0 ? (
-                activities.map((activity, index) => {
-                  const uniqueKey = `${activity.id_atividade}-${activity.weekday || 'no-day'}-${activity.horario_inicio || 'no-time'}-${index}`;
-                  return (
-                    <tr key={uniqueKey}>
-                      <td className="px-4 py-3 font-medium text-gray-900">{activity.nome_atividade}</td>
-                      <td className="px-4 py-3">{activity.grupo_extensao || '—'}</td>
-                      <td className="px-4 py-3">{activity.weekday}</td>
-                      <td className="px-4 py-3">
-                        {activity.horario_inicio} - {activity.horario_fim}
-                      </td>
-                      <td className="px-4 py-3">
-                        {activity.vagas_ocupadas} / {activity.vagas_limite}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td className="px-4 py-6 text-center text-gray-500" colSpan={5}>
-                    Nenhuma atividade corresponde aos filtros selecionados.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        {loading ? (
+          <div className="rounded-lg bg-white p-8 text-center shadow">
+            <p className="text-gray-500">Carregando...</p>
+          </div>
+        ) : activities.length === 0 ? (
+          <div className="rounded-lg border border-gray-200 bg-white p-8 text-center shadow">
+            <p className="text-gray-500">
+              Nenhuma atividade corresponde aos filtros selecionados.
+            </p>
+          </div>
+        ) : (
+          <div className="w-full space-y-4 rounded-lg bg-white p-4 shadow">
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Filtrar por atividade..."
+                value={(table.getColumn('nome_atividade')?.getFilterValue() as string) ?? ''}
+                onChange={(event) =>
+                  table.getColumn('nome_atividade')?.setFilterValue(event.target.value)
+                }
+                className="max-w-sm"
+              />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="ml-auto">
+                    Colunas <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {table
+                    .getAllColumns()
+                    .filter((column) => column.getCanHide())
+                    .map((column) => {
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={column.id}
+                          className="capitalize"
+                          checked={column.getIsVisible()}
+                          onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                        >
+                          {column.id === 'nome_atividade'
+                            ? 'Atividade'
+                            : column.id === 'grupo_extensao'
+                            ? 'Grupo'
+                            : column.id === 'weekday'
+                            ? 'Dia da semana'
+                            : column.id === 'horario'
+                            ? 'Horário'
+                            : column.id === 'inscricoes'
+                            ? 'Inscrições'
+                            : column.id}
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => {
+                        return (
+                          <TableHead key={header.id}>
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(header.column.columnDef.header, header.getContext())}
+                          </TableHead>
+                        );
+                      })}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {table.getRowModel().rows?.length ? (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow key={row.id}>
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="h-24 text-center">
+                        Nenhum resultado encontrado.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="flex items-center justify-end space-x-2">
+              <div className="space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                >
+                  Próxima
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <ActivitiesManager />
       </section>

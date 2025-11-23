@@ -1,6 +1,35 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+import { ArrowUpDown, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -49,6 +78,11 @@ export default function ExternalDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // TanStack Table states
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   useEffect(() => {
     loadInviteData();
@@ -313,29 +347,109 @@ export default function ExternalDashboardPage() {
           {externalParticipations.length > 0 && (
             <div className="rounded-lg bg-white p-6 shadow">
               <h2 className="mb-4 text-lg font-semibold text-gray-900">Participações Externas</h2>
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="border-b text-left text-gray-500">
-                    <tr>
-                      <th className="px-4 py-2">Participante</th>
-                      <th className="px-4 py-2">E-mail</th>
-                      <th className="px-4 py-2">Atividade</th>
-                      <th className="px-4 py-2">Anfitrião</th>
-                      <th className="px-4 py-2">NUSP</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {externalParticipations.map((participation, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-4 py-2 text-gray-900">{participation.participant_name}</td>
-                        <td className="px-4 py-2 text-gray-600">{participation.participant_email}</td>
-                        <td className="px-4 py-2 text-gray-900">{participation.activity_name}</td>
-                        <td className="px-4 py-2 text-gray-600">{participation.host_name}</td>
-                        <td className="px-4 py-2 text-gray-600">{participation.host_nusp}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="w-full space-y-4">
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="Filtrar por participante..."
+                    value={(externalParticipationTable.getColumn('participant_name')?.getFilterValue() as string) ?? ''}
+                    onChange={(event) =>
+                      externalParticipationTable.getColumn('participant_name')?.setFilterValue(event.target.value)
+                    }
+                    className="max-w-sm"
+                  />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="ml-auto">
+                        Colunas <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {externalParticipationTable
+                        .getAllColumns()
+                        .filter((column) => column.getCanHide())
+                        .map((column) => {
+                          return (
+                            <DropdownMenuCheckboxItem
+                              key={column.id}
+                              className="capitalize"
+                              checked={column.getIsVisible()}
+                              onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                            >
+                              {column.id === 'participant_name'
+                                ? 'Participante'
+                                : column.id === 'participant_email'
+                                ? 'E-mail'
+                                : column.id === 'activity_name'
+                                ? 'Atividade'
+                                : column.id === 'host_name'
+                                ? 'Anfitrião'
+                                : column.id === 'host_nusp'
+                                ? 'NUSP'
+                                : column.id}
+                            </DropdownMenuCheckboxItem>
+                          );
+                        })}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      {externalParticipationTable.getHeaderGroups().map((headerGroup) => (
+                        <TableRow key={headerGroup.id}>
+                          {headerGroup.headers.map((header) => {
+                            return (
+                              <TableHead key={header.id}>
+                                {header.isPlaceholder
+                                  ? null
+                                  : flexRender(header.column.columnDef.header, header.getContext())}
+                              </TableHead>
+                            );
+                          })}
+                        </TableRow>
+                      ))}
+                    </TableHeader>
+                    <TableBody>
+                      {externalParticipationTable.getRowModel().rows?.length ? (
+                        externalParticipationTable.getRowModel().rows.map((row) => (
+                          <TableRow key={row.id} className="hover:bg-gray-50">
+                            {row.getVisibleCells().map((cell) => (
+                              <TableCell key={cell.id}>
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={externalParticipationColumns.length} className="h-24 text-center">
+                            Nenhum resultado encontrado.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="flex items-center justify-end space-x-2">
+                  <div className="space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => externalParticipationTable.previousPage()}
+                      disabled={!externalParticipationTable.getCanPreviousPage()}
+                    >
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => externalParticipationTable.nextPage()}
+                      disabled={!externalParticipationTable.getCanNextPage()}
+                    >
+                      Próxima
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           )}

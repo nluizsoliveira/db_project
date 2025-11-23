@@ -239,6 +239,7 @@ export default function ExtensionGroupsManager() {
   const table = useReactTable({
     data: groups,
     columns,
+    getRowId: (row) => row.nome_grupo,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),

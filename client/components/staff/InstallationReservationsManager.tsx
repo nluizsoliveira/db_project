@@ -1,6 +1,35 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useMemo } from 'react';
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+import { ArrowUpDown, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useInstallationReservations, useDeleteInstallationReservation } from '@/hooks/useReservations';
 
 interface InstallationReservation {
@@ -22,6 +51,11 @@ export default function InstallationReservationsManager() {
     id_instalacao: '',
     cpf_responsavel: '',
   });
+
+  // TanStack Table states
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
   const { data: reservations = [], isLoading: loading, error: queryError } = useInstallationReservations();
   const deleteMutation = useDeleteInstallationReservation();
@@ -46,6 +80,129 @@ export default function InstallationReservationsManager() {
       alert(err.message || 'Erro ao cancelar reserva');
     }
   };
+
+  // Define columns
+  const columns: ColumnDef<InstallationReservation>[] = useMemo(
+    () => [
+      {
+        accessorKey: 'nome_instalacao',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Instalação
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div className="font-medium">{row.getValue('nome_instalacao')}</div>
+        ),
+      },
+      {
+        accessorKey: 'tipo_instalacao',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Tipo
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue('tipo_instalacao')}</div>,
+      },
+      {
+        id: 'responsavel',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Responsável
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => (
+          <div>
+            {row.original.nome_responsavel} ({row.original.cpf_responsavel_interno})
+          </div>
+        ),
+        sortingFn: (rowA, rowB) => {
+          return rowA.original.nome_responsavel.localeCompare(
+            rowB.original.nome_responsavel
+          );
+        },
+      },
+      {
+        accessorKey: 'data_reserva',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Data
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue('data_reserva')}</div>,
+      },
+      {
+        id: 'horario',
+        header: 'Horário',
+        cell: ({ row }) => {
+          return (
+            <div>
+              {row.original.horario_inicio} - {row.original.horario_fim}
+            </div>
+          );
+        },
+      },
+      {
+        id: 'actions',
+        enableHiding: false,
+        cell: ({ row }) => {
+          const reservation = row.original;
+          return (
+            <Button
+              onClick={() => handleCancelReservation(reservation.id_reserva)}
+              className="bg-red-600 text-white hover:bg-red-700"
+              size="sm"
+            >
+              Cancelar
+            </Button>
+          );
+        },
+      },
+    ],
+    []
+  );
+
+  const table = useReactTable({
+    data: reservations,
+    columns,
+    getRowId: (row) => row.id_reserva.toString(),
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+    },
+  });
 
   return (
     <div className="rounded-lg bg-white p-6 shadow">
@@ -113,53 +270,118 @@ export default function InstallationReservationsManager() {
 
       {loading ? (
         <div className="py-8 text-center text-gray-500">Carregando reservas...</div>
+      ) : reservations.length === 0 ? (
+        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center shadow">
+          <p className="text-gray-500">
+            Nenhuma reserva encontrada com os filtros selecionados.
+          </p>
+        </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="border-b text-left text-gray-500">
-              <tr>
-                <th className="px-3 py-2">Instalação</th>
-                <th className="px-3 py-2">Tipo</th>
-                <th className="px-3 py-2">Responsável</th>
-                <th className="px-3 py-2">Data</th>
-                <th className="px-3 py-2">Horário</th>
-                <th className="px-3 py-2">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {reservations.length > 0 ? (
-                reservations.map((reservation) => (
-                  <tr key={reservation.id_reserva}>
-                    <td className="px-3 py-2 font-medium text-gray-900">
-                      {reservation.nome_instalacao}
-                    </td>
-                    <td className="px-3 py-2">{reservation.tipo_instalacao}</td>
-                    <td className="px-3 py-2">
-                      {reservation.nome_responsavel} ({reservation.cpf_responsavel_interno})
-                    </td>
-                    <td className="px-3 py-2">{reservation.data_reserva}</td>
-                    <td className="px-3 py-2">
-                      {reservation.horario_inicio} - {reservation.horario_fim}
-                    </td>
-                    <td className="px-3 py-2">
-                      <button
-                        onClick={() => handleCancelReservation(reservation.id_reserva)}
-                        className="rounded bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700"
+        <div className="w-full space-y-4">
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Filtrar por instalação..."
+              value={
+                (table.getColumn('nome_instalacao')?.getFilterValue() as string) ?? ''
+              }
+              onChange={(event) =>
+                table.getColumn('nome_instalacao')?.setFilterValue(event.target.value)
+              }
+              className="max-w-sm"
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Colunas <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {table
+                  .getAllColumns()
+                  .filter((column) => column.getCanHide())
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        className="capitalize"
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
                       >
-                        Cancelar
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td className="px-3 py-4 text-gray-500" colSpan={6}>
-                    Nenhuma reserva encontrada com os filtros selecionados.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                        {column.id === 'nome_instalacao'
+                          ? 'Instalação'
+                          : column.id === 'tipo_instalacao'
+                          ? 'Tipo'
+                          : column.id === 'responsavel'
+                          ? 'Responsável'
+                          : column.id === 'data_reserva'
+                          ? 'Data'
+                          : column.id === 'horario'
+                          ? 'Horário'
+                          : column.id}
+                      </DropdownMenuCheckboxItem>
+                    );
+                  })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                      Nenhum resultado encontrado.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex items-center justify-end space-x-2">
+            <div className="space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                Próxima
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

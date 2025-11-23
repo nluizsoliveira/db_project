@@ -727,3 +727,48 @@ BEGIN
     );
 END;
 $$ LANGUAGE plpgsql;
+
+-- FUNCTION: unblock_user
+-- Unblocks a user account and resets failed login attempts
+-- Parameters:
+--   cpf_pessoa: CPF of the user to unblock
+-- Returns: JSON with success status and message
+CREATE OR REPLACE FUNCTION unblock_user(cpf_pessoa VARCHAR)
+RETURNS JSON
+AS $$
+DECLARE
+    user_exists BOOLEAN;
+    was_blocked BOOLEAN;
+BEGIN
+    -- Check if user exists in usuario_senha table
+    SELECT EXISTS(
+        SELECT 1 FROM usuario_senha us WHERE us.cpf_pessoa = unblock_user.cpf_pessoa
+    ) INTO user_exists;
+
+    IF NOT user_exists THEN
+        RETURN json_build_object(
+            'success', FALSE,
+            'message', 'Usuário não encontrado na tabela de senhas'
+        );
+    END IF;
+
+    -- Check if user was blocked
+    SELECT bloqueado INTO was_blocked
+    FROM usuario_senha
+    WHERE cpf_pessoa = unblock_user.cpf_pessoa;
+
+    -- Unblock user and reset failed attempts
+    UPDATE usuario_senha
+    SET bloqueado = FALSE,
+        tentativas_login = 0
+    WHERE cpf_pessoa = unblock_user.cpf_pessoa;
+
+    RETURN json_build_object(
+        'success', TRUE,
+        'message', CASE
+            WHEN was_blocked THEN 'Usuário desbloqueado com sucesso'
+            ELSE 'Contador de tentativas de login resetado (usuário já estava desbloqueado)'
+        END
+    );
+END;
+$$ LANGUAGE plpgsql;
