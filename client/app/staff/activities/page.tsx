@@ -35,6 +35,7 @@ import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { apiGet } from '@/lib/api';
 import ActivitiesManager from '@/components/staff/ActivitiesManager';
+import AtividadesCompletasTable from '@/components/views/AtividadesCompletasTable';
 
 interface Activity {
   id_atividade: number;
@@ -47,16 +48,46 @@ interface Activity {
   vagas_limite: number;
 }
 
+interface AtividadeCompleta {
+  id_atividade: number;
+  nome_atividade: string;
+  vagas_limite: number | null;
+  data_inicio_periodo: string;
+  data_fim_periodo: string | null;
+  grupo_extensao: string | null;
+  descricao_grupo: string | null;
+  cpf_educador: string | null;
+  nome_educador: string | null;
+  conselho_educador: string | null;
+  id_ocorrencia: number | null;
+  dia_semana: string | null;
+  horario_inicio: string | null;
+  horario_fim: string | null;
+  id_instalacao: number | null;
+  nome_instalacao: string | null;
+  tipo_instalacao: string | null;
+  total_participantes: number;
+  vagas_disponiveis: number | null;
+}
+
 function StaffActivitiesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [atividadesCompletas, setAtividadesCompletas] = useState<
+    AtividadeCompleta[]
+  >([]);
   const [filters, setFilters] = useState({
     weekday: searchParams.get('weekday') || '',
     group: searchParams.get('group') || '',
     modality: searchParams.get('modality') || '',
   });
   const [loading, setLoading] = useState(true);
+  const [loadingCompletas, setLoadingCompletas] = useState(false);
+  const [errorCompletas, setErrorCompletas] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<
+    'atividades' | 'completas' | 'gerenciar'
+  >('atividades');
 
   // TanStack Table states
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -66,6 +97,12 @@ function StaffActivitiesContent() {
   useEffect(() => {
     loadActivities();
   }, [searchParams]);
+
+  useEffect(() => {
+    if (activeTab === 'completas') {
+      loadAtividadesCompletas();
+    }
+  }, [activeTab]);
 
   const loadActivities = async () => {
     try {
@@ -99,8 +136,33 @@ function StaffActivitiesContent() {
     router.push(`/staff/activities?${params.toString()}`);
   };
 
+  const loadAtividadesCompletas = async () => {
+    try {
+      setErrorCompletas(null);
+      setLoadingCompletas(true);
+
+      const response = await apiGet<{
+        success: boolean;
+        data: AtividadeCompleta[];
+      }>('/views/atividades-completas');
+
+      if (response.success) {
+        setAtividadesCompletas(response.data || []);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar atividades completas:', err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : 'Erro desconhecido ao carregar atividades completas';
+      setErrorCompletas(errorMessage);
+    } finally {
+      setLoadingCompletas(false);
+    }
+  };
+
   // Define columns
-  const columns: ColumnDef<Activity>[] = useMemo(
+  const columns: ColumnDef<Activity & { uniqueKey: string }>[] = useMemo(
     () => [
       {
         accessorKey: 'nome_atividade',
@@ -201,7 +263,7 @@ function StaffActivitiesContent() {
   const table = useReactTable({
     data: activitiesWithKeys,
     columns,
-    getRowId: (row) => row.uniqueKey,
+    getRowId: (row: Activity & { uniqueKey: string }) => row.uniqueKey,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -220,10 +282,52 @@ function StaffActivitiesContent() {
     <Layout>
       <section className="space-y-6">
         <header>
-          <h1 className="text-2xl font-semibold text-gray-900">Atividades da Equipe</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Atividades da Equipe
+          </h1>
         </header>
 
-        <form onSubmit={handleSubmit} className="grid gap-4 rounded-lg bg-white p-4 shadow sm:grid-cols-3">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('atividades')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'atividades'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Atividades da Equipe
+            </button>
+            <button
+              onClick={() => setActiveTab('completas')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'completas'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Atividades Completas
+            </button>
+            <button
+              onClick={() => setActiveTab('gerenciar')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'gerenciar'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Gerenciar Atividades
+            </button>
+          </nav>
+        </div>
+
+        {activeTab === 'atividades' && (
+          <>
+            <form
+              onSubmit={handleSubmit}
+              className="grid gap-4 rounded-lg bg-white p-4 shadow sm:grid-cols-3"
+            >
           <label className="text-sm text-gray-600">
             <span className="mb-1 block font-medium">Dia da semana</span>
             <select
@@ -400,8 +504,44 @@ function StaffActivitiesContent() {
             </div>
           </div>
         )}
+          </>
+        )}
 
-        <ActivitiesManager />
+        {activeTab === 'gerenciar' && <ActivitiesManager />}
+
+        {activeTab === 'completas' && (
+          <div className="rounded-lg bg-white p-4 shadow">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                Atividades Completas
+              </h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Visualização consolidada de todas as atividades com grupo de
+                extensão, educador e informações de participantes
+              </p>
+              {loadingCompletas ? (
+                <div className="p-8 text-center text-gray-500">
+                  Carregando atividades completas...
+                </div>
+              ) : errorCompletas ? (
+                <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+                  <h3 className="text-lg font-semibold text-red-900 mb-2">
+                    Erro ao carregar atividades completas
+                  </h3>
+                  <p className="text-red-700 mb-4">{errorCompletas}</p>
+                  <button
+                    onClick={loadAtividadesCompletas}
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              ) : (
+                <AtividadesCompletasTable data={atividadesCompletas} />
+              )}
+            </div>
+          </div>
+        )}
       </section>
     </Layout>
   );

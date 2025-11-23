@@ -71,3 +71,20 @@ def instalacoes_ocupacao():
             "success": False,
             "error": str(e),
         }), 500
+
+
+@views_blueprint.get("/reservas-equipamentos-completas", endpoint="reservas_equipamentos_completas")
+@require_auth
+def reservas_equipamentos_completas():
+    """Retorna dados da view de reservas de equipamentos completas"""
+    try:
+        data = sql_queries.fetch_all("queries/views/reservas_equipamentos_completas.sql")
+        return jsonify({
+            "success": True,
+            "data": data,
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e),
+        }), 500

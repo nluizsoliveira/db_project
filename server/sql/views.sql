@@ -137,3 +137,30 @@ GROUP BY
     i.tipo,
     i.capacidade,
     i.eh_reservavel;
+
+-- ============================================
+-- 5. View de Reservas de Equipamentos Completas
+-- ============================================
+-- View que une reservas de equipamentos com informações do equipamento, instalação e responsável
+CREATE OR REPLACE VIEW vw_reservas_equipamentos_completas AS
+SELECT
+    re.id_reserva_equip,
+    re.data_reserva,
+    re.horario_inicio,
+    re.horario_fim,
+    e.id_patrimonio AS id_equipamento,
+    e.nome AS nome_equipamento,
+    i.id_instalacao,
+    i.nome AS nome_instalacao,
+    i.tipo AS tipo_instalacao,
+    p.cpf AS cpf_responsavel,
+    p.nome AS nome_responsavel,
+    p.email AS email_responsavel,
+    p.celular AS celular_responsavel,
+    iu.nusp AS nusp_responsavel,
+    iu.categoria AS categoria_responsavel
+FROM reserva_equipamento re
+JOIN equipamento e ON re.id_equipamento = e.id_patrimonio
+LEFT JOIN instalacao i ON e.id_instalacao_local = i.id_instalacao
+JOIN interno_usp iu ON re.cpf_responsavel_interno = iu.cpf_pessoa
+JOIN pessoa p ON iu.cpf_pessoa = p.cpf;

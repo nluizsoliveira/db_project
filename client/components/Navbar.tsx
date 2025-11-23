@@ -10,7 +10,6 @@ import {
   CalendarRange,
   ChartBar,
   ClipboardCheck,
-  Database,
   ExternalLink,
   LayoutDashboard,
   Package,
@@ -138,7 +137,7 @@ const Navbar = memo(function Navbar() {
   const staffItems: NavItem[] = [
     {
       href: "/staff/activities",
-      label: "Agenda da Equipe",
+      label: "Atividades da Equipe",
       description: "Filtros e criação de atividades do dia a dia",
       icon: CalendarClock,
     },
@@ -149,15 +148,21 @@ const Navbar = memo(function Navbar() {
       icon: UserRound,
     },
     {
-      href: "/staff/installations",
-      label: "Instalações",
-      description: "Reservas e ajustes de espaços esportivos",
-      icon: Building2,
+      href: "/staff/active-reservations",
+      label: "Reservas Ativas",
+      description: "Gerenciar reservas de instalações e equipamentos",
+      icon: CalendarClock,
     },
     {
-      href: "/staff/equipment",
-      label: "Equipamentos",
-      description: "Empréstimos e reservas de materiais",
+      href: "/staff/reservations",
+      label: "Reservas Completas",
+      description: "Visualização consolidada de todas as reservas do sistema",
+      icon: CalendarRange,
+    },
+    {
+      href: "/staff/resources",
+      label: "Recursos Disponíveis",
+      description: "Instalações e equipamentos disponíveis no sistema",
       icon: Package,
     },
   ];
@@ -302,56 +307,31 @@ const Navbar = memo(function Navbar() {
                 </NavigationMenuItem>
               )}
               {visibility.showReports && (
-                <>
-                  <NavigationMenuItem>
-                    <NavigationMenuLink
-                      asChild
-                      className={navigationMenuTriggerStyle()}
-                      data-active={
-                        isActiveRoute("/reports/overview") ? "true" : "false"
-                      }
-                    >
-                      <Link href="/reports/overview">
-                        <div className="flex items-center gap-2">
-                          <ChartBar
-                            className={cn(
-                              "size-4 transition-colors duration-300",
-                              isActiveRoute("/reports/overview")
-                                ? "text-white"
-                                : "text-muted-foreground"
-                            )}
-                          />
-                          <span className="text-sm font-medium transition-colors ">
-                            Relatórios
-                          </span>
-                        </div>
-                      </Link>
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-                  <NavigationMenuItem>
-                    <NavigationMenuLink
-                      asChild
-                      className={navigationMenuTriggerStyle()}
-                      data-active={isActiveRoute("/views") ? "true" : "false"}
-                    >
-                      <Link href="/views">
-                        <div className="flex items-center gap-2">
-                          <Database
-                            className={cn(
-                              "size-4 transition-colors duration-300",
-                              isActiveRoute("/views")
-                                ? "text-white"
-                                : "text-muted-foreground"
-                            )}
-                          />
-                          <span className="text-sm font-medium transition-colors ">
-                            Views
-                          </span>
-                        </div>
-                      </Link>
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
-                </>
+                <NavigationMenuItem>
+                  <NavigationMenuLink
+                    asChild
+                    className={navigationMenuTriggerStyle()}
+                    data-active={
+                      isActiveRoute("/reports/overview") ? "true" : "false"
+                    }
+                  >
+                    <Link href="/reports/overview">
+                      <div className="flex items-center gap-2">
+                        <ChartBar
+                          className={cn(
+                            "size-4 transition-colors duration-300",
+                            isActiveRoute("/reports/overview")
+                              ? "text-white"
+                              : "text-muted-foreground"
+                          )}
+                        />
+                        <span className="text-sm font-medium transition-colors ">
+                          Relatórios
+                        </span>
+                      </div>
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
               )}
             </NavigationMenuList>
           </NavigationMenu>
