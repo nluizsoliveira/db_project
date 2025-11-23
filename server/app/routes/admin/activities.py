@@ -3,6 +3,7 @@ from flask import jsonify, request
 from app.routes.admin import admin_blueprint
 from app.services.database import executor as sql_queries
 from app.services.auth.decorators import require_role
+from app.services.error_handler import simplify_database_error
 
 
 @admin_blueprint.get("/activities", endpoint="list_activities")
@@ -65,10 +66,10 @@ def create_activity():
             "message": "Atividade criada com sucesso",
         })
     except Exception as e:
-        error_message = str(e)
+        error_message = simplify_database_error(str(e))
         if "data de término" in error_message.lower():
             return jsonify({"success": False, "message": "A data de término não pode ser anterior à data de início"}), 400
-        return jsonify({"success": False, "message": f"Erro ao criar atividade: {error_message}"}), 500
+        return jsonify({"success": False, "message": error_message}), 500
 
 
 @admin_blueprint.put("/activities/<int:activity_id>", endpoint="update_activity")
@@ -102,10 +103,10 @@ def update_activity(activity_id: int):
             "message": "Atividade atualizada com sucesso",
         })
     except Exception as e:
-        error_message = str(e)
+        error_message = simplify_database_error(str(e))
         if "não encontrada" in error_message.lower():
             return jsonify({"success": False, "message": "Atividade não encontrada"}), 404
-        return jsonify({"success": False, "message": f"Erro ao atualizar atividade: {error_message}"}), 500
+        return jsonify({"success": False, "message": error_message}), 500
 
 
 @admin_blueprint.delete("/activities/<int:activity_id>", endpoint="delete_activity")
@@ -122,10 +123,10 @@ def delete_activity(activity_id: int):
             "message": "Atividade deletada com sucesso",
         })
     except Exception as e:
-        error_message = str(e)
+        error_message = simplify_database_error(str(e))
         if "não encontrada" in error_message.lower():
             return jsonify({"success": False, "message": "Atividade não encontrada"}), 404
-        return jsonify({"success": False, "message": f"Erro ao deletar atividade: {error_message}"}), 500
+        return jsonify({"success": False, "message": error_message}), 500
 
 
 @admin_blueprint.get("/activities/<int:activity_id>", endpoint="get_activity")
