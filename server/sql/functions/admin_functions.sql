@@ -229,6 +229,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- UPDATE
+DROP PROCEDURE IF EXISTS atualizar_funcionario(VARCHAR, VARCHAR);
 CREATE OR REPLACE PROCEDURE atualizar_funcionario(
     p_cpf VARCHAR,
     p_formacao_nova VARCHAR
@@ -290,6 +291,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- UPDATE
+DROP PROCEDURE IF EXISTS atualizar_educador(VARCHAR, VARCHAR);
 CREATE OR REPLACE PROCEDURE atualizar_educador(
     p_cpf VARCHAR,
     p_conselho_novo VARCHAR

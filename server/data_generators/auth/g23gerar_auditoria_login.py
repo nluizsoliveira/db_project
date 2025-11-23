@@ -33,10 +33,11 @@ def gerar_auditoria_login(dbsession):
     """
     EMAIL_ADMIN = "admin@usp.br"
 
-    # Verificar se o usuário admin de teste existe
+    # Verificar se o usuário admin de teste existe e obter USERID
     pessoa_admin_result = dbsession.fetch_one(f"""
-        SELECT P.EMAIL
+        SELECT P.CPF, P.EMAIL, US.USERID
         FROM PESSOA P
+        LEFT JOIN USUARIO_SENHA US ON P.CPF = US.USERID
         WHERE P.EMAIL = '{EMAIL_ADMIN}'
     """)
 
@@ -49,20 +50,22 @@ def gerar_auditoria_login(dbsession):
     status = 'SUCCESS'
     ip_origem = gerar_ip_aleatorio()
     mensagem = gerar_mensagem(status, EMAIL_ADMIN)
+    userid = pessoa_admin_result.get("userid")
 
-    # Inserir diretamente no banco
+    # Inserir diretamente no banco (conforme estrutura log_table do PF)
     query = """
         INSERT INTO AUDITORIA_LOGIN (
+            USERID, DATA_HORA_LOGIN,
             TIMESTAMP_EVENTO,
             EMAIL_USUARIO,
             IP_ORIGEM,
             STATUS,
             MENSAGEM
         )
-        VALUES (%s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
     """
 
-    auditoria_data = [(timestamp, EMAIL_ADMIN, ip_origem, status, mensagem)]
+    auditoria_data = [(userid, timestamp, timestamp, EMAIL_ADMIN, ip_origem, status, mensagem)]
 
     print(f"Inserindo 1 log de auditoria de login para {EMAIL_ADMIN}...")
     dbsession.executemany(query, auditoria_data)

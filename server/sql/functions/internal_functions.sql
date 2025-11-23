@@ -29,6 +29,7 @@ $$ LANGUAGE plpgsql;
 -- SELECT * FROM get_reservas_interno('CPF_INTERNO_EXEMPLO');
 
 -- FUNCTION para listar instalações disponíveis em um determinado dia e horário:
+DROP FUNCTION IF EXISTS get_instalacoes_disponiveis_horario(DATE, TIME, TIME);
 CREATE OR REPLACE FUNCTION get_instalacoes_disponiveis_horario(
     dia DATE,
     hora_inicio TIME,
@@ -128,6 +129,7 @@ $$ LANGUAGE plpgsql;
 -- SELECT * FROM get_instalacoes_disponiveis_horario('2023-11-10', '12:00', '14:00');
 
 -- FUNCTION para listar equipamentos disponíveis em um determinado dia e horário:
+DROP FUNCTION IF EXISTS get_equipamentos_disponiveis_horario(DATE, TIME, TIME);
 CREATE OR REPLACE FUNCTION get_equipamentos_disponiveis_horario(
     dia DATE,
     hora_inicio TIME,
