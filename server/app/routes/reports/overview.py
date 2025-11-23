@@ -26,6 +26,24 @@ def overview():
     installations_most_reserved = sql_queries.fetch_all(
         "queries/reports/installations_most_reserved.sql"
     )
+    reservations_row_number = sql_queries.fetch_all(
+        "queries/reports/reservations_row_number.sql"
+    )
+    activities_dense_rank = sql_queries.fetch_all(
+        "queries/reports/activities_dense_rank.sql"
+    )
+    reservations_monthly_growth = sql_queries.fetch_all(
+        "queries/reports/reservations_monthly_growth.sql"
+    )
+    reservations_cumulative = sql_queries.fetch_all(
+        "queries/reports/reservations_cumulative.sql"
+    )
+    activities_moving_average = sql_queries.fetch_all(
+        "queries/reports/activities_moving_average.sql"
+    )
+    educator_activities_count = sql_queries.fetch_all(
+        "queries/reports/educator_activities_count.sql"
+    )
 
     return jsonify({
         "success": True,
@@ -35,4 +53,10 @@ def overview():
         "installation_ranking": installation_ranking,
         "activity_occurrences": activity_occurrences,
         "installations_most_reserved": installations_most_reserved,
+        "reservations_row_number": reservations_row_number,
+        "activities_dense_rank": activities_dense_rank,
+        "reservations_monthly_growth": reservations_monthly_growth,
+        "reservations_cumulative": reservations_cumulative,
+        "activities_moving_average": activities_moving_average,
+        "educator_activities_count": educator_activities_count,
     })

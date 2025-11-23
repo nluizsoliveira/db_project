@@ -13,6 +13,8 @@ export interface Reservation {
   horario_inicio: string;
   horario_fim: string;
   responsible_name: string;
+  next_reservation_date: string | null;
+  next_reservation_time: string | null;
 }
 
 export interface Activity {

@@ -12,6 +12,8 @@ SQL_ROOT = PROJECT_ROOT / "sql"
 SCHEMA_FILE = SQL_ROOT / "upgrade_schema.sql"
 FUNCTIONS_DIR = SQL_ROOT / "functions"
 TRIGGERS_FILE = FUNCTIONS_DIR / "common_triggers.sql"
+INDEXES_FILE = SQL_ROOT / "indexes.sql"
+VIEWS_FILE = SQL_ROOT / "views.sql"
 
 _schema_ready = False
 
@@ -55,6 +57,7 @@ def ensure_schema_populated(db_session) -> None:
                 _schema_ready = False
                 raise Exception("Falha ao criar schema do banco de dados")
             _apply_plpgsql_assets(db_session)
+            _apply_indexes_and_views(db_session)
             _apply_sample_data(db_session)
             _schema_ready = True
             current_app.logger.info("Schema criado e populado com sucesso")
@@ -63,6 +66,7 @@ def ensure_schema_populated(db_session) -> None:
             current_app.logger.info("Schema já existe. Aplicando funções/triggers se necessário...")
             if not _schema_ready:
                 _apply_plpgsql_assets(db_session)
+                _apply_indexes_and_views(db_session)
                 _schema_ready = True
     except Exception as e:
         current_app.logger.error(f"Erro ao garantir schema populado: {e}", exc_info=True)
@@ -212,3 +216,22 @@ def _apply_plpgsql_assets(db_session) -> None:
             db_session.run_sql_file(str(TRIGGERS_FILE))
         except Exception as e:
             current_app.logger.error(f"Erro ao aplicar triggers: {e}")
+
+
+def _apply_indexes_and_views(db_session) -> None:
+    """Aplica índices e views SQL ao banco de dados."""
+    # Aplicar índices
+    if INDEXES_FILE.exists():
+        current_app.logger.info("Applying indexes from %s", INDEXES_FILE)
+        try:
+            db_session.run_sql_file(str(INDEXES_FILE))
+        except Exception as e:
+            current_app.logger.error(f"Erro ao aplicar índices: {e}")
+
+    # Aplicar views
+    if VIEWS_FILE.exists():
+        current_app.logger.info("Applying views from %s", VIEWS_FILE)
+        try:
+            db_session.run_sql_file(str(VIEWS_FILE))
+        except Exception as e:
+            current_app.logger.error(f"Erro ao aplicar views: {e}")

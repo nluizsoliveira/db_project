@@ -10,6 +10,7 @@ import {
   CalendarRange,
   ChartBar,
   ClipboardCheck,
+  Database,
   ExternalLink,
   LayoutDashboard,
   Package,
@@ -171,7 +172,8 @@ const Navbar = memo(function Navbar() {
     {
       href: "/internal/installations",
       label: "Recursos Disponíveis",
-      description: "Consultar disponibilidade de instalações e equipamentos por data e horário",
+      description:
+        "Consultar disponibilidade de instalações e equipamentos por data e horário",
       icon: Building2,
     },
     {
@@ -300,31 +302,56 @@ const Navbar = memo(function Navbar() {
                 </NavigationMenuItem>
               )}
               {visibility.showReports && (
-                <NavigationMenuItem>
-                  <NavigationMenuLink
-                    asChild
-                    className={navigationMenuTriggerStyle()}
-                    data-active={
-                      isActiveRoute("/reports/overview") ? "true" : "false"
-                    }
-                  >
-                    <Link href="/reports/overview">
-                      <div className="flex items-center gap-2">
-                        <ChartBar
-                          className={cn(
-                            "size-4 transition-colors duration-300",
-                            isActiveRoute("/reports/overview")
-                              ? "text-white"
-                              : "text-muted-foreground"
-                          )}
-                        />
-                        <span className="text-sm font-medium transition-colors ">
-                          Relatórios
-                        </span>
-                      </div>
-                    </Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
+                <>
+                  <NavigationMenuItem>
+                    <NavigationMenuLink
+                      asChild
+                      className={navigationMenuTriggerStyle()}
+                      data-active={
+                        isActiveRoute("/reports/overview") ? "true" : "false"
+                      }
+                    >
+                      <Link href="/reports/overview">
+                        <div className="flex items-center gap-2">
+                          <ChartBar
+                            className={cn(
+                              "size-4 transition-colors duration-300",
+                              isActiveRoute("/reports/overview")
+                                ? "text-white"
+                                : "text-muted-foreground"
+                            )}
+                          />
+                          <span className="text-sm font-medium transition-colors ">
+                            Relatórios
+                          </span>
+                        </div>
+                      </Link>
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <NavigationMenuLink
+                      asChild
+                      className={navigationMenuTriggerStyle()}
+                      data-active={isActiveRoute("/views") ? "true" : "false"}
+                    >
+                      <Link href="/views">
+                        <div className="flex items-center gap-2">
+                          <Database
+                            className={cn(
+                              "size-4 transition-colors duration-300",
+                              isActiveRoute("/views")
+                                ? "text-white"
+                                : "text-muted-foreground"
+                            )}
+                          />
+                          <span className="text-sm font-medium transition-colors ">
+                            Views
+                          </span>
+                        </div>
+                      </Link>
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                </>
               )}
             </NavigationMenuList>
           </NavigationMenu>
