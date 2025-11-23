@@ -255,16 +255,14 @@ export default function ActivityParticipantsManager({
 
   if (!activityId) {
     return (
-      <div className="rounded-lg bg-white p-6 shadow">
-        <h2 className="mb-4 text-lg font-semibold text-gray-900">Gerenciar Participantes</h2>
+      <div className="space-y-4">
         <p className="text-sm text-gray-500">Selecione uma atividade para gerenciar seus participantes.</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">Gerenciar Participantes</h2>
+    <div className="space-y-4">
 
       <form onSubmit={handleAddParticipant} className="mb-4 flex gap-2">
         <input

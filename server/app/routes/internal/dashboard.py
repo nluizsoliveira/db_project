@@ -204,6 +204,8 @@ def reserve_equipment():
         error_message = str(e)
         if "não é reservável" in error_message.lower():
             return jsonify({"success": False, "message": "Este equipamento não é reservável"}), 400
+        if "horário de fim deve ser maior" in error_message.lower() or "ck_reserva_equip_horario" in error_message.lower():
+            return jsonify({"success": False, "message": "O horário de fim deve ser maior que o horário de início"}), 400
         return jsonify({"success": False, "message": f"Erro ao reservar equipamento: {error_message}"}), 500
 
 

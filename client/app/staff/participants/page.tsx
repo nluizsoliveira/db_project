@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -35,6 +35,12 @@ import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { apiGet } from '@/lib/api';
 import ActivityParticipantsManager from '@/components/staff/ActivityParticipantsManager';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface Activity {
   id_atividade: number;
@@ -52,6 +58,7 @@ function StaffParticipantsContent() {
   const searchParams = useSearchParams();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [filters, setFilters] = useState({
     weekday: searchParams.get('weekday') || '',
     group: searchParams.get('group') || '',
@@ -125,6 +132,21 @@ function StaffParticipantsContent() {
         ),
       },
       {
+        accessorKey: 'grupo_extensao',
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+            >
+              Grupo de Extensão
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div>{row.getValue('grupo_extensao') || '-'}</div>,
+      },
+      {
         accessorKey: 'weekday',
         header: ({ column }) => {
           return (
@@ -157,15 +179,15 @@ function StaffParticipantsContent() {
           const activity = row.original;
           return (
             <Button
-              onClick={() => setSelectedActivityId(activity.id_atividade)}
-              className={
-                selectedActivityId === activity.id_atividade
-                  ? 'bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab]'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }
+              variant="ghost"
               size="sm"
+              onClick={() => {
+                setSelectedActivityId(activity.id_atividade);
+                setIsDialogOpen(true);
+              }}
+              className="text-[#1094ab] hover:text-[#64c4d2] hover:bg-[#1094ab]/10"
             >
-              Selecionar
+              <Eye className="h-4 w-4" />
             </Button>
           );
         },
@@ -268,8 +290,7 @@ function StaffParticipantsContent() {
           </div>
         </form>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-lg bg-white shadow">
+        <div className="rounded-lg bg-white shadow">
             <div className="p-4 border-b">
               <h2 className="text-lg font-semibold text-gray-900">Selecionar Atividade</h2>
             </div>
@@ -308,6 +329,8 @@ function StaffParticipantsContent() {
                             >
                               {column.id === 'nome_atividade'
                                 ? 'Atividade'
+                                : column.id === 'grupo_extensao'
+                                ? 'Grupo de Extensão'
                                 : column.id === 'weekday'
                                 ? 'Dia'
                                 : column.id === 'horario'
@@ -381,11 +404,17 @@ function StaffParticipantsContent() {
             )}
           </div>
 
-          <ActivityParticipantsManager
-            activityId={selectedActivityId}
-            onUpdate={loadActivities}
-          />
-        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Gerenciar Participantes</DialogTitle>
+            </DialogHeader>
+            <ActivityParticipantsManager
+              activityId={selectedActivityId}
+              onUpdate={loadActivities}
+            />
+          </DialogContent>
+        </Dialog>
       </section>
     </Layout>
   );

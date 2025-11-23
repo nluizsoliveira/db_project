@@ -76,6 +76,11 @@ export default function ReservationForm({ onSuccess, hideTitle = false, hideWrap
           return;
         }
 
+        if (formData.hora_fim <= formData.hora_inicio) {
+          setError('O horário de fim deve ser maior que o horário de início');
+          return;
+        }
+
         const data = await createInstallationMutation.mutateAsync({
           id_instalacao: parseInt(formData.id_instalacao),
           data: formData.data,
@@ -100,6 +105,11 @@ export default function ReservationForm({ onSuccess, hideTitle = false, hideWrap
       } else {
         if (!formData.id_equipamento || !formData.data || !formData.hora_inicio || !formData.hora_fim) {
           setError('Todos os campos são obrigatórios');
+          return;
+        }
+
+        if (formData.hora_fim <= formData.hora_inicio) {
+          setError('O horário de fim deve ser maior que o horário de início');
           return;
         }
 
