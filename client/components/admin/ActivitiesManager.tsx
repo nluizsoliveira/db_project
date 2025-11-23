@@ -45,6 +45,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
   useAdminActivities,
   useAdminActivity,
   useCreateAdminActivity,
@@ -317,11 +324,13 @@ export default function ActivitiesManager() {
         </Button>
       </div>
 
-      {showForm && (
-        <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <h3 className="mb-4 text-md font-semibold text-gray-900">
-            {editingActivityId ? 'Editar Atividade' : 'Nova Atividade'}
-          </h3>
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingActivityId ? 'Editar Atividade' : 'Nova Atividade'}
+            </DialogTitle>
+          </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm text-gray-600">
@@ -371,7 +380,7 @@ export default function ActivitiesManager() {
               )}
             </div>
             {displayError && <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">{displayError}</div>}
-            <div className="flex justify-end gap-2">
+            <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
@@ -389,10 +398,10 @@ export default function ActivitiesManager() {
               >
                 {submitting ? 'Salvando...' : editingActivity ? 'Atualizar' : 'Criar'}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {displayError && !showForm && (
         <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">{displayError}</div>

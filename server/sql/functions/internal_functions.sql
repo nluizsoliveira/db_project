@@ -11,7 +11,7 @@ RETURNS TABLE (
 AS $$
 BEGIN
     RETURN QUERY
-    SELECT 
+    SELECT
         r.id_reserva,
         i.nome AS nome_instalacao,
         i.tipo AS tipo_instalacao,
@@ -19,7 +19,7 @@ BEGIN
         r.horario_inicio,
         r.horario_fim
     FROM reserva r
-    JOIN instalacao i 
+    JOIN instalacao i
         ON r.id_instalacao = i.id_instalacao
     WHERE r.cpf_responsavel_interno = cpf_interno
     ORDER BY r.data_reserva, r.horario_inicio;
@@ -43,7 +43,7 @@ RETURNS TABLE (
 AS $$
 BEGIN
     RETURN QUERY
-    SELECT 
+    SELECT
         i.id_instalacao,
         i.nome,
         i.tipo,
@@ -64,6 +64,42 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- SELECT * FROM get_instalacoes_disponiveis_horario('2023-11-10', '12:00', '14:00');
+
+-- FUNCTION para listar equipamentos disponíveis em um determinado dia e horário:
+CREATE OR REPLACE FUNCTION get_equipamentos_disponiveis_horario(
+    dia DATE,
+    hora_inicio TIME,
+    hora_fim TIME
+)
+RETURNS TABLE (
+    id_patrimonio VARCHAR,
+    nome VARCHAR,
+    local VARCHAR
+)
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        e.id_patrimonio,
+        e.nome,
+        COALESCE(i.nome, 'Sem local') AS local
+    FROM equipamento e
+    LEFT JOIN instalacao i ON e.id_instalacao_local = i.id_instalacao
+    WHERE e.eh_reservavel = 'S'
+      AND e.id_patrimonio NOT IN (
+          SELECT re.id_equipamento
+          FROM reserva_equipamento re
+          WHERE re.data_reserva = dia
+            AND (
+                -- verifica se há sobreposição de horários
+                (hora_inicio < re.horario_fim AND hora_fim > re.horario_inicio)
+            )
+      )
+    ORDER BY e.nome;
+END;
+$$ LANGUAGE plpgsql;
+
+-- SELECT * FROM get_equipamentos_disponiveis_horario('2023-11-10', '12:00', '14:00');
 
 -- FUNCTION para listar atividades com filtros opcionais:
 CREATE OR REPLACE FUNCTION listar_atividades(
@@ -86,7 +122,7 @@ AS $$
 BEGIN
     -- Seleciona atividades com os filtros aplicados
     RETURN QUERY
-    SELECT 
+    SELECT
         a.id_atividade,
         a.nome AS nome_atividade,
         ge.nome_grupo AS grupo_extensao,
@@ -100,7 +136,7 @@ BEGIN
     LEFT JOIN grupo_extensao ge ON ge.nome_grupo = ag.nome_grupo
     LEFT JOIN ocorrencia_semanal os ON os.id_atividade = a.id_atividade
     LEFT JOIN participacao_atividade pa ON pa.id_atividade = a.id_atividade
-    WHERE 
+    WHERE
         (p_dia_semana IS NULL OR os.dia_semana = p_dia_semana)
         AND (p_grupo_extensao IS NULL OR ge.nome_grupo ILIKE '%' || p_grupo_extensao || '%')
         AND (p_modalidade IS NULL OR a.nome ILIKE '%' || p_modalidade || '%')
@@ -113,7 +149,7 @@ $$;
 CREATE OR REPLACE FUNCTION listar_grupos_extensao()
 RETURNS TABLE(nome VARCHAR, descricao TEXT, responsavel VARCHAR) AS $$
 BEGIN
-    RETURN QUERY 
+    RETURN QUERY
     SELECT G.NOME_GRUPO, G.DESCRICAO, P.NOME
     FROM GRUPO_EXTENSAO G
     JOIN PESSOA P ON G.CPF_RESPONSAVEL_INTERNO = P.CPF;

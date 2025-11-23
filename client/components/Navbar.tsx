@@ -7,7 +7,6 @@ import type { LucideIcon } from "lucide-react";
 import {
   Building2,
   CalendarClock,
-  CalendarPlus,
   CalendarRange,
   ChartBar,
   ClipboardCheck,
@@ -97,6 +96,11 @@ const Navbar = memo(function Navbar() {
   const isActiveRoute = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
 
+  const isOnlyInternal =
+    hasRole(user, "internal") &&
+    !hasRole(user, "staff") &&
+    !hasRole(user, "admin");
+
   const visibility = {
     showAdmin: hasRole(user, "admin"),
     showStaff: hasRole(user, "staff") || hasRole(user, "admin"),
@@ -165,16 +169,16 @@ const Navbar = memo(function Navbar() {
       icon: CalendarRange,
     },
     {
+      href: "/internal/installations",
+      label: "Recursos Disponíveis",
+      description: "Consultar disponibilidade de instalações e equipamentos por data e horário",
+      icon: Building2,
+    },
+    {
       href: "/internal/activities",
       label: "Atividades USP",
       description: "Visualizar turmas disponíveis e se inscrever",
       icon: Users,
-    },
-    {
-      href: "/internal/new-reservation",
-      label: "Nova Reserva",
-      description: "Solicitar instalação ou equipamento para uso próprio",
-      icon: CalendarPlus,
     },
     {
       href: "/internal/invites",
@@ -224,8 +228,43 @@ const Navbar = memo(function Navbar() {
                 renderMenuGroup("Administração", ShieldCheck, adminItems)}
               {visibility.showStaff &&
                 renderMenuGroup("Área do Funcionário", UserCog, staffItems)}
-              {visibility.showInternal &&
-                renderMenuGroup("Área USP", University, internalItems)}
+              {isOnlyInternal
+                ? internalItems.map((item) => (
+                    <NavigationMenuItem key={item.href}>
+                      <NavigationMenuLink
+                        asChild
+                        className={navigationMenuTriggerStyle()}
+                        data-active={
+                          isActiveRoute(item.href) ? "true" : "false"
+                        }
+                      >
+                        <Link href={item.href}>
+                          <div className="flex items-center gap-2">
+                            <item.icon
+                              className={cn(
+                                "size-4 transition-colors duration-300",
+                                isActiveRoute(item.href)
+                                  ? "text-white"
+                                  : "text-muted-foreground"
+                              )}
+                            />
+                            <span
+                              className={cn(
+                                "text-sm font-medium transition-colors",
+                                isActiveRoute(item.href)
+                                  ? "text-white"
+                                  : "text-muted-foreground"
+                              )}
+                            >
+                              {item.label}
+                            </span>
+                          </div>
+                        </Link>
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
+                  ))
+                : visibility.showInternal &&
+                  renderMenuGroup("Área USP", University, internalItems)}
               {visibility.showExternal && (
                 <NavigationMenuItem>
                   <NavigationMenuLink

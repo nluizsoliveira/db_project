@@ -29,7 +29,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -195,20 +195,22 @@ function PendingRegistrationsTable({
           return (
             <div className="flex gap-2">
               <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => onApprove(registration.id_solicitacao)}
                 disabled={isProcessing}
-                className="bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                size="sm"
+                className="text-green-600 hover:text-green-700 hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isProcessing ? "Processando..." : "Aprovar"}
+                {isProcessing ? "Processando..." : <Check className="h-4 w-4" />}
               </Button>
               <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => onReject(registration.id_solicitacao)}
                 disabled={isProcessing}
-                className="bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                size="sm"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isProcessing ? "Processando..." : "Rejeitar"}
+                {isProcessing ? "Processando..." : <X className="h-4 w-4" />}
               </Button>
             </div>
           );

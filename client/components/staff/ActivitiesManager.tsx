@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -40,6 +40,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 
@@ -307,18 +314,19 @@ export default function ActivitiesManager() {
           return (
             <div className="flex gap-2">
               <Button
-                onClick={() => handleEdit(activity.id_atividade)}
-                className="bg-blue-600 text-white hover:bg-blue-700"
+                variant="ghost"
                 size="sm"
+                onClick={() => handleEdit(activity.id_atividade)}
               >
-                Editar
+                <Pencil className="h-4 w-4" />
               </Button>
               <Button
-                onClick={() => handleDelete(activity.id_atividade)}
-                className="bg-red-600 text-white hover:bg-red-700"
+                variant="ghost"
                 size="sm"
+                onClick={() => handleDelete(activity.id_atividade)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
               >
-                Deletar
+                <Trash2 className="h-4 w-4" />
               </Button>
             </div>
           );
@@ -358,19 +366,21 @@ export default function ActivitiesManager() {
     <div className="rounded-lg bg-white p-6 shadow">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">Gerenciar Atividades</h2>
-        <button
+        <Button
           onClick={handleCreate}
-          className="rounded bg-[#1094ab] px-4 py-2 text-sm font-semibold text-white hover:bg-[#64c4d2] hover:text-[#1094ab]"
+          className="bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab]"
         >
           Nova Atividade
-        </button>
+        </Button>
       </div>
 
-      {showForm && (
-        <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <h3 className="mb-4 text-md font-semibold text-gray-900">
-            {editingActivity ? 'Editar Atividade' : 'Nova Atividade'}
-          </h3>
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingActivity ? 'Editar Atividade' : 'Nova Atividade'}
+            </DialogTitle>
+          </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm text-gray-600">
@@ -420,28 +430,28 @@ export default function ActivitiesManager() {
               )}
             </div>
             {error && <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">{error}</div>}
-            <div className="flex justify-end gap-2">
-              <button
+            <DialogFooter>
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => {
                   setShowForm(false);
                   setError('');
                 }}
-                className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
               >
                 Cancelar
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
                 disabled={submitting}
-                className="rounded bg-[#1094ab] px-4 py-2 text-sm font-semibold text-white hover:bg-[#64c4d2] hover:text-[#1094ab] disabled:opacity-50"
+                className="bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab] disabled:opacity-50"
               >
                 {submitting ? 'Salvando...' : editingActivity ? 'Atualizar' : 'Criar'}
-              </button>
-            </div>
+              </Button>
+            </DialogFooter>
           </form>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {error && !showForm && (
         <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">{error}</div>

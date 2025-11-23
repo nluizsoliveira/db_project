@@ -34,9 +34,11 @@ interface Equipment {
 
 interface ReservationFormProps {
   onSuccess?: () => void;
+  hideTitle?: boolean;
+  hideWrapper?: boolean;
 }
 
-export default function ReservationForm({ onSuccess }: ReservationFormProps) {
+export default function ReservationForm({ onSuccess, hideTitle = false, hideWrapper = false }: ReservationFormProps) {
   const [type, setType] = useState<'installation' | 'equipment'>('installation');
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -74,6 +76,11 @@ export default function ReservationForm({ onSuccess }: ReservationFormProps) {
           return;
         }
 
+        if (formData.hora_fim <= formData.hora_inicio) {
+          setError('O horário de fim deve ser maior que o horário de início');
+          return;
+        }
+
         const data = await createInstallationMutation.mutateAsync({
           id_instalacao: parseInt(formData.id_instalacao),
           data: formData.data,
@@ -98,6 +105,11 @@ export default function ReservationForm({ onSuccess }: ReservationFormProps) {
       } else {
         if (!formData.id_equipamento || !formData.data || !formData.hora_inicio || !formData.hora_fim) {
           setError('Todos os campos são obrigatórios');
+          return;
+        }
+
+        if (formData.hora_fim <= formData.hora_inicio) {
+          setError('O horário de fim deve ser maior que o horário de início');
           return;
         }
 
@@ -131,9 +143,9 @@ export default function ReservationForm({ onSuccess }: ReservationFormProps) {
 
   const submitting = createInstallationMutation.isPending || createEquipmentMutation.isPending;
 
-  return (
-    <div className="rounded-lg bg-white p-6 shadow">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">Fazer Reserva</h2>
+  const content = (
+    <>
+      {!hideTitle && <h2 className="mb-4 text-lg font-semibold text-gray-900">Fazer Reserva</h2>}
 
       <div className="mb-4 flex gap-4">
         <button
@@ -335,6 +347,16 @@ export default function ReservationForm({ onSuccess }: ReservationFormProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </>
+  );
+
+  if (hideWrapper) {
+    return content;
+  }
+
+  return (
+    <div className="rounded-lg bg-white p-6 shadow">
+      {content}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, FormEvent, Suspense, useMemo } from 'react';
+import { useState, useEffect, Suspense, useMemo, useCallback } from 'react';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, CalendarPlus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -30,30 +30,79 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useSearchParams, useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { apiGet } from '@/lib/api';
+import { useAuthUser } from '@/lib/authStore';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import ReservationForm from '@/components/internal/ReservationForm';
+import {
+  useDeleteInternalInstallationReservation,
+  useDeleteInternalEquipmentReservation,
+} from '@/hooks/useReservations';
+import { useAlertDialog } from '@/hooks/useAlertDialog';
 
-interface Reservation {
+interface InstallationReservation {
+  id_reserva: number;
   nome_instalacao: string;
   data_reserva: string;
   horario_inicio: string;
   horario_fim: string;
 }
 
-interface AvailableInstallation {
-  nome: string;
-  tipo: string;
-  capacidade: number;
+interface EquipmentReservation {
+  id_reserva_equip: number;
+  nome_equipamento: string;
+  data_reserva: string;
+  horario_inicio: string;
+  horario_fim: string;
 }
 
-function ReservationsTable({ reservations, loading, hasCpfFilter }: { reservations: Reservation[]; loading: boolean; hasCpfFilter: boolean }) {
+function InstallationReservationsTable({ reservations, loading, hasCpfFilter, onDelete }: { reservations: InstallationReservation[]; loading: boolean; hasCpfFilter: boolean; onDelete: () => void }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reservationToDelete, setReservationToDelete] = useState<number | null>(null);
+  const deleteMutation = useDeleteInternalInstallationReservation();
+  const alertDialog = useAlertDialog();
 
-  const columns: ColumnDef<Reservation>[] = useMemo(
+  const handleDeleteClick = useCallback((id: number) => {
+    setReservationToDelete(id);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const handleConfirmDelete = async () => {
+    if (reservationToDelete === null) return;
+
+    try {
+      await deleteMutation.mutateAsync(reservationToDelete);
+      alertDialog.showAlert('Reserva cancelada com sucesso!', 'Sucesso');
+      setDeleteDialogOpen(false);
+      setReservationToDelete(null);
+      onDelete();
+    } catch (err: any) {
+      alertDialog.showAlert(err.message || 'Erro ao cancelar reserva', 'Erro');
+    }
+  };
+
+  const columns: ColumnDef<InstallationReservation>[] = useMemo(
     () => [
       {
         accessorKey: 'nome_instalacao',
@@ -98,8 +147,24 @@ function ReservationsTable({ reservations, loading, hasCpfFilter }: { reservatio
           );
         },
       },
+      {
+        id: 'acoes',
+        header: 'Ações',
+        cell: ({ row }) => {
+          return (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDeleteClick(row.original.id_reserva)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          );
+        },
+      },
     ],
-    []
+    [handleDeleteClick]
   );
 
   const table = useReactTable({
@@ -130,7 +195,7 @@ function ReservationsTable({ reservations, loading, hasCpfFilter }: { reservatio
     return (
       <div className="rounded-lg border border-gray-200 bg-white p-8 text-center shadow">
         <p className="text-gray-500">
-          {hasCpfFilter ? 'Nenhuma reserva foi retornada para o CPF informado.' : 'Nenhuma reserva agendada.'}
+          {hasCpfFilter ? 'Nenhuma reserva encontrada.' : 'Carregando informações do usuário...'}
         </p>
       </div>
     );
@@ -171,6 +236,8 @@ function ReservationsTable({ reservations, loading, hasCpfFilter }: { reservatio
                       ? 'Data'
                       : column.id === 'horario'
                       ? 'Horário'
+                      : column.id === 'acoes'
+                      ? 'Ações'
                       : column.id}
                   </DropdownMenuCheckboxItem>
                 );
@@ -236,72 +303,137 @@ function ReservationsTable({ reservations, loading, hasCpfFilter }: { reservatio
           </Button>
         </div>
       </div>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Cancelamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja cancelar esta reserva? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Deletar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
-function AvailableInstallationsTable({ installations, loading, hasFilters }: { installations: AvailableInstallation[]; loading: boolean; hasFilters: boolean }) {
+function EquipmentReservationsTable({ reservations, loading, hasCpfFilter, onDelete }: { reservations: EquipmentReservation[]; loading: boolean; hasCpfFilter: boolean; onDelete: () => void }) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reservationToDelete, setReservationToDelete] = useState<number | null>(null);
+  const deleteMutation = useDeleteInternalEquipmentReservation();
+  const alertDialog = useAlertDialog();
 
-  const columns: ColumnDef<AvailableInstallation>[] = useMemo(
+  const handleDeleteClick = useCallback((id: number) => {
+    setReservationToDelete(id);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const handleConfirmDelete = async () => {
+    if (reservationToDelete === null) return;
+
+    try {
+      await deleteMutation.mutateAsync(reservationToDelete);
+      alertDialog.showAlert('Reserva cancelada com sucesso!', 'Sucesso');
+      setDeleteDialogOpen(false);
+      setReservationToDelete(null);
+      onDelete();
+    } catch (err: any) {
+      alertDialog.showAlert(err.message || 'Erro ao cancelar reserva', 'Erro');
+    }
+  };
+
+  const columns: ColumnDef<EquipmentReservation>[] = useMemo(
     () => [
       {
-        accessorKey: 'nome',
+        accessorKey: 'nome_equipamento',
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              Instalação
+              Equipamento
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
         cell: ({ row }) => (
-          <div className="font-medium">{row.getValue('nome')}</div>
+          <div className="font-medium">{row.getValue('nome_equipamento')}</div>
         ),
       },
       {
-        accessorKey: 'tipo',
+        accessorKey: 'data_reserva',
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
               onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
             >
-              Tipo
+              Data
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
-        cell: ({ row }) => <div>{row.getValue('tipo')}</div>,
+        cell: ({ row }) => <div>{row.getValue('data_reserva')}</div>,
       },
       {
-        accessorKey: 'capacidade',
-        header: ({ column }) => {
+        id: 'horario',
+        header: 'Horário',
+        cell: ({ row }) => {
+          return (
+            <div>
+              {row.original.horario_inicio} - {row.original.horario_fim}
+            </div>
+          );
+        },
+      },
+      {
+        id: 'acoes',
+        header: 'Ações',
+        cell: ({ row }) => {
           return (
             <Button
               variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              size="sm"
+              onClick={() => handleDeleteClick(row.original.id_reserva_equip)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
             >
-              Capacidade
-              <ArrowUpDown className="ml-2 h-4 w-4" />
+              <Trash2 className="h-4 w-4" />
             </Button>
           );
         },
-        cell: ({ row }) => <div>{row.getValue('capacidade')}</div>,
       },
     ],
-    []
+    [handleDeleteClick]
   );
 
   const table = useReactTable({
-    data: installations,
+    data: reservations,
     columns,
-    getRowId: (row, index) => `installation-${index}`,
+    getRowId: (row, index) => `equipment-reservation-${index}`,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
@@ -322,11 +454,11 @@ function AvailableInstallationsTable({ installations, loading, hasFilters }: { i
     );
   }
 
-  if (installations.length === 0) {
+  if (reservations.length === 0) {
     return (
       <div className="rounded-lg border border-gray-200 bg-white p-8 text-center shadow">
         <p className="text-gray-500">
-          {hasFilters ? 'Nenhuma instalação disponível no período selecionado.' : 'Selecione data e horário para ver disponibilidade.'}
+          {hasCpfFilter ? 'Nenhuma reserva de equipamento encontrada.' : 'Carregando informações do usuário...'}
         </p>
       </div>
     );
@@ -336,10 +468,10 @@ function AvailableInstallationsTable({ installations, loading, hasFilters }: { i
     <div className="w-full space-y-4">
       <div className="flex items-center gap-2">
         <Input
-          placeholder="Filtrar por instalação..."
-          value={(table.getColumn('nome')?.getFilterValue() as string) ?? ''}
+          placeholder="Filtrar por equipamento..."
+          value={(table.getColumn('nome_equipamento')?.getFilterValue() as string) ?? ''}
           onChange={(event) =>
-            table.getColumn('nome')?.setFilterValue(event.target.value)
+            table.getColumn('nome_equipamento')?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
@@ -361,12 +493,14 @@ function AvailableInstallationsTable({ installations, loading, hasFilters }: { i
                     checked={column.getIsVisible()}
                     onCheckedChange={(value) => column.toggleVisibility(!!value)}
                   >
-                    {column.id === 'nome'
-                      ? 'Instalação'
-                      : column.id === 'tipo'
-                      ? 'Tipo'
-                      : column.id === 'capacidade'
-                      ? 'Capacidade'
+                    {column.id === 'nome_equipamento'
+                      ? 'Equipamento'
+                      : column.id === 'data_reserva'
+                      ? 'Data'
+                      : column.id === 'horario'
+                      ? 'Horário'
+                      : column.id === 'acoes'
+                      ? 'Ações'
                       : column.id}
                   </DropdownMenuCheckboxItem>
                 );
@@ -432,191 +566,128 @@ function AvailableInstallationsTable({ installations, loading, hasFilters }: { i
           </Button>
         </div>
       </div>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Cancelamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja cancelar esta reserva? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Deletar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
 function InternalReservationsContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [reservas, setReservas] = useState<Reservation[]>([]);
-  const [availableInstalls, setAvailableInstalls] = useState<AvailableInstallation[]>([]);
-  const [filters, setFilters] = useState({
-    cpf: searchParams.get('cpf') || '',
-    date: searchParams.get('date') || '',
-    start: searchParams.get('start') || '',
-    end: searchParams.get('end') || '',
-  });
+  const user = useAuthUser();
+  const [reservasInstalacoes, setReservasInstalacoes] = useState<InstallationReservation[]>([]);
+  const [reservasEquipamentos, setReservasEquipamentos] = useState<EquipmentReservation[]>([]);
   const [loading, setLoading] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
+    // Só carrega se o usuário estiver disponível
+    if (!user?.user_id) {
+      return;
+    }
+
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (filters.cpf) params.append('cpf', filters.cpf);
-      if (filters.date) params.append('date', filters.date);
-      if (filters.start) params.append('start', filters.start);
-      if (filters.end) params.append('end', filters.end);
+      // Usa automaticamente o CPF do usuário logado (user_id é o CPF)
+      params.append('cpf', user.user_id);
 
       const data = await apiGet<{
         success: boolean;
-        reservas: Reservation[];
-        available_installs: AvailableInstallation[];
+        reservas: InstallationReservation[];
+        reservas_equipamentos: EquipmentReservation[];
       }>(`/internal/?${params.toString()}`);
 
       if (data.success) {
-        setReservas(data.reservas || []);
-        setAvailableInstalls(data.available_installs || []);
+        setReservasInstalacoes(data.reservas || []);
+        setReservasEquipamentos(data.reservas_equipamentos || []);
       }
     } catch (err) {
       console.error('Erro ao carregar dados:', err);
-      setReservas([]);
-      setAvailableInstalls([]);
+      setReservasInstalacoes([]);
+      setReservasEquipamentos([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.user_id]);
 
   useEffect(() => {
     loadDashboardData();
-  }, [searchParams]);
+  }, [loadDashboardData]);
 
-  const handleCpfSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams();
-    if (filters.cpf) params.append('cpf', filters.cpf);
-    if (filters.date) params.append('date', filters.date);
-    if (filters.start) params.append('start', filters.start);
-    if (filters.end) params.append('end', filters.end);
-    router.push(`/internal/reservations?${params.toString()}`);
-  };
-
-  const handleAvailabilitySubmit = (e: FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams();
-    if (filters.cpf) params.append('cpf', filters.cpf);
-    if (filters.date) params.append('date', filters.date);
-    if (filters.start) params.append('start', filters.start);
-    if (filters.end) params.append('end', filters.end);
-    router.push(`/internal/reservations?${params.toString()}`);
+  const handleReservationSuccess = () => {
+    setDialogOpen(false);
+    loadDashboardData();
   };
 
   return (
     <Layout>
       <section className="space-y-6">
-        <header>
+        <header className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-gray-900">Minhas Reservas</h1>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2 bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab]">
+                <CalendarPlus className="h-4 w-4" />
+                Nova Reserva
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl sm:max-w-5xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Nova Reserva</DialogTitle>
+              </DialogHeader>
+              <div className="mt-4">
+                <ReservationForm onSuccess={handleReservationSuccess} hideTitle hideWrapper />
+              </div>
+            </DialogContent>
+          </Dialog>
         </header>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <form onSubmit={handleCpfSubmit} className="rounded-lg bg-white p-4 shadow">
-            <h2 className="text-lg font-semibold text-gray-900">Reservas por CPF</h2>
-            <label className="mt-4 block text-sm text-gray-600">
-              <span className="mb-1 block font-medium">CPF</span>
-              <input
-                type="text"
-                name="cpf"
-                value={filters.cpf}
-                onChange={(e) => setFilters({ ...filters, cpf: e.target.value })}
-                placeholder="Apenas números"
-                className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
-              />
-            </label>
-            <input type="hidden" name="date" value={filters.date} />
-            <input type="hidden" name="start" value={filters.start} />
-            <input type="hidden" name="end" value={filters.end} />
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setFilters({ cpf: '', date: '', start: '', end: '' });
-                  router.push('/internal/reservations');
-                }}
-                className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
-              >
-                Limpar
-              </button>
-              <button
-                type="submit"
-                className="rounded bg-[#1094ab] px-4 py-2 text-sm font-semibold text-white hover:bg-[#64c4d2] hover:text-[#1094ab]"
-              >
-                Carregar dados
-              </button>
-            </div>
-          </form>
-
-          <form onSubmit={handleAvailabilitySubmit} className="rounded-lg bg-white p-4 shadow">
-            <h2 className="text-lg font-semibold text-gray-900">Instalações disponíveis</h2>
-            <input type="hidden" name="cpf" value={filters.cpf} />
-            <div className="mt-4 grid gap-4 sm:grid-cols-3">
-              <label className="text-sm text-gray-600">
-                <span className="mb-1 block font-medium">Data</span>
-                <input
-                  type="date"
-                  name="date"
-                  value={filters.date}
-                  onChange={(e) => setFilters({ ...filters, date: e.target.value })}
-                  className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
-                />
-              </label>
-              <label className="text-sm text-gray-600">
-                <span className="mb-1 block font-medium">Início</span>
-                <input
-                  type="time"
-                  name="start"
-                  value={filters.start}
-                  onChange={(e) => setFilters({ ...filters, start: e.target.value })}
-                  className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
-                />
-              </label>
-              <label className="text-sm text-gray-600">
-                <span className="mb-1 block font-medium">Fim</span>
-                <input
-                  type="time"
-                  name="end"
-                  value={filters.end}
-                  onChange={(e) => setFilters({ ...filters, end: e.target.value })}
-                  className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
-                />
-              </label>
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setFilters({ cpf: '', date: '', start: '', end: '' });
-                  router.push('/internal/reservations');
-                }}
-                className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
-              >
-                Limpar
-              </button>
-              <button
-                type="submit"
-                className="rounded bg-[#1094ab] px-4 py-2 text-sm font-semibold text-white hover:bg-[#64c4d2] hover:text-[#1094ab]"
-              >
-                Verificar disponibilidade
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-2">
           <div className="rounded-lg bg-white p-4 shadow">
-            <h3 className="mb-4 text-lg font-semibold text-gray-900">Reservas registradas</h3>
-            <ReservationsTable
-              reservations={reservas}
+            <h3 className="mb-4 text-lg font-semibold text-gray-900">Reservas de Instalações</h3>
+            <InstallationReservationsTable
+              reservations={reservasInstalacoes}
               loading={loading}
-              hasCpfFilter={!!filters.cpf}
+              hasCpfFilter={!!user?.user_id}
+              onDelete={loadDashboardData}
             />
           </div>
 
           <div className="rounded-lg bg-white p-4 shadow">
-            <h3 className="mb-4 text-lg font-semibold text-gray-900">Instalações disponíveis</h3>
-            <AvailableInstallationsTable
-              installations={availableInstalls}
+            <h3 className="mb-4 text-lg font-semibold text-gray-900">Reservas de Equipamentos</h3>
+            <EquipmentReservationsTable
+              reservations={reservasEquipamentos}
               loading={loading}
-              hasFilters={!!(filters.date && filters.start && filters.end)}
+              hasCpfFilter={!!user?.user_id}
+              onDelete={loadDashboardData}
             />
           </div>
         </div>

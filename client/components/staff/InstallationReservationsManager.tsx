@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -187,11 +187,12 @@ export default function InstallationReservationsManager() {
           const reservation = row.original;
           return (
             <Button
-              onClick={() => handleCancelReservation(reservation.id_reserva)}
-              className="bg-red-600 text-white hover:bg-red-700"
+              variant="ghost"
               size="sm"
+              onClick={() => handleCancelReservation(reservation.id_reserva)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
             >
-              Cancelar
+              <Trash2 className="h-4 w-4" />
             </Button>
           );
         },

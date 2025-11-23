@@ -182,6 +182,11 @@ BEGIN
         RAISE EXCEPTION 'O equipamento % não é reservável (uso livre ou interno).', p_id_equipamento;
     END IF;
 
+    -- Verifica se o horário de fim é maior que o horário de início
+    IF p_hora_fim <= p_hora_inicio THEN
+        RAISE EXCEPTION 'O horário de fim deve ser maior que o horário de início.';
+    END IF;
+
     INSERT INTO RESERVA_EQUIPAMENTO (ID_EQUIPAMENTO, CPF_RESPONSAVEL_INTERNO, DATA_RESERVA, HORARIO_INICIO, HORARIO_FIM)
     VALUES (p_id_equipamento, p_cpf_responsavel, p_data, p_hora_inicio, p_hora_fim);
 END;
