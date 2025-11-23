@@ -7,6 +7,7 @@ import Image from "next/image";
 import Layout from "@/components/Layout";
 import { useLogin, useCurrentUser } from "@/hooks/useAuth";
 import { useAuthStore } from "@/lib/authStore";
+import { ApiError } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,8 +41,16 @@ export default function LoginPage() {
         router.push("/admin/dashboard");
       }
     } catch (err: any) {
-      console.error("Login error:", err);
-      setError(err.message || "Erro ao fazer login. Tente novamente.");
+      // Para ApiError (erros esperados como credenciais inválidas),
+      // não logar no console para evitar poluição de logs
+      if (err && typeof err === 'object' && 'isApiError' in err) {
+        const apiError = err as ApiError;
+        setError(apiError.message || "Erro ao fazer login. Tente novamente.");
+      } else {
+        // Para erros inesperados, logar no console
+        console.error("Login error:", err);
+        setError(err.message || "Erro ao fazer login. Tente novamente.");
+      }
     }
   };
 

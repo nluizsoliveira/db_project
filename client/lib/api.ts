@@ -35,6 +35,12 @@ export async function apiGet<T>(path: string): Promise<T> {
   }
 }
 
+export interface ApiError {
+  message: string;
+  status: number;
+  isApiError: true;
+}
+
 export async function apiPost<T>(
   path: string,
   data: Record<string, unknown>
@@ -58,11 +64,29 @@ export async function apiPost<T>(
       } catch {
         // Se não conseguir parsear JSON, usar a mensagem padrão
       }
+
+      // Para erros esperados (400, 401, 403, 404), retornar erro estruturado
+      // em vez de lançar exceção para evitar logs de erro no console
+      if (response.status >= 400 && response.status < 500) {
+        const apiError: ApiError = {
+          message: errorMessage,
+          status: response.status,
+          isApiError: true,
+        };
+        throw apiError;
+      }
+
+      // Para erros de servidor (500+), lançar erro genérico
       throw new Error(errorMessage);
     }
 
     return await response.json();
   } catch (error) {
+    // Se já é um ApiError, re-lançar sem modificação
+    if (error && typeof error === 'object' && 'isApiError' in error) {
+      throw error;
+    }
+
     // Tratar erros de rede (Failed to fetch)
     if (error instanceof TypeError && error.message === "Failed to fetch") {
       const API_BASE_URL = getApiBaseUrl();
