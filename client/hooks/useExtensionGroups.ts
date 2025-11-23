@@ -43,6 +43,28 @@ export function useCreateExtensionGroup() {
   });
 }
 
+export function useUpdateExtensionGroup() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      old_group_name: string;
+      new_group_name: string;
+      description: string;
+      cpf_responsible: string;
+    }) => {
+      const data = await apiPost<{
+        success: boolean;
+        message?: string;
+      }>('/extension_group/update', payload);
+      if (!data.success) throw new Error(data.message || 'Failed to update extension group');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'extension-groups'] });
+    },
+  });
+}
+
 export function useDeleteExtensionGroup() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -3,6 +3,7 @@ from flask import jsonify, request
 from app.routes.admin import admin_blueprint
 from app.services.database import executor as sql_queries
 from app.services.auth.decorators import require_role
+from app.services.error_handler import simplify_database_error
 
 
 @admin_blueprint.get("/events", endpoint="list_events")
@@ -71,10 +72,10 @@ def create_event():
             "message": "Evento criado com sucesso",
         })
     except Exception as e:
-        error_message = str(e)
+        error_message = simplify_database_error(str(e))
         if "não encontrada" in error_message.lower():
             return jsonify({"success": False, "message": "Reserva não encontrada. Crie a reserva antes do evento."}), 400
-        return jsonify({"success": False, "message": f"Erro ao criar evento: {error_message}"}), 500
+        return jsonify({"success": False, "message": error_message}), 500
 
 
 @admin_blueprint.put("/events/<int:event_id>", endpoint="update_event")
@@ -106,10 +107,10 @@ def update_event(event_id: int):
             "message": "Evento atualizado com sucesso",
         })
     except Exception as e:
-        error_message = str(e)
+        error_message = simplify_database_error(str(e))
         if "não encontrado" in error_message.lower():
             return jsonify({"success": False, "message": "Evento não encontrado"}), 404
-        return jsonify({"success": False, "message": f"Erro ao atualizar evento: {error_message}"}), 500
+        return jsonify({"success": False, "message": error_message}), 500
 
 
 @admin_blueprint.delete("/events/<int:event_id>", endpoint="delete_event")
@@ -126,7 +127,7 @@ def delete_event(event_id: int):
             "message": "Evento deletado com sucesso",
         })
     except Exception as e:
-        error_message = str(e)
+        error_message = simplify_database_error(str(e))
         if "não encontrado" in error_message.lower():
             return jsonify({"success": False, "message": "Evento não encontrado"}), 404
-        return jsonify({"success": False, "message": f"Erro ao deletar evento: {error_message}"}), 500
+        return jsonify({"success": False, "message": error_message}), 500

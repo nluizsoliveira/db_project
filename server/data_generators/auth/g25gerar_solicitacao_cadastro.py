@@ -16,6 +16,13 @@ def gerar_nusp():
     """Gera um NUSP aleatório (5 a 8 dígitos)."""
     return f"{random.randint(10000, 99999999)}"
 
+def gerar_senha():
+    """Gera uma senha fictícia para solicitações de cadastro."""
+    # Gera uma senha aleatória de 8 a 12 caracteres
+    caracteres = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    tamanho = random.randint(8, 12)
+    return ''.join(random.choice(caracteres) for _ in range(tamanho))
+
 def gerar_solicitacao_cadastro(dbsession):
     """
     Gera solicitações de cadastro para pessoas não-internas.
@@ -91,28 +98,32 @@ def gerar_solicitacao_cadastro(dbsession):
                 dias_aprovacao = random.randint(1, min(30, dias_aleatorios))
             data_aprovacao = data_solicitacao + timedelta(days=dias_aprovacao)
 
-        # Observações (40% de chance)
+        # Observações
         observacoes = None
-        if random.random() < 0.4:
-            if status == 'APROVADA':
+
+        if status == 'PENDENTE':
+            # Para solicitações PENDENTE, SEMPRE incluir a senha no formato esperado
+            senha_plana = gerar_senha()
+            observacoes = f"Password: {senha_plana}"
+        elif status == 'APROVADA':
+            # Para solicitações APROVADA, pode ter observações genéricas (40% de chance)
+            # A senha já foi removida durante a aprovação
+            if random.random() < 0.4:
                 observacoes_list = [
                     "Cadastro aprovado após verificação de documentos",
                     "Aprovado conforme regulamento",
                     "Documentação completa e válida"
                 ]
-            elif status == 'REJEITADA':
+                observacoes = random.choice(observacoes_list)
+        elif status == 'REJEITADA':
+            # Para solicitações REJEITADA, pode ter observações com motivo (40% de chance)
+            if random.random() < 0.4:
                 observacoes_list = [
                     "Documentação incompleta",
                     "NUSP inválido",
                     "Cadastro não atende aos requisitos"
                 ]
-            else:
-                observacoes_list = [
-                    "Aguardando análise de documentos",
-                    "Em processo de verificação",
-                    "Pendente de validação"
-                ]
-            observacoes = random.choice(observacoes_list)
+                observacoes = random.choice(observacoes_list)
 
         solicitacoes_data.append((
             cpf_pessoa,

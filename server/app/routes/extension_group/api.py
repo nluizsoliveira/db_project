@@ -3,6 +3,7 @@ from flask import jsonify, request
 from app.routes.extension_group import extension_group_blueprint
 from app.services.auth.decorators import require_role
 from app.services.database import executor as sql_queries
+from app.services.error_handler import simplify_database_error
 
 
 @require_role("admin")
@@ -38,9 +39,10 @@ def create_extension_group():
             "message": "Grupo de extensão criado com sucesso"
         })
     except Exception as e:
+        error_message = simplify_database_error(str(e))
         return jsonify({
             "success": False,
-            "message": f"Erro ao criar grupo de extensão: {str(e)}"
+            "message": error_message
         }), 400
 
 
@@ -97,9 +99,10 @@ def update_extension_group():
             "message": "Grupo de extensão atualizado com sucesso"
         })
     except Exception as e:
+        error_message = simplify_database_error(str(e))
         return jsonify({
             "success": False,
-            "message": f"Erro ao atualizar grupo de extensão: {str(e)}"
+            "message": error_message
         }), 400
 
 
@@ -130,7 +133,8 @@ def delete_extension_group():
             "message": "Grupo de extensão deletado com sucesso"
         })
     except Exception as e:
+        error_message = simplify_database_error(str(e))
         return jsonify({
             "success": False,
-            "message": f"Erro ao deletar grupo de extensão: {str(e)}"
+            "message": error_message
         }), 400

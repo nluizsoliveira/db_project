@@ -3,6 +3,7 @@ from flask import jsonify, request
 from app.routes.admin import admin_blueprint
 from app.services.database import executor as sql_queries
 from app.services.auth.decorators import require_role
+from app.services.error_handler import simplify_database_error
 
 
 @admin_blueprint.get("/installations", endpoint="list_installations")
@@ -78,8 +79,8 @@ def create_installation():
             "message": "Instalação criada com sucesso",
         })
     except Exception as e:
-        error_message = str(e)
-        return jsonify({"success": False, "message": f"Erro ao criar instalação: {error_message}"}), 500
+        error_message = simplify_database_error(str(e))
+        return jsonify({"success": False, "message": error_message}), 500
 
 
 @admin_blueprint.put("/installations/<int:installation_id>", endpoint="update_installation")
@@ -118,10 +119,10 @@ def update_installation(installation_id: int):
             "message": "Instalação atualizada com sucesso",
         })
     except Exception as e:
-        error_message = str(e)
+        error_message = simplify_database_error(str(e))
         if "não encontrada" in error_message.lower():
             return jsonify({"success": False, "message": "Instalação não encontrada"}), 404
-        return jsonify({"success": False, "message": f"Erro ao atualizar instalação: {error_message}"}), 500
+        return jsonify({"success": False, "message": error_message}), 500
 
 
 @admin_blueprint.delete("/installations/<int:installation_id>", endpoint="delete_installation")
@@ -138,7 +139,7 @@ def delete_installation(installation_id: int):
             "message": "Instalação deletada com sucesso",
         })
     except Exception as e:
-        error_message = str(e)
+        error_message = simplify_database_error(str(e))
         if "não encontrada" in error_message.lower():
             return jsonify({"success": False, "message": "Instalação não encontrada"}), 404
-        return jsonify({"success": False, "message": f"Erro ao deletar instalação: {error_message}"}), 500
+        return jsonify({"success": False, "message": error_message}), 500

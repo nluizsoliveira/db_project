@@ -3,7 +3,20 @@
 import { useState, FormEvent } from 'react';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { useExtensionGroups, useCreateExtensionGroup, useDeleteExtensionGroup } from '@/hooks/useExtensionGroups';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import {
+  useExtensionGroups,
+  useCreateExtensionGroup,
+  useUpdateExtensionGroup,
+  useDeleteExtensionGroup,
+} from '@/hooks/useExtensionGroups';
 
 interface ExtensionGroup {
   nome_grupo: string;
@@ -27,6 +40,7 @@ export default function ExtensionGroupsPage() {
 
   const { data: groups = [], isLoading: loading, error: queryError } = useExtensionGroups();
   const createMutation = useCreateExtensionGroup();
+  const updateMutation = useUpdateExtensionGroup();
   const deleteMutation = useDeleteExtensionGroup();
 
   if (queryError) {
@@ -51,8 +65,7 @@ export default function ExtensionGroupsPage() {
         category: 'success',
         text: data.message || 'Grupo de extensão criado com sucesso',
       });
-      setShowCreateForm(false);
-      setFormData({ group_name: '', description: '', cpf_responsible: '' });
+      handleDialogClose();
     } catch (err: any) {
       const errorMessage = err.message || 'Erro ao processar solicitação';
       try {
@@ -72,33 +85,20 @@ export default function ExtensionGroupsPage() {
     if (!editingGroup) return;
 
     try {
-      const data = await apiPost<{
-        success: boolean;
-        message?: string;
-      }>('/extension_group/update', {
+      const data = await updateMutation.mutateAsync({
         old_group_name: editingGroup.nome_grupo,
         new_group_name: formData.group_name,
         description: formData.description,
         cpf_responsible: formData.cpf_responsible,
       });
 
-      if (data.success) {
-        setMessage({
-          category: 'success',
-          text: data.message || 'Grupo de extensão atualizado com sucesso',
-        });
-        setEditingGroup(null);
-        setFormData({ group_name: '', description: '', cpf_responsible: '' });
-        loadGroups();
-      } else {
-        setMessage({
-          category: 'error',
-          text: data.message || 'Erro ao atualizar grupo de extensão',
-        });
-      }
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Erro ao processar solicitação';
+      setMessage({
+        category: 'success',
+        text: data.message || 'Grupo de extensão atualizado com sucesso',
+      });
+      handleDialogClose();
+    } catch (err: any) {
+      const errorMessage = err.message || 'Erro ao processar solicitação';
       try {
         const errorData = JSON.parse(errorMessage);
         setMessage({
@@ -146,15 +146,19 @@ export default function ExtensionGroupsPage() {
     setShowCreateForm(false);
   };
 
-  const cancelEdit = () => {
+  const handleCreateClick = () => {
+    setShowCreateForm(true);
     setEditingGroup(null);
     setFormData({ group_name: '', description: '', cpf_responsible: '' });
   };
 
-  const cancelCreate = () => {
+  const handleDialogClose = () => {
     setShowCreateForm(false);
+    setEditingGroup(null);
     setFormData({ group_name: '', description: '', cpf_responsible: '' });
   };
+
+  const isDialogOpen = showCreateForm || editingGroup !== null;
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>
@@ -164,21 +168,23 @@ export default function ExtensionGroupsPage() {
             <h1 className="text-3xl font-bold text-gray-900">
               Gestão de Grupos de Extensão
             </h1>
-            {!showCreateForm && !editingGroup && (
-              <button
-                onClick={() => setShowCreateForm(true)}
-                className="rounded bg-[#1094ab] px-4 py-2 text-sm font-semibold text-white hover:bg-[#64c4d2] hover:text-[#1094ab]"
+            {!isDialogOpen && (
+              <Button
+                onClick={handleCreateClick}
+                className="bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab]"
               >
                 Criar Novo Grupo
-              </button>
+              </Button>
             )}
           </div>
 
-          {(showCreateForm || editingGroup) && (
-            <div className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow">
-              <h2 className="mb-4 text-xl font-semibold text-gray-900">
-                {editingGroup ? 'Editar Grupo de Extensão' : 'Criar Novo Grupo de Extensão'}
-              </h2>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => !open && handleDialogClose()}>
+            <DialogContent className="!max-w-[90vw] sm:!max-w-6xl">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingGroup ? 'Editar Grupo de Extensão' : 'Criar Novo Grupo de Extensão'}
+                </DialogTitle>
+              </DialogHeader>
               <form onSubmit={editingGroup ? handleUpdate : handleCreate}>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
@@ -231,24 +237,29 @@ export default function ExtensionGroupsPage() {
                     placeholder="Descrição do grupo de extensão"
                   />
                 </div>
-                <div className="mt-4 flex justify-end gap-2">
-                  <button
+                <DialogFooter className="mt-4">
+                  <Button
                     type="button"
-                    onClick={editingGroup ? cancelEdit : cancelCreate}
-                    className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                    variant="outline"
+                    onClick={handleDialogClose}
                   >
                     Cancelar
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
-                    className="rounded bg-[#1094ab] px-4 py-2 text-sm font-semibold text-white hover:bg-[#64c4d2] hover:text-[#1094ab]"
+                    disabled={createMutation.isPending || updateMutation.isPending}
+                    className="bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab] disabled:opacity-50"
                   >
-                    {editingGroup ? 'Atualizar' : 'Criar'}
-                  </button>
-                </div>
+                    {createMutation.isPending || updateMutation.isPending
+                      ? 'Salvando...'
+                      : editingGroup
+                      ? 'Atualizar'
+                      : 'Criar'}
+                  </Button>
+                </DialogFooter>
               </form>
-            </div>
-          )}
+            </DialogContent>
+          </Dialog>
 
           {loading ? (
             <div className="text-center text-gray-500">Carregando...</div>

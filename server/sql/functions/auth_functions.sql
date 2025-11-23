@@ -208,11 +208,12 @@ DECLARE
     solicitation_record RECORD;
     password_hash TEXT;
     plain_password TEXT;
+    admin_exists BOOLEAN;
 BEGIN
     -- Get solicitation record
     SELECT * INTO solicitation_record
     FROM solicitacao_cadastro
-    WHERE id_solicitacao = approve_registration.id_solicitacao;
+    WHERE solicitacao_cadastro.id_solicitacao = approve_registration.id_solicitacao;
 
     IF NOT FOUND THEN
         RETURN json_build_object(
@@ -228,8 +229,35 @@ BEGIN
         );
     END IF;
 
+    -- Verify if admin exists in pessoa table
+    SELECT EXISTS(SELECT 1 FROM pessoa WHERE cpf = approve_registration.cpf_admin) INTO admin_exists;
+
+    IF NOT admin_exists THEN
+        RETURN json_build_object(
+            'success', FALSE,
+            'message', 'Admin CPF not found in database'
+        );
+    END IF;
+
     -- Extract plain password from observacoes (temporary storage)
-    plain_password := substring(solicitation_record.observacoes FROM 'Password: (.+)');
+    -- Format is always "Password: <password>"
+    IF solicitation_record.observacoes IS NULL OR solicitation_record.observacoes = '' OR solicitation_record.observacoes NOT LIKE 'Password: %' THEN
+        RETURN json_build_object(
+            'success', FALSE,
+            'message', 'Registration request does not contain password information'
+        );
+    END IF;
+
+    -- Extract password: format is "Password: <password>"
+    -- Remove the "Password: " prefix and trim whitespace
+    plain_password := trim(replace(solicitation_record.observacoes, 'Password: ', ''));
+
+    IF plain_password IS NULL OR plain_password = '' THEN
+        RETURN json_build_object(
+            'success', FALSE,
+            'message', 'Password could not be extracted from registration request'
+        );
+    END IF;
 
     -- Hash the password
     password_hash := hash_password(plain_password);
@@ -247,7 +275,7 @@ BEGIN
         cpf_admin_aprovador = cpf_admin,
         data_aprovacao = CURRENT_TIMESTAMP,
         observacoes = NULL  -- Remove password from observacoes
-    WHERE id_solicitacao = approve_registration.id_solicitacao;
+    WHERE solicitacao_cadastro.id_solicitacao = approve_registration.id_solicitacao;
 
     RETURN json_build_object(
         'success', TRUE,
@@ -272,11 +300,12 @@ RETURNS JSON
 AS $$
 DECLARE
     solicitation_record RECORD;
+    admin_exists BOOLEAN;
 BEGIN
     -- Get solicitation record
     SELECT * INTO solicitation_record
     FROM solicitacao_cadastro
-    WHERE id_solicitacao = reject_registration.id_solicitacao;
+    WHERE solicitacao_cadastro.id_solicitacao = reject_registration.id_solicitacao;
 
     IF NOT FOUND THEN
         RETURN json_build_object(
@@ -292,13 +321,23 @@ BEGIN
         );
     END IF;
 
+    -- Verify if admin exists in pessoa table
+    SELECT EXISTS(SELECT 1 FROM pessoa WHERE cpf = reject_registration.cpf_admin) INTO admin_exists;
+
+    IF NOT admin_exists THEN
+        RETURN json_build_object(
+            'success', FALSE,
+            'message', 'Admin CPF not found in database'
+        );
+    END IF;
+
     -- Update solicitation status
     UPDATE solicitacao_cadastro
     SET status = 'REJEITADA',
         cpf_admin_aprovador = cpf_admin,
         data_aprovacao = CURRENT_TIMESTAMP,
         observacoes = reject_registration.observacoes
-    WHERE id_solicitacao = reject_registration.id_solicitacao;
+    WHERE solicitacao_cadastro.id_solicitacao = reject_registration.id_solicitacao;
 
     RETURN json_build_object(
         'success', TRUE,

@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, session
+from flask import Blueprint, g, jsonify, request, session
 import logging
 from pathlib import Path
 
@@ -164,6 +164,42 @@ def pending_registrations():
     })
 
 
+@auth_blueprint.route("/approved-registrations", methods=["GET"])
+def approved_registrations():
+    if not session.get("user_id"):
+        return jsonify({"success": False, "message": "Autenticação necessária"}), 401
+
+    # Check if user is admin (simple check via session)
+    profile_access = session.get("profile_access", {})
+    if not profile_access.get("admin"):
+        return jsonify({"success": False, "message": "Acesso de administrador necessário"}), 403
+
+    registrations = sql_queries.fetch_all("queries/auth/list_approved_registrations.sql")
+
+    return jsonify({
+        "success": True,
+        "registrations": registrations
+    })
+
+
+@auth_blueprint.route("/rejected-registrations", methods=["GET"])
+def rejected_registrations():
+    if not session.get("user_id"):
+        return jsonify({"success": False, "message": "Autenticação necessária"}), 401
+
+    # Check if user is admin (simple check via session)
+    profile_access = session.get("profile_access", {})
+    if not profile_access.get("admin"):
+        return jsonify({"success": False, "message": "Acesso de administrador necessário"}), 403
+
+    registrations = sql_queries.fetch_all("queries/auth/list_rejected_registrations.sql")
+
+    return jsonify({
+        "success": True,
+        "registrations": registrations
+    })
+
+
 @auth_blueprint.route("/approve-registration", methods=["POST"])
 def approve_registration():
     if not session.get("user_id"):
@@ -177,19 +213,33 @@ def approve_registration():
     if not id_solicitacao:
         return jsonify({"success": False, "message": "Solicitação inválida"}), 400
 
-    result = sql_queries.fetch_one(
-        "queries/auth/approve_registration.sql",
-        {
-            "id_solicitacao": int(id_solicitacao),
-            "cpf_admin": session["user_id"],
-        },
-    )
+    try:
+        result = sql_queries.fetch_one(
+            "queries/auth/approve_registration.sql",
+            {
+                "id_solicitacao": int(id_solicitacao),
+                "cpf_admin": session["user_id"],
+            },
+        )
 
-    if result and result.get("result") and result["result"].get("success"):
-        return jsonify({"success": True, "message": "Cadastro aprovado com sucesso"})
-    else:
-        message = result.get("result", {}).get("message", "Erro ao aprovar cadastro") if result else "Erro ao processar solicitação"
-        return jsonify({"success": False, "message": message}), 400
+        # Commit the transaction after executing the function that modifies the database
+        if hasattr(g, 'db_session') and g.db_session:
+            if result and result.get("result") and result["result"].get("success"):
+                g.db_session.connection.commit()
+            else:
+                g.db_session.connection.rollback()
+
+        if result and result.get("result") and result["result"].get("success"):
+            return jsonify({"success": True, "message": "Cadastro aprovado com sucesso"})
+        else:
+            message = result.get("result", {}).get("message", "Erro ao aprovar cadastro") if result else "Erro ao processar solicitação"
+            return jsonify({"success": False, "message": message}), 400
+    except Exception as e:
+        # Rollback on error
+        if hasattr(g, 'db_session') and g.db_session:
+            g.db_session.connection.rollback()
+        logger.error(f"Error approving registration: {e}")
+        return jsonify({"success": False, "message": f"Erro ao aprovar cadastro: {str(e)}"}), 500
 
 
 @auth_blueprint.route("/reject-registration", methods=["POST"])
@@ -212,20 +262,34 @@ def reject_registration():
     if not id_solicitacao:
         return jsonify({"success": False, "message": "Solicitação inválida"}), 400
 
-    result = sql_queries.fetch_one(
-        "queries/auth/reject_registration.sql",
-        {
-            "id_solicitacao": int(id_solicitacao),
-            "cpf_admin": session["user_id"],
-            "observacoes": observacoes if observacoes else None,
-        },
-    )
+    try:
+        result = sql_queries.fetch_one(
+            "queries/auth/reject_registration.sql",
+            {
+                "id_solicitacao": int(id_solicitacao),
+                "cpf_admin": session["user_id"],
+                "observacoes": observacoes if observacoes else None,
+            },
+        )
 
-    if result and result.get("result") and result["result"].get("success"):
-        return jsonify({"success": True, "message": "Cadastro rejeitado"})
-    else:
-        message = result.get("result", {}).get("message", "Erro ao rejeitar cadastro") if result else "Erro ao processar solicitação"
-        return jsonify({"success": False, "message": message}), 400
+        # Commit the transaction after executing the function that modifies the database
+        if hasattr(g, 'db_session') and g.db_session:
+            if result and result.get("result") and result["result"].get("success"):
+                g.db_session.connection.commit()
+            else:
+                g.db_session.connection.rollback()
+
+        if result and result.get("result") and result["result"].get("success"):
+            return jsonify({"success": True, "message": "Cadastro rejeitado"})
+        else:
+            message = result.get("result", {}).get("message", "Erro ao rejeitar cadastro") if result else "Erro ao processar solicitação"
+            return jsonify({"success": False, "message": message}), 400
+    except Exception as e:
+        # Rollback on error
+        if hasattr(g, 'db_session') and g.db_session:
+            g.db_session.connection.rollback()
+        logger.error(f"Error rejecting registration: {e}")
+        return jsonify({"success": False, "message": f"Erro ao rejeitar cadastro: {str(e)}"}), 500
 
 
 @auth_blueprint.route("/me", methods=["GET"])

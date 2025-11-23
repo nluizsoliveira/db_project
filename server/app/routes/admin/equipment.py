@@ -3,6 +3,7 @@ from flask import jsonify, request
 from app.routes.admin import admin_blueprint
 from app.services.database import executor as sql_queries
 from app.services.auth.decorators import require_role
+from app.services.error_handler import simplify_database_error
 
 
 @admin_blueprint.get("/equipment", endpoint="list_equipment")
@@ -82,8 +83,8 @@ def create_equipment():
             "message": "Equipamento criado com sucesso",
         })
     except Exception as e:
-        error_message = str(e)
-        return jsonify({"success": False, "message": f"Erro ao criar equipamento: {error_message}"}), 500
+        error_message = simplify_database_error(str(e))
+        return jsonify({"success": False, "message": error_message}), 500
 
 
 @admin_blueprint.put("/equipment/<equipment_id>", endpoint="update_equipment")
@@ -120,10 +121,10 @@ def update_equipment(equipment_id: str):
             "message": "Equipamento atualizado com sucesso",
         })
     except Exception as e:
-        error_message = str(e)
+        error_message = simplify_database_error(str(e))
         if "não encontrado" in error_message.lower():
             return jsonify({"success": False, "message": "Equipamento não encontrado"}), 404
-        return jsonify({"success": False, "message": f"Erro ao atualizar equipamento: {error_message}"}), 500
+        return jsonify({"success": False, "message": error_message}), 500
 
 
 @admin_blueprint.delete("/equipment/<equipment_id>", endpoint="delete_equipment")
@@ -140,7 +141,7 @@ def delete_equipment(equipment_id: str):
             "message": "Equipamento deletado com sucesso",
         })
     except Exception as e:
-        error_message = str(e)
+        error_message = simplify_database_error(str(e))
         if "não encontrado" in error_message.lower():
             return jsonify({"success": False, "message": "Equipamento não encontrado"}), 404
-        return jsonify({"success": False, "message": f"Erro ao deletar equipamento: {error_message}"}), 500
+        return jsonify({"success": False, "message": error_message}), 500
