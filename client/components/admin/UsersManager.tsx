@@ -87,7 +87,6 @@ interface User {
   data_nascimento: string | null;
   tipo_usuario: string;
   nusp: string | null;
-  categoria: string | null;
   formacao: string | null;
   numero_conselho: string | null;
   is_admin?: boolean;
@@ -110,7 +109,6 @@ export default function UsersManager() {
     data_nascimento: "",
     tipo_usuario: "interno",
     nusp: "",
-    categoria: "ALUNO",
     formacao: "",
     numero_conselho: "",
     is_admin: false,
@@ -161,7 +159,6 @@ export default function UsersManager() {
       data_nascimento: "",
       tipo_usuario: "interno",
       nusp: "",
-      categoria: "ALUNO",
       formacao: "",
       numero_conselho: "",
       is_admin: false,
@@ -187,10 +184,6 @@ export default function UsersManager() {
           atribuicoes.find((a) => a !== "Administrador") || "";
 
         const isFuncionario = user.is_funcionario || false;
-        // Sincronizar categoria com is_funcionario
-        const categoria = isFuncionario
-          ? "FUNCIONARIO"
-          : user.categoria || "ALUNO";
 
         setEditingUser(user);
         setFormData({
@@ -201,7 +194,6 @@ export default function UsersManager() {
           data_nascimento: user.data_nascimento || "",
           tipo_usuario: user.tipo_usuario,
           nusp: user.nusp || "",
-          categoria: categoria,
           formacao: user.formacao || "",
           numero_conselho: user.numero_conselho || "",
           is_admin: user.is_admin || false,
@@ -268,8 +260,6 @@ export default function UsersManager() {
           celular: formData.celular || null,
           tipo_usuario: formData.tipo_usuario,
           nusp: formData.tipo_usuario === "interno" ? formData.nusp : null,
-          categoria:
-            formData.tipo_usuario === "interno" ? formData.categoria : null,
           formacao: formData.is_funcionario ? formData.formacao || null : null,
           numero_conselho: formData.is_educador_fisico
             ? formData.numero_conselho || null
@@ -306,10 +296,7 @@ export default function UsersManager() {
           data_nascimento: formData.data_nascimento || null,
           tipo_usuario: formData.tipo_usuario,
           nusp: formData.tipo_usuario === "interno" ? formData.nusp : null,
-          categoria:
-            formData.tipo_usuario === "interno" ? formData.categoria : null,
-          formacao:
-            formData.categoria === "FUNCIONARIO" ? formData.formacao : null,
+          formacao: formData.is_funcionario ? formData.formacao : null,
           numero_conselho: formData.numero_conselho || null,
         });
 
@@ -423,23 +410,6 @@ export default function UsersManager() {
           );
         },
         cell: ({ row }) => <div>{row.getValue("nusp") || "—"}</div>,
-      },
-      {
-        accessorKey: "categoria",
-        header: ({ column }) => {
-          return (
-            <Button
-              variant="ghost"
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-            >
-              Categoria
-              <ArrowUpDown className="ml-2 h-4 w-4" />
-            </Button>
-          );
-        },
-        cell: ({ row }) => <div>{row.getValue("categoria") || "—"}</div>,
       },
       {
         id: "actions",
@@ -624,26 +594,7 @@ export default function UsersManager() {
                           className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                         />
                       </label>
-                      <label className="text-sm text-gray-600">
-                        <span className="mb-1 block font-medium">
-                          Categoria
-                        </span>
-                        <select
-                          value={formData.categoria}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              categoria: e.target.value,
-                            })
-                          }
-                          required
-                          className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
-                        >
-                          <option value="ALUNO">Aluno</option>
-                          <option value="FUNCIONARIO">Funcionário</option>
-                        </select>
-                      </label>
-                      {formData.categoria === "FUNCIONARIO" && (
+                      {formData.is_funcionario && (
                         <>
                           <label className="text-sm text-gray-600">
                             <span className="mb-1 block font-medium">
@@ -740,8 +691,6 @@ export default function UsersManager() {
                         setFormData({
                           ...formData,
                           is_funcionario: isFuncionario,
-                          // Sincronizar categoria com o checkbox
-                          categoria: isFuncionario ? "FUNCIONARIO" : "ALUNO",
                           // Se desmarcar funcionário, também desmarcar educador e admin
                           is_educador_fisico: isFuncionario
                             ? formData.is_educador_fisico
@@ -948,8 +897,6 @@ export default function UsersManager() {
                       >
                         {column.id === "tipo_usuario"
                           ? "Tipo"
-                          : column.id === "categoria"
-                          ? "Categoria"
                           : column.id}
                       </DropdownMenuCheckboxItem>
                     );

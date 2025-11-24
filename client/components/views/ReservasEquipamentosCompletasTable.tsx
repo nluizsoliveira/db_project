@@ -46,7 +46,6 @@ interface ReservaEquipamentoCompleta {
   email_responsavel: string;
   celular_responsavel: string | null;
   nusp_responsavel: string;
-  categoria_responsavel: string;
 }
 
 interface ReservasEquipamentosCompletasTableProps {

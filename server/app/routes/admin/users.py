@@ -40,6 +40,22 @@ def get_user(cpf: str):
         current_app.logger.info(f"[get_user] Tipo do user: {type(user)}")
         current_app.logger.info(f"[get_user] Chaves do user: {list(user.keys()) if isinstance(user, dict) else 'N/A'}")
 
+        # Garantir que valores booleanos sejam booleanos Python
+        if "is_funcionario" in user:
+            user["is_funcionario"] = bool(user.get("is_funcionario", False))
+        else:
+            user["is_funcionario"] = False
+
+        if "is_educador_fisico" in user:
+            user["is_educador_fisico"] = bool(user.get("is_educador_fisico", False))
+        else:
+            user["is_educador_fisico"] = False
+
+        if "is_admin" in user:
+            user["is_admin"] = bool(user.get("is_admin", False))
+        else:
+            user["is_admin"] = False
+
         # Garantir que atribuicoes seja uma lista válida
         if "atribuicoes" in user:
             atribuicoes = user.get("atribuicoes", [])
@@ -59,6 +75,8 @@ def get_user(cpf: str):
             else:
                 user["atribuicoes"] = list(atribuicoes)
                 current_app.logger.info(f"[get_user] Atribuicoes já era lista/tupla, convertido para lista: {len(user['atribuicoes'])} itens")
+        else:
+            user["atribuicoes"] = []
 
         current_app.logger.info(f"[get_user] Retornando usuário com sucesso")
         return jsonify({
@@ -86,7 +104,6 @@ def create_user():
         data_nascimento = data.get("data_nascimento")
         tipo_usuario = data.get("tipo_usuario", "").strip()
         nusp = data.get("nusp", "").strip()
-        categoria = data.get("categoria", "").strip()
         formacao = data.get("formacao", "").strip()
         numero_conselho = data.get("numero_conselho", "").strip()
     else:
@@ -97,7 +114,6 @@ def create_user():
         data_nascimento = request.form.get("data_nascimento")
         tipo_usuario = request.form.get("tipo_usuario", "").strip()
         nusp = request.form.get("nusp", "").strip()
-        categoria = request.form.get("categoria", "").strip()
         formacao = request.form.get("formacao", "").strip()
         numero_conselho = request.form.get("numero_conselho", "").strip()
 
@@ -111,7 +127,7 @@ def create_user():
                 return jsonify({"success": False, "message": "NUSP é obrigatório para interno"}), 400
 
             # Se for educador físico
-            if categoria == "FUNCIONARIO" and numero_conselho:
+            if numero_conselho:
                 if not formacao:
                     return jsonify({"success": False, "message": "Formação é obrigatória para educador físico"}), 400
                 sql_queries.execute_statement(
@@ -128,9 +144,7 @@ def create_user():
                     },
                 )
             # Se for funcionário
-            elif categoria == "FUNCIONARIO":
-                if not formacao:
-                    return jsonify({"success": False, "message": "Formação é obrigatória para funcionário"}), 400
+            elif formacao:
                 sql_queries.execute_statement(
                     "queries/admin/criar_funcionario.sql",
                     {
@@ -154,7 +168,6 @@ def create_user():
                         "celular": celular if celular else None,
                         "data_nascimento": data_nascimento if data_nascimento else None,
                         "nusp": nusp,
-                        "categoria": categoria if categoria else "ALUNO",
                     },
                 )
         else:
@@ -194,7 +207,6 @@ def update_user(cpf: str):
         novo_nome = safe_strip(data.get("nome"))
         novo_email = safe_strip(data.get("email"))
         novo_celular = safe_strip(data.get("celular"))
-        nova_categoria = safe_strip(data.get("categoria"))
         nova_formacao = safe_strip(data.get("formacao"))
         novo_conselho = safe_strip(data.get("numero_conselho"))
         tipo_usuario = safe_strip(data.get("tipo_usuario"))
@@ -207,7 +219,6 @@ def update_user(cpf: str):
         novo_nome = safe_strip(request.form.get("nome"))
         novo_email = safe_strip(request.form.get("email"))
         novo_celular = safe_strip(request.form.get("celular"))
-        nova_categoria = safe_strip(request.form.get("categoria"))
         nova_formacao = safe_strip(request.form.get("formacao"))
         novo_conselho = safe_strip(request.form.get("numero_conselho"))
         tipo_usuario = safe_strip(request.form.get("tipo_usuario"))
@@ -269,17 +280,12 @@ def update_user(cpf: str):
             # Adicionar como interno
             if not nusp:
                 return jsonify({"success": False, "message": "NUSP é obrigatório para usuário interno"}), 400
-            # Se categoria for ALUNO (inválida), usar ALUNO_GRADUACAO como padrão
-            categoria_inicial = nova_categoria if nova_categoria else "ALUNO_GRADUACAO"
-            if categoria_inicial == "ALUNO":
-                categoria_inicial = "ALUNO_GRADUACAO"
 
             sql_queries.execute_statement(
                 "queries/admin/adicionar_interno.sql",
                 {
                     "cpf": cpf,
                     "nusp": nusp,
-                    "categoria": categoria_inicial,
                 },
             )
         elif not is_interno and current_is_interno:
@@ -294,38 +300,7 @@ def update_user(cpf: str):
             current_is_admin = False
             current_atribuicoes = []
         elif is_interno and current_is_interno:
-            # Atualizar categoria e nusp se for interno
-            # Se não é mais funcionário, garantir que a categoria seja válida
-            if nova_categoria:
-                # Se a categoria for ALUNO (inválida), usar ALUNO_GRADUACAO
-                categoria_final = nova_categoria
-                if categoria_final == "ALUNO":
-                    categoria_final = "ALUNO_GRADUACAO"
-                # Validar que a categoria está na lista permitida
-                categorias_validas = ["ALUNO_GRADUACAO", "ALUNO_MESTRADO", "ALUNO_DOUTORADO", "FUNCIONARIO"]
-                if categoria_final not in categorias_validas:
-                    # Se não for válida e não for funcionário, usar ALUNO_GRADUACAO
-                    if not is_funcionario:
-                        categoria_final = "ALUNO_GRADUACAO"
-                    else:
-                        categoria_final = "FUNCIONARIO"
-
-                sql_queries.execute_statement(
-                    "queries/admin/atualizar_interno.sql",
-                    {
-                        "cpf": cpf,
-                        "categoria": categoria_final,
-                    },
-                )
-            elif not is_funcionario and current_is_funcionario:
-                # Se estava como funcionário e agora não é mais, mudar para ALUNO_GRADUACAO
-                sql_queries.execute_statement(
-                    "queries/admin/atualizar_interno.sql",
-                    {
-                        "cpf": cpf,
-                        "categoria": "ALUNO_GRADUACAO",
-                    },
-                )
+            # Atualizar nusp se for interno
             if nusp:
                 sql_queries.execute_statement(
                     "queries/admin/atualizar_nusp.sql",
@@ -342,15 +317,6 @@ def update_user(cpf: str):
                 return jsonify({"success": False, "message": "Usuário deve ser interno para ser funcionário"}), 400
             if not nova_formacao:
                 return jsonify({"success": False, "message": "Formação é obrigatória para funcionário"}), 400
-            # Garantir que a categoria seja FUNCIONARIO
-            if is_interno and current_is_interno:
-                sql_queries.execute_statement(
-                    "queries/admin/atualizar_interno.sql",
-                    {
-                        "cpf": cpf,
-                        "categoria": "FUNCIONARIO",
-                    },
-                )
             sql_queries.execute_statement(
                 "queries/admin/adicionar_funcionario.sql",
                 {
@@ -360,15 +326,6 @@ def update_user(cpf: str):
             )
         elif not is_funcionario and current_is_funcionario:
             # Remover como funcionário (cascade remove atribuicoes e educador)
-            # Primeiro atualizar a categoria para uma válida de aluno
-            if is_interno and current_is_interno:
-                sql_queries.execute_statement(
-                    "queries/admin/atualizar_interno.sql",
-                    {
-                        "cpf": cpf,
-                        "categoria": "ALUNO_GRADUACAO",
-                    },
-                )
             sql_queries.execute_statement(
                 "queries/admin/remover_funcionario.sql",
                 {"cpf": cpf},

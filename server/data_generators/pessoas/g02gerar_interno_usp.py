@@ -30,11 +30,6 @@ def gerar_nusp(dbsession, max_tentativas=100):
     # Se não conseguiu gerar um único após max_tentativas, usar timestamp + random
     return f"{int(time.time()) % 100000000}{random.randint(1000, 9999)}"
 
-# Função para gerar uma categoria aleatória
-def gerar_categoria():
-    categorias = ['ALUNO_GRADUACAO', 'ALUNO_MESTRADO', 'ALUNO_DOUTORADO', 'FUNCIONARIO']
-    return random.choice(categorias)
-
 # Função para dividir os dados em 90% para internos e 10% para pessoas restantes
 def gerar_interno_usp(dbsession):
     # Emails fixos para garantir que sejam internos
@@ -131,8 +126,7 @@ def gerar_interno_usp(dbsession):
                         break
 
             nusps_gerados.add(nusp)
-            categoria = gerar_categoria()
-            internos_data.append((cpf_pessoa, nusp, categoria))
+            internos_data.append((cpf_pessoa, nusp))
 
     if not internos_data:
         print("⚠️  Todos os CPFs já possuem internos cadastrados. Nada a inserir.")
@@ -141,8 +135,8 @@ def gerar_interno_usp(dbsession):
     # Inserir diretamente no banco com ON CONFLICT para evitar duplicatas
     # NUSP já é verificado antes de inserir, então só precisamos verificar CPF
     query = """
-        INSERT INTO INTERNO_USP (CPF_PESSOA, NUSP, CATEGORIA)
-        VALUES (%s, %s, %s)
+        INSERT INTO INTERNO_USP (CPF_PESSOA, NUSP)
+        VALUES (%s, %s)
         ON CONFLICT (CPF_PESSOA) DO NOTHING
     """
 

@@ -19,8 +19,7 @@ SELECT
     p.nome AS nome_responsavel,
     p.email AS email_responsavel,
     p.celular AS celular_responsavel,
-    iu.nusp AS nusp_responsavel,
-    iu.categoria AS categoria_responsavel
+    iu.nusp AS nusp_responsavel
 FROM reserva r
 JOIN instalacao i ON r.id_instalacao = i.id_instalacao
 JOIN interno_usp iu ON r.cpf_responsavel_interno = iu.cpf_pessoa
@@ -157,8 +156,7 @@ SELECT
     p.nome AS nome_responsavel,
     p.email AS email_responsavel,
     p.celular AS celular_responsavel,
-    iu.nusp AS nusp_responsavel,
-    iu.categoria AS categoria_responsavel
+    iu.nusp AS nusp_responsavel
 FROM reserva_equipamento re
 JOIN equipamento e ON re.id_equipamento = e.id_patrimonio
 LEFT JOIN instalacao i ON e.id_instalacao_local = i.id_instalacao
