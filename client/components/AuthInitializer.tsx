@@ -12,12 +12,12 @@ export default function AuthInitializer() {
   const loadAttemptedRef = useRef(false);
 
   // Verifica se estamos em uma página de autenticação
-  const isAuthPage = pathname?.startsWith('/auth/login') ||
-                     pathname?.startsWith('/auth/logout') ||
-                     pathname?.startsWith('/auth/register');
+  // Inclui todas as rotas de autenticação para evitar carregar usuário desnecessariamente
+  const isAuthPage = pathname?.startsWith('/auth/');
 
   useEffect(() => {
     // Não tenta carregar se estamos em páginas de autenticação
+    // Isso evita queries desnecessárias e re-renders
     if (isAuthPage) {
       loadAttemptedRef.current = false;
       return;
