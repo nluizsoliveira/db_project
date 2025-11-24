@@ -583,7 +583,7 @@ DECLARE
     activity_record RECORD;
     result JSON;
 BEGIN
-    -- Find invite by token
+    -- Find invite by token (exact match, tokens should not have whitespace)
     SELECT * INTO invite_record
     FROM convite_externo
     WHERE convite_externo.token = authenticate_external_by_token.token;
@@ -608,6 +608,13 @@ BEGIN
         SELECT * INTO activity_record
         FROM atividade
         WHERE id_atividade = invite_record.id_atividade;
+
+        -- Verificar se a atividade foi encontrada
+        IF NOT FOUND THEN
+            activity_record := NULL;
+        END IF;
+    ELSE
+        activity_record := NULL;
     END IF;
 
     -- Build result with invite and activity data
@@ -626,7 +633,7 @@ BEGIN
         ),
         'activity_id', invite_record.id_atividade,
         'activity_data', CASE
-            WHEN activity_record.id_atividade IS NOT NULL THEN
+            WHEN activity_record IS NOT NULL AND activity_record.id_atividade IS NOT NULL THEN
                 json_build_object(
                     'id_atividade', activity_record.id_atividade,
                     'nome', activity_record.nome,

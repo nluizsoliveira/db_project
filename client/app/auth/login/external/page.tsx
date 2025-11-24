@@ -107,7 +107,7 @@ function ExternalLoginContent() {
               autoComplete="off"
             />
             <p className="mt-1 text-xs text-gray-500">
-              O token foi enviado no seu convite por e-mail.
+              O token foi fornecido quando você recebeu o convite.
             </p>
           </div>
           <button
@@ -130,7 +130,7 @@ function ExternalLoginContent() {
           <h2 className="mb-2 font-semibold text-gray-800">Acesso Externo</h2>
           <p>
             Usuários externos podem acessar o sistema mediante convite validado.
-            O token do convite foi enviado por e-mail quando você foi convidado para participar de uma atividade.
+            O token do convite foi fornecido quando você foi convidado para participar de uma atividade.
           </p>
         </div>
       </div>

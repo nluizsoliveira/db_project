@@ -41,7 +41,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   clearUser: () => {
     clearUserCache();
-    set({ user: null, initialized: false });
+    // Mantém initialized como true para evitar que AuthInitializer tente carregar novamente
+    // O user sendo null já indica que não está autenticado
+    set({ user: null, initialized: true, loading: false });
   },
 
   refreshUser: async () => {

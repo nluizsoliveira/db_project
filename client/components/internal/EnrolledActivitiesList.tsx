@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useMemo, useCallback } from 'react';
+import { useState, FormEvent, useMemo } from 'react';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -30,55 +30,28 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { useInternalActivities, useEnrollActivity, type Activity } from '@/hooks/useActivities';
-import { useAlertDialog } from '@/hooks/useAlertDialog';
+import { useInternalActivities, type Activity } from '@/hooks/useActivities';
 
-interface ActivitiesListProps {
-  onEnroll?: (activityId: number) => void;
-}
-
-export default function ActivitiesList({ onEnroll }: ActivitiesListProps) {
+export default function EnrolledActivitiesList() {
   const [filters, setFilters] = useState({
     weekday: '',
     group_name: '',
     modality: '',
   });
 
-  // TanStack Table states
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
 
-  const { data: activities = [], isLoading: loading, error: queryError } = useInternalActivities(filters);
-  const enrollMutation = useEnrollActivity();
-  const alertDialog = useAlertDialog();
+  const { data: allActivities = [], isLoading: loading, error: queryError } = useInternalActivities(filters);
+
+  const enrolledActivities = useMemo(() => {
+    return allActivities.filter((activity) => activity.is_enrolled === true);
+  }, [allActivities]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    // Query will automatically refetch when filters change
   };
-
-  const handleEnroll = useCallback(async (activityId: number) => {
-    try {
-      const data = await enrollMutation.mutateAsync(activityId);
-      alertDialog.showAlert(data.message || 'Inscrição realizada com sucesso!', 'Sucesso');
-      if (onEnroll) {
-        onEnroll(activityId);
-      }
-    } catch (err: any) {
-      console.error('Erro ao inscrever:', err);
-      alertDialog.showAlert(err.message || 'Erro ao inscrever na atividade', 'Erro');
-    }
-  }, [enrollMutation, onEnroll, alertDialog]);
 
   const error = queryError?.message || '';
 
@@ -93,7 +66,6 @@ export default function ActivitiesList({ onEnroll }: ActivitiesListProps) {
     { value: 'DOMINGO', label: 'Domingo' },
   ];
 
-  // Define columns
   const columns: ColumnDef<Activity>[] = useMemo(
     () => [
       {
@@ -192,50 +164,27 @@ export default function ActivitiesList({ onEnroll }: ActivitiesListProps) {
         },
       },
       {
-        id: 'actions',
-        enableHiding: false,
-        cell: ({ row }) => {
-          const activity = row.original;
-          const vagasDisponiveis = activity.vagas_limite - activity.vagas_ocupadas;
-          const temVagas = vagasDisponiveis > 0;
-          const isEnrolled = activity.is_enrolled || false;
-
-          if (isEnrolled) {
-            return (
-              <Button
-                disabled
-                className="bg-green-500 text-white hover:bg-green-600 disabled:bg-green-500 disabled:text-white disabled:opacity-100"
-                size="sm"
-              >
-                <Check className="mr-2 h-4 w-4" />
-                Inscrito
-              </Button>
-            );
-          }
-
+        id: 'status',
+        header: 'Status',
+        cell: () => {
           return (
-            <Button
-              onClick={() => handleEnroll(activity.id_atividade)}
-              disabled={!temVagas}
-              className="bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab] disabled:bg-gray-300 disabled:text-gray-500"
-              size="sm"
-            >
-              {temVagas ? 'Inscrever-se' : 'Sem vagas'}
-            </Button>
+            <div className="flex items-center">
+              <Check className="mr-2 h-4 w-4 text-green-500" />
+              <span className="text-green-600 font-medium">Inscrito</span>
+            </div>
           );
         },
       },
     ],
-    [handleEnroll]
+    []
   );
 
-  // Create unique keys for rows
   const activitiesWithKeys = useMemo(() => {
-    return activities.map((activity, index) => ({
+    return enrolledActivities.map((activity, index) => ({
       ...activity,
       uniqueKey: `${activity.id_atividade}-${activity.weekday || 'no-day'}-${activity.horario_inicio || 'no-time'}-${index}`,
     }));
-  }, [activities]);
+  }, [enrolledActivities]);
 
   const table = useReactTable({
     data: activitiesWithKeys,
@@ -257,7 +206,7 @@ export default function ActivitiesList({ onEnroll }: ActivitiesListProps) {
 
   return (
     <div className="rounded-lg bg-white p-6 shadow">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">Atividades Disponíveis</h2>
+      <h2 className="mb-4 text-lg font-semibold text-gray-900">Minhas Inscrições</h2>
 
       <form onSubmit={handleSubmit} className="mb-4 grid gap-4 sm:grid-cols-3">
         <label className="text-sm text-gray-600">
@@ -322,10 +271,10 @@ export default function ActivitiesList({ onEnroll }: ActivitiesListProps) {
 
       {loading ? (
         <div className="py-8 text-center text-gray-500">Carregando atividades...</div>
-      ) : activities.length === 0 ? (
+      ) : enrolledActivities.length === 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white p-8 text-center shadow">
           <p className="text-gray-500">
-            Nenhuma atividade encontrada com os filtros selecionados.
+            Você não está inscrito em nenhuma atividade no momento.
           </p>
         </div>
       ) : (
@@ -367,6 +316,8 @@ export default function ActivitiesList({ onEnroll }: ActivitiesListProps) {
                           ? 'Horário'
                           : column.id === 'vagas'
                           ? 'Vagas'
+                          : column.id === 'status'
+                          ? 'Status'
                           : column.id}
                       </DropdownMenuCheckboxItem>
                     );
@@ -434,18 +385,6 @@ export default function ActivitiesList({ onEnroll }: ActivitiesListProps) {
           </div>
         </div>
       )}
-
-      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
-            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

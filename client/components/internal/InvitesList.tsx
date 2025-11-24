@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -33,13 +33,14 @@ import {
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useInvites } from '@/hooks/useInvites';
+import { useInvites, useDeleteInvite } from '@/hooks/useInvites';
 import { useAlertDialog } from '@/hooks/useAlertDialog';
 
 interface Invite {
@@ -66,6 +67,7 @@ interface InvitesListProps {
 
 export default function InvitesList({ refreshTrigger }: InvitesListProps) {
   const { data: invites = [], isLoading: loading, error: queryError, refetch } = useInvites();
+  const deleteMutation = useDeleteInvite();
   const alertDialog = useAlertDialog();
 
   const error = queryError?.message || '';
@@ -74,6 +76,10 @@ export default function InvitesList({ refreshTrigger }: InvitesListProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  // Delete confirmation dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [inviteToDelete, setInviteToDelete] = useState<{ id: number; nome: string } | null>(null);
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
@@ -109,6 +115,27 @@ export default function InvitesList({ refreshTrigger }: InvitesListProps) {
   const copyToken = (token: string) => {
     navigator.clipboard.writeText(token);
     alertDialog.showAlert('Token copiado para a área de transferência!', 'Sucesso');
+  };
+
+  const handleDeleteClick = (inviteId: number, nomeConvidado: string) => {
+    setInviteToDelete({ id: inviteId, nome: nomeConvidado });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!inviteToDelete) return;
+
+    try {
+      await deleteMutation.mutateAsync(inviteToDelete.id);
+      alertDialog.showAlert('Convite deletado com sucesso!', 'Sucesso');
+      setDeleteDialogOpen(false);
+      setInviteToDelete(null);
+      refetch();
+    } catch (err: any) {
+      alertDialog.showAlert(err?.message || 'Erro ao deletar convite', 'Erro');
+      setDeleteDialogOpen(false);
+      setInviteToDelete(null);
+    }
   };
 
   // Define columns
@@ -241,8 +268,28 @@ export default function InvitesList({ refreshTrigger }: InvitesListProps) {
           );
         },
       },
+      {
+        id: 'actions',
+        header: 'Ações',
+        enableHiding: false,
+        cell: ({ row }) => {
+          const invite = row.original;
+          return (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDeleteClick(invite.id_convite, invite.nome_convidado)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              disabled={deleteMutation.isPending}
+              title="Deletar convite"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          );
+        },
+      },
     ],
-    []
+    [deleteMutation.isPending]
   );
 
   const table = useReactTable({
@@ -264,15 +311,22 @@ export default function InvitesList({ refreshTrigger }: InvitesListProps) {
   });
 
   useEffect(() => {
-    if (refreshTrigger !== undefined) {
+    if (refreshTrigger !== undefined && refreshTrigger > 0) {
+      console.log('Refresh trigger acionado:', refreshTrigger);
       refetch();
     }
   }, [refreshTrigger, refetch]);
 
+  // Log quando os dados mudarem
+  useEffect(() => {
+    console.log('Invites atualizados:', invites);
+    console.log('Loading:', loading);
+    console.log('Error:', queryError);
+  }, [invites, loading, queryError]);
+
   return (
     <div className="rounded-lg bg-white p-6 shadow">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Convites Criados</h2>
+      <div className="mb-4 flex items-center justify-end">
         <button
           onClick={() => refetch()}
           className="rounded border border-gray-300 px-3 py-1 text-sm font-semibold text-gray-600 hover:bg-gray-50"
@@ -399,6 +453,32 @@ export default function InvitesList({ refreshTrigger }: InvitesListProps) {
           </div>
         </div>
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja deletar o convite de {inviteToDelete?.nome}? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setDeleteDialogOpen(false);
+              setInviteToDelete(null);
+            }}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 text-white hover:bg-red-700"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? 'Deletando...' : 'Deletar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
         <AlertDialogContent>
