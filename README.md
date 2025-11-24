@@ -6,7 +6,7 @@ Projeto acadêmico - Sistema de gerenciamento de reservas e atividades para inst
 
 ## 📑 Sumário
 
-- [db\_project](#db_project)
+- [db_project](#db_project)
   - [📑 Sumário](#-sumário)
   - [📋 Sobre o Projeto](#-sobre-o-projeto)
   - [🏗️ Estrutura do Projeto](#️-estrutura-do-projeto)
@@ -52,12 +52,15 @@ Aplicação full-stack para gerenciamento de reservas e atividades em instalaç�
 
 ## 🏗️ Estrutura do Projeto
 
-```
+```text
 db_project/
 ├── client/          # Frontend Next.js
+│   └── Dockerfile.dev  # Dockerfile para desenvolvimento do Next.js
 ├── server/          # Backend Flask
 │   ├── app/         # Aplicação Flask (rotas, serviços)
 │   ├── data_generators/  # Geradores de dados sintéticos
+│   ├── docker/      # Configurações Docker do Flask
+│   │   └── Dockerfile  # Dockerfile para o Flask
 │   └── sql/         # Scripts SQL (migrações, views, funções)
 ├── docs/            # Documentação do projeto
 └── docker-compose.yml
@@ -92,13 +95,17 @@ DB_PORT=5432
 DB_NAME=public
 DB_USER=postgres
 DB_PASSWORD=postgres
+DB_SCHEMA=              # Opcional: schema específico do PostgreSQL
 
 # Flask
 FLASK_SECRET_KEY=your-secret-key-here
 FLASK_DEBUG=true
-FLASK_RUN_PORT=5050
+FLASK_RUN_PORT=5050     # Porta interna do Flask dentro do container
 FLASK_RUN_HOST=0.0.0.0
-FLASK_PORT=5050
+FLASK_PORT=5050         # Porta de mapeamento Docker (host:container)
+
+# CORS (opcional - necessário apenas para desenvolvimento local)
+CORS_ORIGINS=http://localhost:3000  # Origens permitidas separadas por vírgula
 
 # Next.js
 NEXT_PUBLIC_API_URL=http://localhost:5050
@@ -124,8 +131,8 @@ Isso irá:
 
 #### 3. Acessar as aplicações
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:5050
+- **Frontend**: <http://localhost:3000>
+- **Backend API**: <http://localhost:5050>
 - **PostgreSQL**: localhost:5432
 
 #### 4. Ver logs
@@ -163,6 +170,8 @@ pip install -r requirements.txt
 
 Certifique-se de que o arquivo `.env` está configurado corretamente (veja Método 1).
 
+**Importante**: Para desenvolvimento local, configure `CORS_ORIGINS` no `.env` com a URL do frontend (ex: `CORS_ORIGINS=http://localhost:3000`). No Docker, isso não é necessário pois o CORS é configurado automaticamente.
+
 3. **Rodar o servidor Flask**
 
 ```bash
@@ -179,13 +188,17 @@ cd client
 pnpm install
 ```
 
-2. **Rodar o servidor de desenvolvimento**
+2. **Configurar variáveis de ambiente**
+
+Certifique-se de que `NEXT_PUBLIC_API_URL` está configurado no `.env` apontando para a URL do backend Flask.
+
+3. **Rodar o servidor de desenvolvimento**
 
 ```bash
 pnpm dev
 ```
 
-O frontend estará disponível em http://localhost:3000
+O frontend estará disponível em <http://localhost:3000>
 
 ## 🗄️ Banco de Dados
 
@@ -289,8 +302,13 @@ Consulte o arquivo `LOGINS.md` para informações sobre usuários de teste e sen
 
 ### Porta já em uso
 
-- Altere as portas no arquivo `.env` (ex: `FLASK_PORT=5051`, `NEXTJS_PORT=3001`)
+- Altere as portas no arquivo `.env` (ex: `FLASK_PORT=5051`, `FLASK_RUN_PORT=5051`, `NEXTJS_PORT=3001`)
 - Ou pare o processo que está usando a porta
+
+### Erro de CORS no desenvolvimento local
+
+- Certifique-se de que `CORS_ORIGINS` está configurado no `.env` com a URL do frontend (ex: `CORS_ORIGINS=http://localhost:3000`)
+- Verifique se `NEXT_PUBLIC_API_URL` está apontando para a URL correta do backend
 
 ## 📚 Documentação Adicional
 
