@@ -6,6 +6,13 @@
 **Professor**: Mirela Teixeira Cazzolato
 **PAE**: Leonardo Campos
 
+**Autores**:
+- Breno Rodrigues - 11734142
+- Erick Barcelos - 11345562
+- Gabriel Henrique dos Santos - 13783972
+- Lourençco Roselino - 11796805
+- Nelson Luiz - 9793502
+
 ---
 
 ## 📑 Sumário

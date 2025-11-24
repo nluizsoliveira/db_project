@@ -301,3 +301,10 @@ Consulte o arquivo `LOGINS.md` para informações sobre usuários de teste e sen
 ## 📄 Sobre
 
 Este projeto foi desenvolvido como parte do Projeto Final (PF) da disciplina SCC0641 – Laboratório de Bases de Dados.
+
+**Autores**:
+- Breno Rodrigues - 11734142
+- Erick Barcelos - 11345562
+- Gabriel Henrique dos Santos - 13783972
+- Lourençco Roselino - 11796805
+- Nelson Luiz - 9793502
