@@ -866,6 +866,16 @@ export default function UsersManager() {
         <div className="w-full space-y-4">
           <div className="flex items-center gap-2">
             <Input
+              placeholder="Filtrar por nome..."
+              value={
+                (table.getColumn("nome")?.getFilterValue() as string) ?? ""
+              }
+              onChange={(event) =>
+                table.getColumn("nome")?.setFilterValue(event.target.value)
+              }
+              className="max-w-sm"
+            />
+            <Input
               placeholder="Filtrar por email..."
               value={
                 (table.getColumn("email")?.getFilterValue() as string) ?? ""
