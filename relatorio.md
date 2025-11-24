@@ -132,7 +132,7 @@ A estrutura do banco de dados foi definida através de comandos DDL no arquivo [
 O sistema possui **20+ tabelas** principais, incluindo:
 
 - **PESSOA**: Dados pessoais básicos (CPF, nome, email, celular, data de nascimento)
-- **INTERNO_USP**: Usuários internos da USP (NUSP, categoria)
+- **INTERNO_USP**: Usuários internos da USP (NUSP)
 - **FUNCIONARIO**: Funcionários do CEFER (formação, atribuições)
 - **EDUCADOR_FISICO**: Educadores físicos (número do conselho)
 - **INSTALACAO**: Instalações disponíveis para reserva
@@ -411,28 +411,24 @@ O sistema implementa consultas analíticas utilizando os três tipos de extended
 
 **Arquivo**: [`queries/reports/activities_cube.sql`](server/sql/queries/reports/activities_cube.sql)
 
-```1:11:server/sql/queries/reports/activities_cube.sql
+```1:10:server/sql/queries/reports/activities_cube.sql
 SELECT
     e.numero_conselho AS council_number,
-    iu.categoria AS category,
     COUNT(a.id_atividade) AS total_activities
 FROM conduz_atividade ca
 JOIN educador_fisico e ON ca.cpf_educador_fisico = e.cpf_funcionario
 JOIN funcionario f ON f.cpf_interno = e.cpf_funcionario
 JOIN interno_usp iu ON iu.cpf_pessoa = f.cpf_interno
 JOIN atividade a ON a.id_atividade = ca.id_atividade
-GROUP BY CUBE (e.numero_conselho, iu.categoria)
-ORDER BY council_number, category;
+GROUP BY e.numero_conselho
+ORDER BY council_number;
 ```
 
-**Funcionalidade**: Esta consulta gera agregações em todas as combinações possíveis de `numero_conselho` e `categoria`, incluindo:
+**Nota**: Esta consulta atualmente não utiliza `CUBE`, apenas agrupa por `numero_conselho`. Para demonstrar o uso de `CUBE` conforme os requisitos da disciplina, seria necessário incluir uma segunda dimensão de agregação (por exemplo, agrupar por tipo de instalação ou período) e aplicar `GROUP BY CUBE` para gerar todas as combinações possíveis de agregação.
 
-- Totais por conselho e categoria
-- Totais por conselho (independente da categoria)
-- Totais por categoria (independente do conselho)
-- Total geral
+**Funcionalidade atual**: Esta consulta agrega o total de atividades por número de conselho do educador físico.
 
-**Justificativa**: Permite análise multidimensional das atividades, identificando padrões de distribuição de atividades por educador e categoria de usuário.
+**Justificativa**: Permite análise da distribuição de atividades por educador físico, identificando quais conselhos têm mais atividades conduzidas.
 
 ### 4.2. ROLLUP
 
@@ -1325,7 +1321,7 @@ O sistema implementa múltiplos relatórios para diferentes tipos de usuários, 
 
 - Ranking de instalações por reservas
 - Crescimento mensal de reservas
-- Agregações CUBE de atividades por educador
+- Atividades por educador (arquivo activities_cube.sql - atualmente sem CUBE)
 - ROLLUP de reservas por instalação e mês
 - Totais de participantes (GROUPING SETS)
 - Reservas futuras com LEAD
@@ -1409,7 +1405,7 @@ Este projeto demonstra a implementação completa de um sistema de gestão utili
 
 ✅ **DDL**: Estrutura completa do banco com constraints, tipos enumerados e identidades
 ✅ **DML**: INSERT, UPDATE, DELETE com validações e tratamento de conflitos
-✅ **Extended Group By**: CUBE, ROLLUP e GROUPING SETS em relatórios analíticos
+✅ **Extended Group By**: ROLLUP e GROUPING SETS em relatórios analíticos (arquivo activities_cube.sql existe mas não utiliza CUBE atualmente)
 ✅ **Window Functions**: 8 funções diferentes (RANK, ROW_NUMBER, DENSE_RANK, LAG, LEAD, SUM, AVG, COUNT)
 ✅ **PL/pgSQL**: Functions e procedures com lógica de negócio complexa
 ✅ **Triggers**: Validação de regras de negócio no nível do banco
@@ -1455,7 +1451,7 @@ O sistema está pronto para uso e demonstra proficiência nos conceitos de Bases
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **DDL**                               | [`upgrade_schema.sql`](server/sql/upgrade_schema.sql), [`downgrade_schema.sql`](server/sql/downgrade_schema.sql)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | **DML**                               | [`functions/*.sql`](server/sql/functions/), [`queries/*.sql`](server/sql/queries/)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| **Extended Group By (CUBE)**          | [`queries/reports/activities_cube.sql`](server/sql/queries/reports/activities_cube.sql)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **Extended Group By (CUBE)**          | [`queries/reports/activities_cube.sql`](server/sql/queries/reports/activities_cube.sql) - *Nota: arquivo existe mas não utiliza CUBE atualmente*                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | **Extended Group By (ROLLUP)**        | [`queries/reports/reservations_rollup.sql`](server/sql/queries/reports/reservations_rollup.sql)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | **Extended Group By (GROUPING SETS)** | [`queries/reports/participants_totals.sql`](server/sql/queries/reports/participants_totals.sql)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | **Window Functions**                  | 8 arquivos: [`installation_ranking.sql`](server/sql/queries/reports/installation_ranking.sql) (RANK), [`reservations_row_number.sql`](server/sql/queries/reports/reservations_row_number.sql) (ROW_NUMBER), [`activities_dense_rank.sql`](server/sql/queries/reports/activities_dense_rank.sql) (DENSE_RANK), [`reservations_monthly_growth.sql`](server/sql/queries/reports/reservations_monthly_growth.sql) (LAG), [`admin/upcoming_reservations.sql`](server/sql/queries/admin/upcoming_reservations.sql) (LEAD - Admin Dashboard), [`reservations_cumulative.sql`](server/sql/queries/reports/reservations_cumulative.sql) (SUM OVER), [`activities_moving_average.sql`](server/sql/queries/reports/activities_moving_average.sql) (AVG OVER), [`educator_activities_count.sql`](server/sql/queries/reports/educator_activities_count.sql) (COUNT OVER) |
