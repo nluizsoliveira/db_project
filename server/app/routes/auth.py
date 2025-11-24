@@ -96,19 +96,19 @@ def register_post():
     if password != password_confirm:
         return jsonify({"success": False, "message": "As senhas não coincidem"}), 400
 
-    # Verificar se usuário já existe (por email ou CPF)
-    existing_user_by_email = sql_queries.fetch_one(
-        "queries/auth/check_user_exists.sql",
+    # Verificar se usuário já tem conta ativa (verifica USUARIO_SENHA, não apenas PESSOA)
+    existing_account_by_email = sql_queries.fetch_one(
+        "queries/auth/check_user_account_exists.sql",
         {"email_or_cpf": email}
     )
-    if existing_user_by_email:
+    if existing_account_by_email:
         return jsonify({"success": False, "message": "Usuário já existe com este e-mail"}), 400
 
-    existing_user_by_cpf = sql_queries.fetch_one(
-        "queries/auth/check_user_exists.sql",
+    existing_account_by_cpf = sql_queries.fetch_one(
+        "queries/auth/check_user_account_exists.sql",
         {"email_or_cpf": cpf}
     )
-    if existing_user_by_cpf:
+    if existing_account_by_cpf:
         return jsonify({"success": False, "message": "Usuário já existe com este CPF"}), 400
 
     # Verificar se já existe solicitação pendente
@@ -122,28 +122,61 @@ def register_post():
     if existing_request:
         return jsonify({"success": False, "message": "Já existe uma solicitação de cadastro pendente para este CPF/NUSP"}), 400
 
-    result = sql_queries.fetch_one(
-        "queries/auth/request_registration.sql",
-        {
-            "cpf_pessoa": cpf,
-            "nusp": nusp,
-            "email": email,
-            "password": password,
-        },
-    )
+    try:
+        result = sql_queries.fetch_one(
+            "queries/auth/request_registration.sql",
+            {
+                "cpf_pessoa": cpf,
+                "nusp": nusp,
+                "email": email,
+                "password": password,
+            },
+        )
 
-    if not result or not result.get("result"):
-        return jsonify({"success": False, "message": "Erro ao processar solicitação de cadastro"}), 500
+        logger.info(f"Registration request result: {result}")
 
-    registration_data = result["result"]
+        if not result or not result.get("result"):
+            if hasattr(g, 'db_session') and g.db_session:
+                g.db_session.connection.rollback()
+            return jsonify({"success": False, "message": "Erro ao processar solicitação de cadastro"}), 500
 
-    if not registration_data.get("success"):
-        return jsonify({"success": False, "message": registration_data.get("message", "Erro ao processar solicitação")}), 400
+        registration_data = result["result"]
 
-    return jsonify({
-        "success": True,
-        "message": registration_data.get("message", "Solicitação de cadastro criada com sucesso")
-    })
+        # Parse JSON if it's a string (PostgreSQL may return JSON as string)
+        if isinstance(registration_data, str):
+            import json
+            try:
+                registration_data = json.loads(registration_data)
+            except json.JSONDecodeError as e:
+                logger.error(f"Error parsing JSON result: {e}, raw: {registration_data}")
+                if hasattr(g, 'db_session') and g.db_session:
+                    g.db_session.connection.rollback()
+                return jsonify({"success": False, "message": "Erro ao processar resposta do servidor"}), 500
+
+        logger.info(f"Registration data parsed: {registration_data}")
+
+        # Commit the transaction after executing the function that modifies the database
+        if hasattr(g, 'db_session') and g.db_session:
+            if registration_data.get("success"):
+                logger.info("Committing transaction for successful registration request")
+                g.db_session.connection.commit()
+            else:
+                logger.warning("Rolling back transaction for failed registration request")
+                g.db_session.connection.rollback()
+
+        if not registration_data.get("success"):
+            return jsonify({"success": False, "message": registration_data.get("message", "Erro ao processar solicitação")}), 400
+
+        return jsonify({
+            "success": True,
+            "message": registration_data.get("message", "Solicitação de cadastro criada com sucesso")
+        })
+    except Exception as e:
+        # Rollback on error
+        if hasattr(g, 'db_session') and g.db_session:
+            g.db_session.connection.rollback()
+        logger.error(f"Error creating registration request: {e}", exc_info=True)
+        return jsonify({"success": False, "message": f"Erro ao processar solicitação de cadastro: {str(e)}"}), 500
 
 
 @auth_blueprint.route("/pending-registrations", methods=["GET"])
@@ -157,6 +190,7 @@ def pending_registrations():
         return jsonify({"success": False, "message": "Acesso de administrador necessário"}), 403
 
     registrations = sql_queries.fetch_all("queries/auth/list_pending_registrations.sql")
+    logger.info(f"Found {len(registrations)} pending registration requests")
 
     return jsonify({
         "success": True,

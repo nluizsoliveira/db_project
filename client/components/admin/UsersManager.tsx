@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect, FormEvent, useMemo } from 'react';
+import { useState, useEffect, FormEvent, useMemo } from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -12,10 +12,10 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
+} from "@tanstack/react-table";
+import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react";
 
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -24,8 +24,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -33,7 +33,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,16 +43,41 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/api';
-import { useAlertDialog } from '@/hooks/useAlertDialog';
+} from "@/components/ui/dialog";
+import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
+import { useAlertDialog } from "@/hooks/useAlertDialog";
+import { Checkbox } from "@/components/ui/checkbox";
+
+const ATRIBUICOES_POSSIVEIS = [
+  "Administrador",
+  "Professor de Educação Física",
+  "Coordenador de Atividades Esportivas",
+  "Treinador de Atletismo",
+  "Professor de Natação",
+  "Preparador Físico",
+  "Instrutor de Musculação",
+  "Técnico de Futebol",
+  "Técnico de Vôlei",
+  "Assistente de Reabilitação Física",
+  "Supervisor de Recreação",
+  "Nutricionista Esportivo",
+  "Psicólogo Esportivo",
+  "Fisioterapeuta",
+  "Analista de Performance",
+  "Gerente de Eventos Esportivos",
+  "Administrador de Ginásio",
+  "Monitores de Atividades Recreativas",
+  "Gestor de Programas Esportivos",
+  "Professor de Yoga ou Pilates",
+  "Especialista em Medicina Esportiva",
+];
 
 interface User {
   cpf: string;
@@ -65,25 +90,33 @@ interface User {
   categoria: string | null;
   formacao: string | null;
   numero_conselho: string | null;
+  is_admin?: boolean;
+  is_funcionario?: boolean;
+  is_educador_fisico?: boolean;
+  atribuicoes?: string[];
 }
 
 export default function UsersManager() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
-    cpf: '',
-    nome: '',
-    email: '',
-    celular: '',
-    data_nascimento: '',
-    tipo_usuario: 'interno',
-    nusp: '',
-    categoria: 'ALUNO',
-    formacao: '',
-    numero_conselho: '',
+    cpf: "",
+    nome: "",
+    email: "",
+    celular: "",
+    data_nascimento: "",
+    tipo_usuario: "interno",
+    nusp: "",
+    categoria: "ALUNO",
+    formacao: "",
+    numero_conselho: "",
+    is_admin: false,
+    is_funcionario: false,
+    is_educador_fisico: false,
+    atribuicao: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const alertDialog = useAlertDialog();
@@ -95,19 +128,19 @@ export default function UsersManager() {
 
   const loadUsers = async () => {
     setLoading(true);
-    setError('');
+    setError("");
     try {
       const data = await apiGet<{
         success: boolean;
         users: User[];
-      }>('/admin/users');
+      }>("/admin/users");
 
       if (data.success) {
         setUsers(data.users || []);
       }
     } catch (err) {
-      console.error('Erro ao carregar usuários:', err);
-      setError('Erro ao carregar usuários');
+      console.error("Erro ao carregar usuários:", err);
+      setError("Erro ao carregar usuários");
       setUsers([]);
     } finally {
       setLoading(false);
@@ -121,16 +154,20 @@ export default function UsersManager() {
   const handleCreate = () => {
     setEditingUser(null);
     setFormData({
-      cpf: '',
-      nome: '',
-      email: '',
-      celular: '',
-      data_nascimento: '',
-      tipo_usuario: 'interno',
-      nusp: '',
-      categoria: 'ALUNO',
-      formacao: '',
-      numero_conselho: '',
+      cpf: "",
+      nome: "",
+      email: "",
+      celular: "",
+      data_nascimento: "",
+      tipo_usuario: "interno",
+      nusp: "",
+      categoria: "ALUNO",
+      formacao: "",
+      numero_conselho: "",
+      is_admin: false,
+      is_funcionario: false,
+      is_educador_fisico: false,
+      atribuicao: "",
     });
     setShowForm(true);
   };
@@ -143,31 +180,47 @@ export default function UsersManager() {
       }>(`/admin/users/${cpf}`);
 
       if (data.success && data.user) {
-        setEditingUser(data.user);
+        const user = data.user;
+        const atribuicoes = user.atribuicoes || [];
+        // Encontrar atribuição principal (primeira que não seja Administrador)
+        const atribuicaoPrincipal =
+          atribuicoes.find((a) => a !== "Administrador") || "";
+
+        const isFuncionario = user.is_funcionario || false;
+        // Sincronizar categoria com is_funcionario
+        const categoria = isFuncionario
+          ? "FUNCIONARIO"
+          : user.categoria || "ALUNO";
+
+        setEditingUser(user);
         setFormData({
-          cpf: data.user.cpf,
-          nome: data.user.nome,
-          email: data.user.email,
-          celular: data.user.celular || '',
-          data_nascimento: data.user.data_nascimento || '',
-          tipo_usuario: data.user.tipo_usuario,
-          nusp: data.user.nusp || '',
-          categoria: data.user.categoria || 'ALUNO',
-          formacao: data.user.formacao || '',
-          numero_conselho: data.user.numero_conselho || '',
+          cpf: user.cpf,
+          nome: user.nome,
+          email: user.email,
+          celular: user.celular || "",
+          data_nascimento: user.data_nascimento || "",
+          tipo_usuario: user.tipo_usuario,
+          nusp: user.nusp || "",
+          categoria: categoria,
+          formacao: user.formacao || "",
+          numero_conselho: user.numero_conselho || "",
+          is_admin: user.is_admin || false,
+          is_funcionario: isFuncionario,
+          is_educador_fisico: user.is_educador_fisico || false,
+          atribuicao: atribuicaoPrincipal,
         });
         setShowForm(true);
       }
     } catch (err) {
-      console.error('Erro ao carregar usuário:', err);
-      alertDialog.showAlert('Erro ao carregar usuário', 'Erro');
+      console.error("Erro ao carregar usuário:", err);
+      alertDialog.showAlert("Erro ao carregar usuário", "Erro");
     }
   };
 
   const handleDelete = async (cpf: string) => {
     alertDialog.showConfirm(
-      'Deseja realmente deletar este usuário? Esta ação não pode ser desfeita.',
-      'Confirmar Exclusão',
+      "Deseja realmente deletar este usuário? Esta ação não pode ser desfeita.",
+      "Confirmar Exclusão",
       async () => {
         try {
           const data = await apiDelete<{
@@ -176,14 +229,23 @@ export default function UsersManager() {
           }>(`/admin/users/${cpf}`);
 
           if (data.success) {
-            alertDialog.showAlert(data.message || 'Usuário deletado com sucesso!', 'Sucesso');
+            alertDialog.showAlert(
+              data.message || "Usuário deletado com sucesso!",
+              "Sucesso"
+            );
             loadUsers();
           } else {
-            alertDialog.showAlert(data.message || 'Erro ao deletar usuário', 'Erro');
+            alertDialog.showAlert(
+              data.message || "Erro ao deletar usuário",
+              "Erro"
+            );
           }
         } catch (err: any) {
-          console.error('Erro ao deletar usuário:', err);
-          alertDialog.showAlert(err.message || 'Erro ao deletar usuário', 'Erro');
+          console.error("Erro ao deletar usuário:", err);
+          alertDialog.showAlert(
+            err.message || "Erro ao deletar usuário",
+            "Erro"
+          );
         }
       }
     );
@@ -192,7 +254,7 @@ export default function UsersManager() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    setError('');
+    setError("");
 
     try {
       if (editingUser) {
@@ -204,47 +266,67 @@ export default function UsersManager() {
           nome: formData.nome,
           email: formData.email,
           celular: formData.celular || null,
-          categoria: formData.tipo_usuario === 'interno' ? formData.categoria : null,
-          formacao: formData.formacao || null,
-          numero_conselho: formData.numero_conselho || null,
+          tipo_usuario: formData.tipo_usuario,
+          nusp: formData.tipo_usuario === "interno" ? formData.nusp : null,
+          categoria:
+            formData.tipo_usuario === "interno" ? formData.categoria : null,
+          formacao: formData.is_funcionario ? formData.formacao || null : null,
+          numero_conselho: formData.is_educador_fisico
+            ? formData.numero_conselho || null
+            : null,
+          is_admin: formData.is_admin,
+          is_funcionario: formData.is_funcionario,
+          is_educador_fisico: formData.is_educador_fisico,
+          atribuicao:
+            formData.is_funcionario && formData.atribuicao
+              ? formData.atribuicao
+              : null,
         });
 
         if (data.success) {
-          alertDialog.showAlert(data.message || 'Usuário atualizado com sucesso!', 'Sucesso');
+          alertDialog.showAlert(
+            data.message || "Usuário atualizado com sucesso!",
+            "Sucesso"
+          );
           setShowForm(false);
           loadUsers();
         } else {
-          setError(data.message || 'Erro ao atualizar usuário');
+          setError(data.message || "Erro ao atualizar usuário");
         }
       } else {
         // Create
         const data = await apiPost<{
           success: boolean;
           message?: string;
-        }>('/admin/users', {
+        }>("/admin/users", {
           cpf: formData.cpf,
           nome: formData.nome,
           email: formData.email,
           celular: formData.celular || null,
           data_nascimento: formData.data_nascimento || null,
           tipo_usuario: formData.tipo_usuario,
-          nusp: formData.tipo_usuario === 'interno' ? formData.nusp : null,
-          categoria: formData.tipo_usuario === 'interno' ? formData.categoria : null,
-          formacao: formData.categoria === 'FUNCIONARIO' ? formData.formacao : null,
+          nusp: formData.tipo_usuario === "interno" ? formData.nusp : null,
+          categoria:
+            formData.tipo_usuario === "interno" ? formData.categoria : null,
+          formacao:
+            formData.categoria === "FUNCIONARIO" ? formData.formacao : null,
           numero_conselho: formData.numero_conselho || null,
         });
 
         if (data.success) {
-          alertDialog.showAlert(data.message || 'Usuário criado com sucesso!', 'Sucesso');
+          alertDialog.showAlert(
+            data.message || "Usuário criado com sucesso!",
+            "Sucesso"
+          );
           setShowForm(false);
           loadUsers();
         } else {
-          setError(data.message || 'Erro ao criar usuário');
+          setError(data.message || "Erro ao criar usuário");
         }
       }
     } catch (err: any) {
-      console.error('Erro ao salvar usuário:', err);
-      setError(err.message || 'Erro ao salvar usuário');
+      console.error("Erro ao salvar usuário:", err);
+      setError(err.message || "Erro ao salvar usuário");
     } finally {
       setSubmitting(false);
     }
@@ -254,97 +336,113 @@ export default function UsersManager() {
   const columns: ColumnDef<User>[] = useMemo(
     () => [
       {
-        accessorKey: 'cpf',
+        accessorKey: "cpf",
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
             >
               CPF
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
-        cell: ({ row }) => <div className="font-medium">{row.getValue('cpf')}</div>,
+        cell: ({ row }) => (
+          <div className="font-medium">{row.getValue("cpf")}</div>
+        ),
       },
       {
-        accessorKey: 'nome',
+        accessorKey: "nome",
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
             >
               Nome
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
-        cell: ({ row }) => <div>{row.getValue('nome')}</div>,
+        cell: ({ row }) => <div>{row.getValue("nome")}</div>,
       },
       {
-        accessorKey: 'email',
+        accessorKey: "email",
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
             >
               Email
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
-        cell: ({ row }) => <div className="lowercase">{row.getValue('email')}</div>,
+        cell: ({ row }) => (
+          <div className="lowercase">{row.getValue("email")}</div>
+        ),
       },
       {
-        accessorKey: 'tipo_usuario',
+        accessorKey: "tipo_usuario",
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
             >
               Tipo
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
-        cell: ({ row }) => <div>{row.getValue('tipo_usuario')}</div>,
+        cell: ({ row }) => <div>{row.getValue("tipo_usuario")}</div>,
       },
       {
-        accessorKey: 'nusp',
+        accessorKey: "nusp",
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
             >
               NUSP
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
-        cell: ({ row }) => <div>{row.getValue('nusp') || '—'}</div>,
+        cell: ({ row }) => <div>{row.getValue("nusp") || "—"}</div>,
       },
       {
-        accessorKey: 'categoria',
+        accessorKey: "categoria",
         header: ({ column }) => {
           return (
             <Button
               variant="ghost"
-              onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
             >
               Categoria
               <ArrowUpDown className="ml-2 h-4 w-4" />
             </Button>
           );
         },
-        cell: ({ row }) => <div>{row.getValue('categoria') || '—'}</div>,
+        cell: ({ row }) => <div>{row.getValue("categoria") || "—"}</div>,
       },
       {
-        id: 'actions',
+        id: "actions",
         enableHiding: false,
         cell: ({ row }) => {
           const user = row.original;
@@ -399,7 +497,9 @@ export default function UsersManager() {
   return (
     <div className="rounded-lg bg-white p-6 shadow">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Gerenciar Usuários</h2>
+        <h2 className="text-lg font-semibold text-gray-900">
+          Gerenciar Usuários
+        </h2>
         <Button
           onClick={handleCreate}
           className="bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab]"
@@ -409,10 +509,10 @@ export default function UsersManager() {
       </div>
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingUser ? 'Editar Usuário' : 'Novo Usuário'}
+              {editingUser ? "Editar Usuário" : "Novo Usuário"}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -424,7 +524,10 @@ export default function UsersManager() {
                     type="text"
                     value={formData.cpf}
                     onChange={(e) =>
-                      setFormData({ ...formData, cpf: e.target.value.replace(/\D/g, '') })
+                      setFormData({
+                        ...formData,
+                        cpf: e.target.value.replace(/\D/g, ""),
+                      })
                     }
                     required
                     maxLength={11}
@@ -437,7 +540,9 @@ export default function UsersManager() {
                 <input
                   type="text"
                   value={formData.nome}
-                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, nome: e.target.value })
+                  }
                   required
                   className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                 />
@@ -447,7 +552,9 @@ export default function UsersManager() {
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   required
                   className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                 />
@@ -458,7 +565,10 @@ export default function UsersManager() {
                   type="text"
                   value={formData.celular}
                   onChange={(e) =>
-                    setFormData({ ...formData, celular: e.target.value.replace(/\D/g, '') })
+                    setFormData({
+                      ...formData,
+                      celular: e.target.value.replace(/\D/g, ""),
+                    })
                   }
                   className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                 />
@@ -466,19 +576,33 @@ export default function UsersManager() {
               {!editingUser && (
                 <>
                   <label className="text-sm text-gray-600">
-                    <span className="mb-1 block font-medium">Data de Nascimento</span>
+                    <span className="mb-1 block font-medium">
+                      Data de Nascimento
+                    </span>
                     <input
                       type="date"
                       value={formData.data_nascimento}
-                      onChange={(e) => setFormData({ ...formData, data_nascimento: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          data_nascimento: e.target.value,
+                        })
+                      }
                       className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                     />
                   </label>
                   <label className="text-sm text-gray-600">
-                    <span className="mb-1 block font-medium">Tipo de Usuário</span>
+                    <span className="mb-1 block font-medium">
+                      Tipo de Usuário
+                    </span>
                     <select
                       value={formData.tipo_usuario}
-                      onChange={(e) => setFormData({ ...formData, tipo_usuario: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          tipo_usuario: e.target.value,
+                        })
+                      }
                       required
                       className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                     >
@@ -486,23 +610,32 @@ export default function UsersManager() {
                       <option value="externo">Externo USP</option>
                     </select>
                   </label>
-                  {formData.tipo_usuario === 'interno' && (
+                  {formData.tipo_usuario === "interno" && (
                     <>
                       <label className="text-sm text-gray-600">
                         <span className="mb-1 block font-medium">NUSP</span>
                         <input
                           type="text"
                           value={formData.nusp}
-                          onChange={(e) => setFormData({ ...formData, nusp: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({ ...formData, nusp: e.target.value })
+                          }
                           required
                           className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                         />
                       </label>
                       <label className="text-sm text-gray-600">
-                        <span className="mb-1 block font-medium">Categoria</span>
+                        <span className="mb-1 block font-medium">
+                          Categoria
+                        </span>
                         <select
                           value={formData.categoria}
-                          onChange={(e) => setFormData({ ...formData, categoria: e.target.value })}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              categoria: e.target.value,
+                            })
+                          }
                           required
                           className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                         >
@@ -510,25 +643,37 @@ export default function UsersManager() {
                           <option value="FUNCIONARIO">Funcionário</option>
                         </select>
                       </label>
-                      {formData.categoria === 'FUNCIONARIO' && (
+                      {formData.categoria === "FUNCIONARIO" && (
                         <>
                           <label className="text-sm text-gray-600">
-                            <span className="mb-1 block font-medium">Formação</span>
+                            <span className="mb-1 block font-medium">
+                              Formação
+                            </span>
                             <input
                               type="text"
                               value={formData.formacao}
-                              onChange={(e) => setFormData({ ...formData, formacao: e.target.value })}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  formacao: e.target.value,
+                                })
+                              }
                               required
                               className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                             />
                           </label>
                           <label className="text-sm text-gray-600">
-                            <span className="mb-1 block font-medium">Número do Conselho (Educador Físico)</span>
+                            <span className="mb-1 block font-medium">
+                              Número do Conselho (Educador Físico)
+                            </span>
                             <input
                               type="text"
                               value={formData.numero_conselho}
                               onChange={(e) =>
-                                setFormData({ ...formData, numero_conselho: e.target.value })
+                                setFormData({
+                                  ...formData,
+                                  numero_conselho: e.target.value,
+                                })
                               }
                               className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
                             />
@@ -540,14 +685,204 @@ export default function UsersManager() {
                 </>
               )}
             </div>
-            {error && <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">{error}</div>}
+
+            {/* Seção de Permissões - Apenas quando editando */}
+            {editingUser && (
+              <div className="space-y-4 border-t pt-4">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  Permissões e Atribuições
+                </h3>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="text-sm text-gray-600">
+                    <span className="mb-1 block font-medium">
+                      Tipo de Usuário
+                    </span>
+                    <select
+                      value={formData.tipo_usuario}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          tipo_usuario: e.target.value,
+                        })
+                      }
+                      required
+                      className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
+                    >
+                      <option value="interno">Interno USP</option>
+                      <option value="externo">Externo USP</option>
+                    </select>
+                  </label>
+
+                  {formData.tipo_usuario === "interno" && (
+                    <label className="text-sm text-gray-600">
+                      <span className="mb-1 block font-medium">NUSP</span>
+                      <input
+                        type="text"
+                        value={formData.nusp}
+                        onChange={(e) =>
+                          setFormData({ ...formData, nusp: e.target.value })
+                        }
+                        required
+                        className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
+                      />
+                    </label>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="is_funcionario"
+                      checked={formData.is_funcionario}
+                      onCheckedChange={(checked) => {
+                        const isFuncionario = checked === true;
+                        setFormData({
+                          ...formData,
+                          is_funcionario: isFuncionario,
+                          // Sincronizar categoria com o checkbox
+                          categoria: isFuncionario ? "FUNCIONARIO" : "ALUNO",
+                          // Se desmarcar funcionário, também desmarcar educador e admin
+                          is_educador_fisico: isFuncionario
+                            ? formData.is_educador_fisico
+                            : false,
+                          is_admin: isFuncionario ? formData.is_admin : false,
+                        });
+                      }}
+                      disabled={formData.tipo_usuario !== "interno"}
+                    />
+                    <label
+                      htmlFor="is_funcionario"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      É Funcionário (Staff)
+                    </label>
+                  </div>
+
+                  {formData.is_funcionario && (
+                    <>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="is_admin"
+                          checked={formData.is_admin}
+                          onCheckedChange={(checked) =>
+                            setFormData({
+                              ...formData,
+                              is_admin: checked === true,
+                            })
+                          }
+                        />
+                        <label
+                          htmlFor="is_admin"
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          É Administrador
+                        </label>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="is_educador_fisico"
+                          checked={formData.is_educador_fisico}
+                          onCheckedChange={(checked) =>
+                            setFormData({
+                              ...formData,
+                              is_educador_fisico: checked === true,
+                            })
+                          }
+                        />
+                        <label
+                          htmlFor="is_educador_fisico"
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          É Educador Físico
+                        </label>
+                      </div>
+
+                      {formData.is_funcionario && (
+                        <>
+                          <label className="text-sm text-gray-600">
+                            <span className="mb-1 block font-medium">
+                              Formação
+                            </span>
+                            <input
+                              type="text"
+                              value={formData.formacao}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  formacao: e.target.value,
+                                })
+                              }
+                              required={formData.is_funcionario}
+                              className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
+                            />
+                          </label>
+
+                          {formData.is_educador_fisico && (
+                            <label className="text-sm text-gray-600">
+                              <span className="mb-1 block font-medium">
+                                Número do Conselho (Educador Físico)
+                              </span>
+                              <input
+                                type="text"
+                                value={formData.numero_conselho}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    numero_conselho: e.target.value,
+                                  })
+                                }
+                                required={formData.is_educador_fisico}
+                                className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
+                              />
+                            </label>
+                          )}
+
+                          <label className="text-sm text-gray-600">
+                            <span className="mb-1 block font-medium">
+                              Atribuição Principal
+                            </span>
+                            <select
+                              value={formData.atribuicao}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  atribuicao: e.target.value,
+                                })
+                              }
+                              className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
+                            >
+                              <option value="">Selecione uma atribuição</option>
+                              {ATRIBUICOES_POSSIVEIS.filter(
+                                (a) => a !== "Administrador"
+                              ).map((atrib) => (
+                                <option key={atrib} value={atrib}>
+                                  {atrib}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800">
+                {error}
+              </div>
+            )}
             <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => {
                   setShowForm(false);
-                  setError('');
+                  setError("");
                 }}
               >
                 Cancelar
@@ -557,7 +892,11 @@ export default function UsersManager() {
                 disabled={submitting}
                 className="bg-[#1094ab] text-white hover:bg-[#64c4d2] hover:text-[#1094ab] disabled:opacity-50"
               >
-                {submitting ? 'Salvando...' : editingUser ? 'Atualizar' : 'Criar'}
+                {submitting
+                  ? "Salvando..."
+                  : editingUser
+                  ? "Atualizar"
+                  : "Criar"}
               </Button>
             </DialogFooter>
           </form>
@@ -565,18 +904,26 @@ export default function UsersManager() {
       </Dialog>
 
       {error && !showForm && (
-        <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">{error}</div>
+        <div className="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-800">
+          {error}
+        </div>
       )}
 
       {loading ? (
-        <div className="py-8 text-center text-gray-500">Carregando usuários...</div>
+        <div className="py-8 text-center text-gray-500">
+          Carregando usuários...
+        </div>
       ) : (
         <div className="w-full space-y-4">
           <div className="flex items-center gap-2">
             <Input
               placeholder="Filtrar por email..."
-              value={(table.getColumn('email')?.getFilterValue() as string) ?? ''}
-              onChange={(event) => table.getColumn('email')?.setFilterValue(event.target.value)}
+              value={
+                (table.getColumn("email")?.getFilterValue() as string) ?? ""
+              }
+              onChange={(event) =>
+                table.getColumn("email")?.setFilterValue(event.target.value)
+              }
               className="max-w-sm"
             />
             <DropdownMenu>
@@ -595,12 +942,14 @@ export default function UsersManager() {
                         key={column.id}
                         className="capitalize"
                         checked={column.getIsVisible()}
-                        onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(!!value)
+                        }
                       >
-                        {column.id === 'tipo_usuario'
-                          ? 'Tipo'
-                          : column.id === 'categoria'
-                          ? 'Categoria'
+                        {column.id === "tipo_usuario"
+                          ? "Tipo"
+                          : column.id === "categoria"
+                          ? "Categoria"
                           : column.id}
                       </DropdownMenuCheckboxItem>
                     );
@@ -618,7 +967,10 @@ export default function UsersManager() {
                         <TableHead key={header.id}>
                           {header.isPlaceholder
                             ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
                         </TableHead>
                       );
                     })}
@@ -628,19 +980,23 @@ export default function UsersManager() {
               <TableBody>
                 {table.getRowModel().rows?.length ? (
                   table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                    >
+                    <TableRow key={row.id}>
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
                         </TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
                       Nenhum usuário encontrado.
                     </TableCell>
                   </TableRow>
@@ -671,20 +1027,31 @@ export default function UsersManager() {
         </div>
       )}
 
-      <AlertDialog open={alertDialog.open} onOpenChange={alertDialog.handleClose}>
+      <AlertDialog
+        open={alertDialog.open}
+        onOpenChange={alertDialog.handleClose}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
-            <AlertDialogDescription>{alertDialog.message}</AlertDialogDescription>
+            <AlertDialogDescription>
+              {alertDialog.message}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            {alertDialog.type === 'confirm' ? (
+            {alertDialog.type === "confirm" ? (
               <>
-                <AlertDialogCancel onClick={alertDialog.handleCancel}>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={alertDialog.handleConfirm}>Confirmar</AlertDialogAction>
+                <AlertDialogCancel onClick={alertDialog.handleCancel}>
+                  Cancelar
+                </AlertDialogCancel>
+                <AlertDialogAction onClick={alertDialog.handleConfirm}>
+                  Confirmar
+                </AlertDialogAction>
               </>
             ) : (
-              <AlertDialogAction onClick={alertDialog.handleClose}>OK</AlertDialogAction>
+              <AlertDialogAction onClick={alertDialog.handleClose}>
+                OK
+              </AlertDialogAction>
             )}
           </AlertDialogFooter>
         </AlertDialogContent>

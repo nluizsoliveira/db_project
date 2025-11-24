@@ -40,12 +40,21 @@ def gerar_interno_usp(dbsession):
     # Emails fixos para garantir que sejam internos
     EMAILS_TESTE = ["admin@usp.br", "interno@usp.br", "funcionario@usp.br", "cadastro@usp.br"]
 
+    # NUSPs fixos para emails de teste (para garantir consistência e facilitar testes)
+    NUSPS_TESTE = {
+        "admin@usp.br": "12345678",
+        "interno@usp.br": "12345679",
+        "funcionario@usp.br": "12345680",
+        "cadastro@usp.br": "12345681"  # NUSP fixo para teste de cadastro
+    }
+
     # Buscar todas as pessoas do banco
     pessoas_result = dbsession.fetch_all("SELECT CPF, EMAIL FROM PESSOA ORDER BY CPF")
     cpfs = [row['cpf'] for row in pessoas_result]
 
     # Garantir que as pessoas com emails fixos sejam internas
     cpfs_teste = []
+    email_para_cpf = {}  # Mapear email para CPF para usar NUSP fixo depois
     for email_teste in EMAILS_TESTE:
         pessoa_teste_result = dbsession.fetch_one(f"SELECT CPF FROM PESSOA WHERE EMAIL = '{email_teste}'")
         if pessoa_teste_result:
@@ -53,6 +62,7 @@ def gerar_interno_usp(dbsession):
             if cpf_teste in cpfs:
                 cpfs.remove(cpf_teste)
                 cpfs_teste.append(cpf_teste)
+                email_para_cpf[cpf_teste] = email_teste
 
     # Embaralhar os dados para garantir a aleatoriedade
     random.shuffle(cpfs)
@@ -85,16 +95,40 @@ def gerar_interno_usp(dbsession):
 
     for cpf_pessoa in cpfs_internos:
         if cpf_pessoa not in cpfs_existentes:
-            # Gerar NUSP único (não existe no banco nem no batch atual)
-            nusp = gerar_nusp(dbsession)
-            tentativas = 0
-            while nusp in nusps_gerados:  # gerar_nusp já verifica no banco
+            # Verificar se é email de teste para usar NUSP fixo
+            email_pessoa = email_para_cpf.get(cpf_pessoa)
+            if email_pessoa and email_pessoa in NUSPS_TESTE:
+                # Usar NUSP fixo para emails de teste
+                nusp = NUSPS_TESTE[email_pessoa]
+                # Verificar se o NUSP fixo já existe (pode existir de execução anterior)
+                nusp_existe = dbsession.fetch_one(
+                    "SELECT 1 FROM INTERNO_USP WHERE NUSP = %s AND CPF_PESSOA != %s",
+                    (nusp, cpf_pessoa)
+                )
+                if nusp_existe:
+                    # Se o NUSP fixo já está em uso por outro CPF, gerar um novo
+                    print(f"   ⚠️  NUSP fixo {nusp} já está em uso. Gerando novo NUSP para {email_pessoa}")
+                    nusp = gerar_nusp(dbsession)
+                    tentativas = 0
+                    while nusp in nusps_gerados:
+                        nusp = gerar_nusp(dbsession)
+                        tentativas += 1
+                        if tentativas > 100:
+                            nusp = f"{int(time.time() * 1000) % 100000000}{random.randint(1000, 9999)}"
+                            break
+                else:
+                    print(f"   📧 Usando NUSP fixo {nusp} para {email_pessoa}")
+            else:
+                # Gerar NUSP único para usuários normais (não existe no banco nem no batch atual)
                 nusp = gerar_nusp(dbsession)
-                tentativas += 1
-                if tentativas > 100:
-                    # Fallback: usar timestamp + random para garantir unicidade
-                    nusp = f"{int(time.time() * 1000) % 100000000}{random.randint(1000, 9999)}"
-                    break
+                tentativas = 0
+                while nusp in nusps_gerados:  # gerar_nusp já verifica no banco
+                    nusp = gerar_nusp(dbsession)
+                    tentativas += 1
+                    if tentativas > 100:
+                        # Fallback: usar timestamp + random para garantir unicidade
+                        nusp = f"{int(time.time() * 1000) % 100000000}{random.randint(1000, 9999)}"
+                        break
 
             nusps_gerados.add(nusp)
             categoria = gerar_categoria()

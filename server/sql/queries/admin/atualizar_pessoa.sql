@@ -4,4 +4,8 @@
 --   %(nome)s - New name
 --   %(email)s - New email
 --   %(celular)s - New phone (can be NULL)
-CALL atualizar_pessoa(%(cpf)s, %(nome)s, %(email)s, %(celular)s);
+UPDATE pessoa
+SET nome = %(nome)s,
+    email = %(email)s,
+    celular = %(celular)s
+WHERE cpf = %(cpf)s;
