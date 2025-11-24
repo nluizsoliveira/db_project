@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   useAuthUser,
@@ -27,6 +27,8 @@ export default function ProtectedRoute({
   const loading = useAuthLoading();
   const initialized = useAuthInitialized();
   const loadUser = useAuthStore((state) => state.loadUser);
+  const hasRedirectedRef = useRef<string | null>(null);
+  const loadUserCalledRef = useRef(false);
 
   const authorized = useMemo(() => {
     if (!initialized || loading || !user) {
@@ -35,19 +37,38 @@ export default function ProtectedRoute({
     return hasAnyRole(user, allowedRoles);
   }, [user, loading, initialized, allowedRoles]);
 
+  // Reset refs when pathname changes
   useEffect(() => {
-    // Tenta carregar o usuário se ainda não foi inicializado
-    if (!initialized && !loading) {
-      loadUser();
-      return;
+    if (hasRedirectedRef.current !== pathname) {
+      hasRedirectedRef.current = null;
+      loadUserCalledRef.current = false;
     }
+  }, [pathname]);
 
+  // Handle loading user
+  useEffect(() => {
+    if (!initialized && !loading && !loadUserCalledRef.current) {
+      loadUserCalledRef.current = true;
+      loadUser();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialized, loading]);
+
+  // Handle redirects after initialization
+  useEffect(() => {
+    // Wait for initialization
     if (!initialized || loading) {
       return;
     }
 
+    // Prevent multiple redirects to the same path
+    if (hasRedirectedRef.current === pathname) {
+      return;
+    }
+
+    // Not authenticated - redirect to login
     if (!user) {
-      // Not authenticated, redirect to appropriate login with current path as redirect
+      hasRedirectedRef.current = pathname;
       if (allowedRoles.includes("external")) {
         router.push(`/auth/login/external?redirect=${encodeURIComponent(pathname)}`);
       } else {
@@ -56,8 +77,9 @@ export default function ProtectedRoute({
       return;
     }
 
+    // User doesn't have required role - redirect to their dashboard
     if (!authorized) {
-      // User doesn't have required role, redirect to their dashboard
+      hasRedirectedRef.current = pathname;
       if (user.roles.admin) {
         router.push("/admin/dashboard");
       } else if (user.roles.staff) {
@@ -69,16 +91,20 @@ export default function ProtectedRoute({
       } else {
         router.push(redirectTo || "/auth/login");
       }
+      return;
     }
+
+    // User is authorized - clear redirect ref
+    hasRedirectedRef.current = null;
   }, [
+    initialized,
+    loading,
+    user,
+    authorized,
     router,
+    pathname,
     allowedRoles,
     redirectTo,
-    user,
-    loading,
-    initialized,
-    authorized,
-    loadUser,
   ]);
 
   if (!initialized || loading) {

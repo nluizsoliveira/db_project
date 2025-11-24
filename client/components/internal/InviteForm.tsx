@@ -55,18 +55,38 @@ export default function InviteForm({ onSuccess }: InviteFormProps) {
       return;
     }
 
+    if (!formData.id_atividade) {
+      setError('É obrigatório selecionar uma atividade');
+      return;
+    }
+
     try {
-      // Note: The API might return invite data differently, adjust as needed
-      const data = await createMutation.mutateAsync({
-        email: formData.email_convidado || '',
-        nome: formData.nome_convidado,
-      });
+      const payload = {
+        documento_convidado: formData.documento_convidado.trim(),
+        nome_convidado: formData.nome_convidado.trim(),
+        email_convidado: formData.email_convidado.trim() || undefined,
+        telefone_convidado: formData.telefone_convidado.trim() || undefined,
+        id_atividade: formData.id_atividade && formData.id_atividade.trim()
+          ? parseInt(formData.id_atividade, 10)
+          : undefined,
+        observacoes: formData.observacoes.trim() || undefined,
+      };
+
+      const data = await createMutation.mutateAsync(payload);
+
+      console.log('Resposta da API ao criar convite:', data);
 
       if (data.success) {
         setSuccess(true);
-        // If the API returns a token, extract it here
-        // setCreatedToken(data.invite?.token || '');
+        if (data.invite?.token) {
+          setCreatedToken(data.invite.token);
+          console.log('Token criado:', data.invite.token);
+        } else {
+          console.warn('Token não encontrado na resposta:', data);
+        }
+        // Call onSuccess callback to trigger refresh
         if (onSuccess) {
+          console.log('Chamando onSuccess para atualizar lista');
           onSuccess();
         }
         // Reset form
@@ -83,7 +103,16 @@ export default function InviteForm({ onSuccess }: InviteFormProps) {
       }
     } catch (err: any) {
       console.error('Erro ao criar convite:', err);
-      setError(err.message || 'Erro ao criar convite');
+      // Extrair mensagem de erro de forma mais robusta
+      let errorMessage = 'Erro ao criar convite';
+      if (err?.message) {
+        errorMessage = err.message;
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      } else if (err && typeof err === 'object') {
+        errorMessage = JSON.stringify(err);
+      }
+      setError(errorMessage);
     }
   };
 
@@ -98,8 +127,6 @@ export default function InviteForm({ onSuccess }: InviteFormProps) {
 
   return (
     <div className="rounded-lg bg-white p-6 shadow">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">Convidar Usuário Externo</h2>
-
       {success && createdToken && (
         <div className="mb-4 rounded-lg bg-green-50 p-4">
           <p className="mb-2 text-sm font-semibold text-green-800">Convite criado com sucesso!</p>
@@ -172,16 +199,19 @@ export default function InviteForm({ onSuccess }: InviteFormProps) {
         </div>
 
         <label className="block text-sm text-gray-600">
-          <span className="mb-1 block font-medium">Atividade (Opcional)</span>
+          <span className="mb-1 block font-medium">
+            Atividade <span className="text-red-500">*</span>
+          </span>
           {loading ? (
             <div className="py-2 text-sm text-gray-500">Carregando atividades...</div>
           ) : (
             <select
               value={formData.id_atividade}
               onChange={(e) => setFormData({ ...formData, id_atividade: e.target.value })}
+              required
               className="w-full rounded border border-gray-300 px-3 py-2 focus:border-[#1094ab] focus:outline-none focus:ring-1 focus:ring-[#1094ab]"
             >
-              <option value="">Nenhuma atividade específica</option>
+              <option value="">Selecione uma atividade</option>
               {activities.map((activity) => (
                 <option key={activity.id_atividade} value={activity.id_atividade}>
                   {activity.nome_atividade}

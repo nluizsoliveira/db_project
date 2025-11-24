@@ -10,6 +10,7 @@ export interface Activity {
   horario_fim: string;
   vagas_ocupadas: number;
   vagas_limite: number;
+  is_enrolled?: boolean;
 }
 
 export interface ActivityDetail {

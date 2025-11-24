@@ -348,70 +348,160 @@ def get_current_user():
 @auth_blueprint.route("/login/external", methods=["POST"])
 def login_external():
     """Login endpoint for external users using token."""
-    logger.info("=== LOGIN EXTERNO INICIADO ===")
+    logger.info("=" * 80)
+    logger.info("DEBUG LOGIN_EXTERNAL - INÍCIO")
+    logger.info("=" * 80)
 
     if request.is_json:
         data = request.json
         token = data.get("token", "").strip()
-        logger.info(f"Token recebido (JSON): '{token}' (tamanho: {len(token)})")
+        logger.info(f"DEBUG LOGIN_EXTERNAL - Token recebido (JSON): '{token}' (tamanho: {len(token)})")
+        logger.info(f"DEBUG LOGIN_EXTERNAL - Dados completos recebidos: {data}")
     else:
         token = request.form.get("token", "").strip()
-        logger.info(f"Token recebido (FORM): '{token}' (tamanho: {len(token)})")
+        logger.info(f"DEBUG LOGIN_EXTERNAL - Token recebido (FORM): '{token}' (tamanho: {len(token)})")
+        logger.info(f"DEBUG LOGIN_EXTERNAL - Form completo: {dict(request.form)}")
+
+    # Ensure token has no whitespace
+    token = token.strip()
+    logger.info(f"DEBUG LOGIN_EXTERNAL - Token após strip: '{token}' (tamanho: {len(token)})")
 
     if not token:
-        logger.warning("Token vazio recebido")
+        logger.warning("DEBUG LOGIN_EXTERNAL - Token vazio recebido")
+        logger.info("=" * 80)
+        logger.info("DEBUG LOGIN_EXTERNAL - FIM (ERRO: Token vazio)")
+        logger.info("=" * 80)
         return jsonify({"success": False, "message": "Token é obrigatório"}), 400
 
-    logger.info(f"Buscando convite com token: '{token}'")
+    logger.info(f"DEBUG LOGIN_EXTERNAL - Buscando convite com token: '{token}' (tamanho: {len(token)})")
+    logger.info(f"DEBUG LOGIN_EXTERNAL - Token (primeiros 20 chars): '{token[:20] if len(token) >= 20 else token}...'")
 
     # Debug: verificar se o token existe no banco usando conexão direta
+    logger.info(f"DEBUG LOGIN_EXTERNAL - Verificando token no banco de dados...")
     try:
         from flask import g
         if hasattr(g, 'db_session') and g.db_session:
             with g.db_session.connection.cursor() as cursor:
+                # Buscar token exato
+                logger.info(f"DEBUG LOGIN_EXTERNAL - Executando query: SELECT ... WHERE TOKEN = '{token[:20]}...'")
                 cursor.execute(
-                    "SELECT TOKEN, STATUS, ID_CONVITE, NOME_CONVIDADO FROM CONVITE_EXTERNO WHERE TOKEN = %s",
+                    "SELECT ID_CONVITE, TOKEN, STATUS, NOME_CONVIDADO, CPF_CONVIDANTE, LENGTH(TOKEN) as token_len FROM CONVITE_EXTERNO WHERE TOKEN = %s",
                     (token,)
                 )
                 debug_result = cursor.fetchone()
-                logger.info(f"DEBUG - Token encontrado no banco: {debug_result}")
+                if debug_result:
+                    logger.info(f"DEBUG LOGIN_EXTERNAL - Token ENCONTRADO no banco:")
+                    logger.info(f"  - ID_CONVITE: {debug_result[0]}")
+                    logger.info(f"  - TOKEN: {debug_result[1][:20] if debug_result[1] else 'N/A'}... (len: {debug_result[5]})")
+                    logger.info(f"  - STATUS: {debug_result[2]}")
+                    logger.info(f"  - NOME_CONVIDADO: {debug_result[3]}")
+                    logger.info(f"  - CPF_CONVIDANTE: {debug_result[4]}")
+                else:
+                    logger.warning(f"DEBUG LOGIN_EXTERNAL - Token NÃO encontrado no banco com busca exata")
 
-                # Verificar todos os tokens que começam com "teste"
+                # Verificar se há tokens similares (primeiros 10 caracteres)
+                if len(token) >= 10:
+                    cursor.execute(
+                        "SELECT ID_CONVITE, TOKEN, STATUS, NOME_CONVIDADO FROM CONVITE_EXTERNO WHERE TOKEN LIKE %s LIMIT 5",
+                        (token[:10] + '%',)
+                    )
+                    similar_tokens = cursor.fetchall()
+                    if similar_tokens:
+                        logger.info(f"DEBUG LOGIN_EXTERNAL - Tokens similares (começam com '{token[:10]}'): {len(similar_tokens)} encontrados")
+                        for idx, sim_token in enumerate(similar_tokens):
+                            logger.info(f"  Similar {idx+1}: ID={sim_token[0]}, Token={sim_token[1][:20]}..., Status={sim_token[2]}")
+                    else:
+                        logger.info(f"DEBUG LOGIN_EXTERNAL - Nenhum token similar encontrado")
+
+                # Listar últimos 5 tokens criados
                 cursor.execute(
-                    "SELECT TOKEN, STATUS, ID_CONVITE, NOME_CONVIDADO FROM CONVITE_EXTERNO WHERE TOKEN LIKE 'teste%' LIMIT 5"
+                    "SELECT ID_CONVITE, TOKEN, STATUS, NOME_CONVIDADO, DATA_CONVITE, LENGTH(TOKEN) as token_length FROM CONVITE_EXTERNO ORDER BY DATA_CONVITE DESC LIMIT 5"
                 )
-                all_test_tokens = cursor.fetchall()
-                logger.info(f"DEBUG - Tokens que começam com 'teste': {all_test_tokens}")
-    except Exception as e:
-        logger.warning(f"Erro ao fazer debug query: {str(e)}")
+                recent_tokens = cursor.fetchall()
+                logger.info(f"DEBUG LOGIN_EXTERNAL - Últimos 5 tokens criados no banco:")
+                for idx, rec_token in enumerate(recent_tokens):
+                    logger.info(f"  Recente {idx+1}: ID={rec_token[0]}, Token={rec_token[1][:20]}..., Status={rec_token[2]}, Data={rec_token[4]}, Len={rec_token[5]}")
 
+                # Contar total de tokens no banco
+                cursor.execute("SELECT COUNT(*) FROM CONVITE_EXTERNO")
+                total_tokens = cursor.fetchone()
+                logger.info(f"DEBUG LOGIN_EXTERNAL - Total de convites no banco: {total_tokens[0] if total_tokens else 0}")
+        else:
+            logger.warning("DEBUG LOGIN_EXTERNAL - db_session não disponível para debug")
+    except Exception as e:
+        logger.error(f"DEBUG LOGIN_EXTERNAL - Erro ao fazer debug query: {type(e).__name__}: {str(e)}", exc_info=True)
+
+    logger.info(f"DEBUG LOGIN_EXTERNAL - Executando função SQL authenticate_external_by_token...")
     try:
         result = sql_queries.fetch_one(
             "queries/auth/login_external_by_token.sql",
             {"token": token},
         )
-        logger.info(f"Resultado da query: {result}")
+        logger.info(f"DEBUG LOGIN_EXTERNAL - Resultado bruto da query: {result}")
+        logger.info(f"DEBUG LOGIN_EXTERNAL - Tipo do resultado: {type(result)}")
+        if result:
+            logger.info(f"DEBUG LOGIN_EXTERNAL - Chaves do resultado: {list(result.keys()) if isinstance(result, dict) else 'N/A'}")
     except Exception as e:
-        logger.error(f"Erro ao executar query: {type(e).__name__}: {str(e)}", exc_info=True)
+        logger.error(f"DEBUG LOGIN_EXTERNAL - Erro ao executar query: {type(e).__name__}: {str(e)}", exc_info=True)
+        logger.info("=" * 80)
+        logger.info("DEBUG LOGIN_EXTERNAL - FIM (ERRO na query)")
+        logger.info("=" * 80)
         return jsonify({"success": False, "message": f"Erro ao processar autenticação: {str(e)}"}), 500
 
     if not result:
-        logger.warning("Query retornou None")
+        logger.error("DEBUG LOGIN_EXTERNAL - Query retornou None")
+        logger.info("=" * 80)
+        logger.info("DEBUG LOGIN_EXTERNAL - FIM (ERRO: resultado None)")
+        logger.info("=" * 80)
         return jsonify({"success": False, "message": "Erro ao processar autenticação: resultado vazio"}), 500
 
     if not result.get("result"):
-        logger.warning(f"Query retornou sem campo 'result': {result}")
+        logger.error(f"DEBUG LOGIN_EXTERNAL - Query retornou sem campo 'result': {result}")
+        logger.info("=" * 80)
+        logger.info("DEBUG LOGIN_EXTERNAL - FIM (ERRO: sem campo result)")
+        logger.info("=" * 80)
         return jsonify({"success": False, "message": "Erro ao processar autenticação: sem resultado"}), 500
 
-    auth_data = result["result"]
-    logger.info(f"Dados de autenticação: {auth_data}")
+    # Parse JSON if it's a string (PostgreSQL may return JSON as string)
+    auth_data_raw = result["result"]
+    logger.info(f"DEBUG LOGIN_EXTERNAL - auth_data_raw: {auth_data_raw}")
+    logger.info(f"DEBUG LOGIN_EXTERNAL - Tipo de auth_data_raw: {type(auth_data_raw)}")
+
+    if isinstance(auth_data_raw, str):
+        import json
+        try:
+            logger.info(f"DEBUG LOGIN_EXTERNAL - Fazendo parse do JSON string...")
+            auth_data = json.loads(auth_data_raw)
+            logger.info(f"DEBUG LOGIN_EXTERNAL - Parse bem-sucedido: {auth_data}")
+        except json.JSONDecodeError as e:
+            logger.error(f"DEBUG LOGIN_EXTERNAL - Erro ao fazer parse do JSON: {e}")
+            logger.error(f"  - String recebida: {auth_data_raw[:200]}...")
+            logger.info("=" * 80)
+            logger.info("DEBUG LOGIN_EXTERNAL - FIM (ERRO: parse JSON)")
+            logger.info("=" * 80)
+            return jsonify({"success": False, "message": "Erro ao processar resposta do servidor"}), 500
+    else:
+        auth_data = auth_data_raw
+        logger.info(f"DEBUG LOGIN_EXTERNAL - auth_data já é objeto (não string): {auth_data}")
+
+    logger.info(f"DEBUG LOGIN_EXTERNAL - Dados de autenticação processados:")
+    logger.info(f"  - success: {auth_data.get('success')}")
+    logger.info(f"  - message: {auth_data.get('message', 'N/A')}")
+    logger.info(f"  - invite_id: {auth_data.get('invite_id', 'N/A')}")
+    logger.info(f"  - invite_status: {auth_data.get('invite_status', 'N/A')}")
 
     if not auth_data.get("success"):
         error_message = auth_data.get("message", "Token inválido")
-        logger.warning(f"Autenticação falhou: {error_message}")
+        logger.warning(f"DEBUG LOGIN_EXTERNAL - Autenticação FALHOU: {error_message}")
+        logger.info("=" * 80)
+        logger.info("DEBUG LOGIN_EXTERNAL - FIM (FALHA na autenticação)")
+        logger.info("=" * 80)
         return jsonify({"success": False, "message": error_message}), 401
 
-    logger.info("Autenticação bem-sucedida!")
+    logger.info("DEBUG LOGIN_EXTERNAL - Autenticação bem-sucedida!")
+    logger.info(f"  - invite_id: {auth_data.get('invite_id')}")
+    logger.info(f"  - invite_status: {auth_data.get('invite_status')}")
+    logger.info(f"  - activity_id: {auth_data.get('activity_id', 'N/A')}")
 
     # Store external user data in session
     session["external_token"] = token
@@ -425,6 +515,15 @@ def login_external():
         "telefone": auth_data["invite_data"].get("telefone_convidado"),
     }
     session["profile_access"] = {"external": True}
+
+    logger.info(f"DEBUG LOGIN_EXTERNAL - Dados salvos na sessão:")
+    logger.info(f"  - external_token: {session.get('external_token', 'N/A')[:20]}...")
+    logger.info(f"  - invite_id: {session.get('invite_id', 'N/A')}")
+    logger.info(f"  - invite_status: {session.get('invite_status', 'N/A')}")
+    logger.info(f"  - activity_id: {session.get('activity_id', 'N/A')}")
+    logger.info("=" * 80)
+    logger.info("DEBUG LOGIN_EXTERNAL - FIM (SUCESSO)")
+    logger.info("=" * 80)
 
     return jsonify({
         "success": True,

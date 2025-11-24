@@ -13,6 +13,7 @@ SELECT
     ce.data_resposta,
     ce.observacoes,
     ce.token,
+    ce.cpf_convidante,
     a.nome AS atividade_nome,
     a.data_inicio_periodo AS atividade_data_inicio,
     a.data_fim_periodo AS atividade_data_fim,
