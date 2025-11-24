@@ -7,6 +7,7 @@
 **PAE**: Leonardo Campos
 
 **Autores**:
+
 - Breno Rodrigues - 11734142
 - Erick Barcelos - 11345562
 - Gabriel Henrique dos Santos - 13783972
@@ -15,83 +16,86 @@
 
 ---
 
-## 📑 Sumário
+## Sumário
 
-- [1. Introdução](#1-introdução)
-  - [1.1. Objetivo do Projeto](#11-objetivo-do-projeto)
-  - [1.2. Escopo do Sistema](#12-escopo-do-sistema)
-- [2. Estrutura do Banco de Dados](#2-estrutura-do-banco-de-dados)
-  - [2.1. DDL (Data Definition Language)](#21-ddl-data-definition-language)
-    - [2.1.1. Criação de Tabelas](#211-criação-de-tabelas)
-    - [2.1.2. Tipos Enumerados](#212-tipos-enumerados)
-    - [2.1.3. Constraints Implementadas](#213-constraints-implementadas)
-    - [2.1.4. Scripts de Downgrade](#214-scripts-de-downgrade)
-- [3. Manipulação de Dados (DML)](#3-manipulação-de-dados-dml)
-  - [3.1. INSERT](#31-insert)
-  - [3.2. UPDATE](#32-update)
-  - [3.3. DELETE](#33-delete)
-  - [3.4. SELECT](#34-select)
-- [4. Consultas Analíticas - Extended Group By](#4-consultas-analíticas---extended-group-by)
-  - [4.1. CUBE](#41-cube)
-  - [4.2. ROLLUP](#42-rollup)
-  - [4.3. GROUPING SETS](#43-grouping-sets)
-- [5. Window Functions](#5-window-functions)
-  - [5.1. RANK() OVER](#51-rank-over)
-  - [5.2. ROW_NUMBER() OVER](#52-row_number-over)
-  - [5.3. DENSE_RANK() OVER](#53-dense_rank-over)
-  - [5.4. LAG() OVER](#54-lag-over)
-  - [5.5. LEAD() OVER](#55-lead-over)
-  - [5.6. SUM() OVER](#56-sum-over)
-  - [5.7. AVG() OVER](#57-avg-over)
-  - [5.8. COUNT() OVER](#58-count-over)
-  - [5.9. Resumo das Window Functions](#59-resumo-das-window-functions)
-- [6. PL/pgSQL](#6-plpgsql)
-  - [6.1. Functions](#61-functions)
-    - [6.1.1. Function que Retorna TABLE](#611-function-que-retorna-table)
-    - [6.1.2. Function que Retorna JSON](#612-function-que-retorna-json)
-    - [6.1.3. Function com Parâmetros e Lógica Condicional](#613-function-com-parâmetros-e-lógica-condicional)
-  - [6.2. Procedures](#62-procedures)
-    - [6.2.1. Procedure Simples](#621-procedure-simples)
-    - [6.2.2. Procedure com Validação de Negócio](#622-procedure-com-validação-de-negócio)
-  - [6.3. Características PL/pgSQL Utilizadas](#63-características-plpgsql-utilizadas)
-  - [6.4. Arquivos com PL/pgSQL](#64-arquivos-com-plpgsql)
-- [7. Triggers](#7-triggers)
-  - [7.1. Trigger de Validação de Horário](#71-trigger-de-validação-de-horário)
-  - [7.2. Trigger de Validação de Formação](#72-trigger-de-validação-de-formação)
-- [8. Visões (Views)](#8-visões-views)
-  - [8.1. `vw_reservas_completas`](#81-vw_reservas_completas)
-  - [8.2. `vw_atividades_completas`](#82-vw_atividades_completas)
-  - [8.3. `vw_equipamentos_disponiveis`](#83-vw_equipamentos_disponiveis)
-  - [8.4. `vw_instalacoes_ocupacao`](#84-vw_instalacoes_ocupacao)
-  - [8.5. `vw_reservas_equipamentos_completas`](#85-vw_reservas_equipamentos_completas)
-  - [8.6. Integração Frontend](#86-integração-frontend)
-- [9. Índices (Indexes)](#9-índices-indexes)
-  - [9.1. Índices Implícitos](#91-índices-implícitos)
-  - [9.2. Índices Explícitos Implementados](#92-índices-explícitos-implementados)
-    - [9.2.1. Índices para Foreign Keys](#921-índices-para-foreign-keys)
-    - [9.2.2. Índices para WHERE e JOIN](#922-índices-para-where-e-join)
-    - [9.2.3. Índices para ORDER BY](#923-índices-para-order-by)
-    - [9.2.4. Índices Compostos](#924-índices-compostos)
-- [10. Segurança e Autenticação](#10-segurança-e-autenticação)
-  - [10.1. Sistema de Usuários](#101-sistema-de-usuários)
-    - [10.1.1. Atendimento aos Requisitos do PF](#1011-atendimento-aos-requisitos-do-pf)
-    - [10.1.2. Justificativa de Design](#1012-justificativa-de-design)
-  - [10.2. Log de Acessos](#102-log-de-acessos)
-    - [10.2.1. Atendimento aos Requisitos do PF](#1021-atendimento-aos-requisitos-do-pf)
-    - [10.2.2. Justificativa de Design](#1022-justificativa-de-design)
-- [11. Relatórios Implementados](#11-relatórios-implementados)
-  - [11.1. Tipos de Usuários](#111-tipos-de-usuários)
-  - [11.2. Relatórios por Tipo de Usuário](#112-relatórios-por-tipo-de-usuário)
-- [12. Decisões de Projeto](#12-decisões-de-projeto)
-  - [12.1. Escolha do SGBD](#121-escolha-do-sgbd)
-  - [12.2. Estrutura de Arquivos SQL](#122-estrutura-de-arquivos-sql)
-  - [12.3. Uso de Stored Procedures](#123-uso-de-stored-procedures)
-  - [12.4. Índices Estratégicos](#124-índices-estratégicos)
-- [13. Conclusão](#13-conclusão)
-  - [13.1. Conceitos Implementados](#131-conceitos-implementados)
-  - [13.2. Características Principais](#132-características-principais)
-  - [13.3. Atendimento aos Requisitos do PF](#133-atendimento-aos-requisitos-do-pf)
-- [Referências](#referências)
+- [Relatório Técnico - Projeto Final](#relatório-técnico---projeto-final)
+  - [Sistema de Gestão de Reservas e Atividades do CEFER](#sistema-de-gestão-de-reservas-e-atividades-do-cefer)
+  - [Sumário](#sumário)
+  - [1. Introdução](#1-introdução)
+    - [1.1. Objetivo do Projeto](#11-objetivo-do-projeto)
+    - [1.2. Escopo do Sistema](#12-escopo-do-sistema)
+  - [2. Estrutura do Banco de Dados](#2-estrutura-do-banco-de-dados)
+    - [2.1. DDL (Data Definition Language)](#21-ddl-data-definition-language)
+      - [2.1.1. Criação de Tabelas](#211-criação-de-tabelas)
+      - [2.1.2. Tipos Enumerados](#212-tipos-enumerados)
+      - [2.1.3. Constraints Implementadas](#213-constraints-implementadas)
+      - [2.1.4. Scripts de Downgrade](#214-scripts-de-downgrade)
+  - [3. Manipulação de Dados (DML)](#3-manipulação-de-dados-dml)
+    - [3.1. INSERT](#31-insert)
+    - [3.2. UPDATE](#32-update)
+    - [3.3. DELETE](#33-delete)
+    - [3.4. SELECT](#34-select)
+  - [4. Consultas Analíticas - Extended Group By](#4-consultas-analíticas---extended-group-by)
+    - [4.1. CUBE](#41-cube)
+    - [4.2. ROLLUP](#42-rollup)
+    - [4.3. GROUPING SETS](#43-grouping-sets)
+  - [5. Window Functions](#5-window-functions)
+    - [5.1. RANK() OVER](#51-rank-over)
+    - [5.2. ROW\_NUMBER() OVER](#52-row_number-over)
+    - [5.3. DENSE\_RANK() OVER](#53-dense_rank-over)
+    - [5.4. LAG() OVER](#54-lag-over)
+    - [5.5. LEAD() OVER](#55-lead-over)
+    - [5.6. SUM() OVER](#56-sum-over)
+    - [5.7. AVG() OVER](#57-avg-over)
+    - [5.8. COUNT() OVER](#58-count-over)
+    - [5.9. Resumo das Window Functions](#59-resumo-das-window-functions)
+  - [6. PL/pgSQL](#6-plpgsql)
+    - [6.1. Functions](#61-functions)
+      - [6.1.1. Function que Retorna TABLE](#611-function-que-retorna-table)
+      - [6.1.2. Function que Retorna JSON](#612-function-que-retorna-json)
+      - [6.1.3. Function com Parâmetros e Lógica Condicional](#613-function-com-parâmetros-e-lógica-condicional)
+    - [6.2. Procedures](#62-procedures)
+      - [6.2.1. Procedure Simples](#621-procedure-simples)
+      - [6.2.2. Procedure com Validação de Negócio](#622-procedure-com-validação-de-negócio)
+    - [6.3. Características PL/pgSQL Utilizadas](#63-características-plpgsql-utilizadas)
+    - [6.4. Arquivos com PL/pgSQL](#64-arquivos-com-plpgsql)
+  - [7. Triggers](#7-triggers)
+    - [7.1. Trigger de Validação de Horário](#71-trigger-de-validação-de-horário)
+    - [7.2. Trigger de Validação de Formação](#72-trigger-de-validação-de-formação)
+  - [8. Visões (Views)](#8-visões-views)
+    - [8.1. `vw_reservas_completas`](#81-vw_reservas_completas)
+    - [8.2. `vw_atividades_completas`](#82-vw_atividades_completas)
+    - [8.3. `vw_equipamentos_disponiveis`](#83-vw_equipamentos_disponiveis)
+    - [8.4. `vw_instalacoes_ocupacao`](#84-vw_instalacoes_ocupacao)
+    - [8.5. `vw_reservas_equipamentos_completas`](#85-vw_reservas_equipamentos_completas)
+    - [8.6. Integração Frontend](#86-integração-frontend)
+  - [9. Índices (Indexes)](#9-índices-indexes)
+    - [9.1. Índices Implícitos](#91-índices-implícitos)
+    - [9.2. Índices Explícitos Implementados](#92-índices-explícitos-implementados)
+      - [9.2.1. Índices para Foreign Keys](#921-índices-para-foreign-keys)
+      - [9.2.2. Índices para WHERE e JOIN](#922-índices-para-where-e-join)
+      - [9.2.3. Índices para ORDER BY](#923-índices-para-order-by)
+      - [9.2.4. Índices Compostos](#924-índices-compostos)
+  - [10. Segurança e Autenticação](#10-segurança-e-autenticação)
+    - [10.1. Sistema de Usuários](#101-sistema-de-usuários)
+      - [10.1.1. Atendimento aos Requisitos do PF](#1011-atendimento-aos-requisitos-do-pf)
+      - [10.1.2. Justificativa de Design](#1012-justificativa-de-design)
+    - [10.2. Log de Acessos](#102-log-de-acessos)
+      - [10.2.1. Atendimento aos Requisitos do PF](#1021-atendimento-aos-requisitos-do-pf)
+      - [10.2.2. Justificativa de Design](#1022-justificativa-de-design)
+  - [11. Relatórios Implementados](#11-relatórios-implementados)
+    - [11.1. Tipos de Usuários](#111-tipos-de-usuários)
+    - [11.2. Relatórios por Tipo de Usuário](#112-relatórios-por-tipo-de-usuário)
+      - [Administrador](#administrador)
+      - [Staff](#staff)
+      - [Interno](#interno)
+      - [Externo](#externo)
+  - [12. Decisões de Projeto](#12-decisões-de-projeto)
+    - [12.1. Estrutura de Arquivos SQL](#121-estrutura-de-arquivos-sql)
+    - [12.2. Uso de Stored Procedures](#122-uso-de-stored-procedures)
+    - [12.3. Índices Estratégicos](#123-índices-estratégicos)
+  - [13. Conclusão](#13-conclusão)
+  - [Referências](#referências)
 
 ---
 
@@ -1197,25 +1201,26 @@ O sistema implementa autenticação através da tabela `USUARIO_SENHA`, que **at
 #### 10.1.1. Atendimento aos Requisitos do PF
 
 **Especificação do PF (Tabela USERS):**
+
 - UserID, Login, Senha, Tipo, IdOriginal
 - Senha deve utilizar função MD5 do SGBD
 
 **Implementação (Tabela USUARIO_SENHA):**
 
-| Requisito PF | Campo Implementado | Justificativa |
-|--------------|-------------------|--------------|
-| **UserID** | **CPF** (PK) | O CPF é o identificador único natural do usuário no sistema. Utilizar CPF diretamente elimina redundância e mantém integridade referencial com a tabela PESSOA. O CPF cumpre a função de UserID de forma mais eficiente, pois já é único e não requer geração de IDs artificiais. |
-| **Login** | **LOGIN** | Campo implementado exatamente como especificado, armazenando o email do usuário (VARCHAR(255)). |
-| **Senha** | **SENHA** | Campo implementado com hash MD5 usando função `md5()` do PostgreSQL, conforme exigido. |
-| **Tipo** | **TIPO** | Campo implementado com valores: 'Administrador', 'Staff', 'Interno', 'Externo'. O tipo é determinado automaticamente através da função `get_user_type(CPF)` baseado nos relacionamentos do usuário no sistema. |
-| **IdOriginal** | **CPF** (mesmo campo) | O CPF já é o identificador original na tabela PESSOA. Não há necessidade de campo separado, pois o CPF em si já serve como referência à tabela de origem. Esta abordagem elimina redundância e mantém normalização do banco de dados. |
+| Requisito PF   | Campo Implementado    | Justificativa                                                                                                                                                                                                                                                                     |
+| -------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **UserID**     | **CPF** (PK)          | O CPF é o identificador único natural do usuário no sistema. Utilizar CPF diretamente elimina redundância e mantém integridade referencial com a tabela PESSOA. O CPF cumpre a função de UserID de forma mais eficiente, pois já é único e não requer geração de IDs artificiais. |
+| **Login**      | **LOGIN**             | Campo implementado exatamente como especificado, armazenando o email do usuário (VARCHAR(255)).                                                                                                                                                                                   |
+| **Senha**      | **SENHA**             | Campo implementado com hash MD5 usando função `md5()` do PostgreSQL, conforme exigido.                                                                                                                                                                                            |
+| **Tipo**       | **TIPO**              | Campo implementado com valores: 'Administrador', 'Staff', 'Interno', 'Externo'. O tipo é determinado automaticamente através da função `get_user_type(CPF)` baseado nos relacionamentos do usuário no sistema.                                                                    |
+| **IdOriginal** | **CPF** (mesmo campo) | O CPF já é o identificador original na tabela PESSOA. Não há necessidade de campo separado, pois o CPF em si já serve como referência à tabela de origem. Esta abordagem elimina redundância e mantém normalização do banco de dados.                                             |
 
 **Estrutura da tabela `USUARIO_SENHA`:**
 
-- **CPF** (PK): Identificador único do usuário (VARCHAR(11), chave primária e FK para PESSOA.CPF) - *Equivale a UserID e IdOriginal*
-- **LOGIN**: Email do usuário (VARCHAR(255), obtido da tabela PESSOA) - *Conforme especificação*
-- **SENHA**: Hash MD5 da senha (VARCHAR(255), usando função `md5()` do PostgreSQL) - *Conforme especificação*
-- **TIPO**: Tipo de usuário (VARCHAR(50), valores: 'Administrador', 'Staff', 'Interno', 'Externo') - *Conforme especificação*
+- **CPF** (PK): Identificador único do usuário (VARCHAR(11), chave primária e FK para PESSOA.CPF) - _Equivale a UserID e IdOriginal_
+- **LOGIN**: Email do usuário (VARCHAR(255), obtido da tabela PESSOA) - _Conforme especificação_
+- **SENHA**: Hash MD5 da senha (VARCHAR(255), usando função `md5()` do PostgreSQL) - _Conforme especificação_
+- **TIPO**: Tipo de usuário (VARCHAR(50), valores: 'Administrador', 'Staff', 'Interno', 'Externo') - _Conforme especificação_
 
 **Campos adicionais para funcionalidades do sistema:**
 
@@ -1246,13 +1251,6 @@ O campo `TIPO` é preenchido automaticamente através da função `get_user_type
 
 4. **IdOriginal Implícito**: O CPF em si já é o "IdOriginal" - é o identificador na tabela de origem (PESSOA). Não há necessidade de campo separado quando a chave primária já serve esse propósito.
 
-**Por que o nome USUARIO_SENHA ao invés de USERS?**
-
-A escolha do nome `USUARIO_SENHA` foi feita para:
-- **Clareza semântica**: O nome descreve explicitamente que a tabela armazena usuários e suas senhas
-- **Consistência com nomenclatura do projeto**: Todas as tabelas do sistema utilizam nomenclatura em português e descritiva
-- **Funcionalidade equivalente**: A tabela `USUARIO_SENHA` atende **completamente** aos requisitos funcionais especificados para `USERS` no PF, com todos os campos necessários e funcionalidades adicionais
-
 **Conclusão**: A implementação da tabela `USUARIO_SENHA` **atende e supera** os requisitos especificados para `USERS` no PF, mantendo todos os campos funcionais necessários enquanto elimina redundâncias e adiciona funcionalidades de segurança avançadas.
 
 ### 10.2. Log de Acessos
@@ -1262,28 +1260,29 @@ A tabela `AUDITORIA_LOGIN` **atende completamente aos requisitos funcionais** da
 #### 10.2.1. Atendimento aos Requisitos do PF
 
 **Especificação do PF (Tabela log_table):**
+
 - UserID, data e hora do login
 
 **Implementação (Tabela AUDITORIA_LOGIN):**
 
-| Requisito PF | Campo Implementado | Justificativa |
-|--------------|-------------------|--------------|
-| **UserID** | **CPF** | O CPF identifica o usuário, mantendo consistência com a tabela USUARIO_SENHA. O CPF pode ser NULL para registrar tentativas de login falhadas onde o usuário não foi identificado, permitindo auditoria completa mesmo em casos de falha de autenticação. |
-| **Data e hora do login** | **DATA_HORA_LOGIN** | Campo implementado como TIMESTAMP com valor padrão CURRENT_TIMESTAMP, registrando automaticamente a data e hora de cada evento de login. |
+| Requisito PF             | Campo Implementado  | Justificativa                                                                                                                                                                                                                                             |
+| ------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **UserID**               | **CPF**             | O CPF identifica o usuário, mantendo consistência com a tabela USUARIO_SENHA. O CPF pode ser NULL para registrar tentativas de login falhadas onde o usuário não foi identificado, permitindo auditoria completa mesmo em casos de falha de autenticação. |
+| **Data e hora do login** | **DATA_HORA_LOGIN** | Campo implementado como TIMESTAMP com valor padrão CURRENT_TIMESTAMP, registrando automaticamente a data e hora de cada evento de login.                                                                                                                  |
 
 **Estrutura da tabela `AUDITORIA_LOGIN` (conforme especificação do PF):**
 
-- **CPF**: Identificador do usuário (VARCHAR(11), foreign key para USUARIO_SENHA.CPF, pode ser NULL para tentativas de login falhadas) - *Equivale a UserID*
-- **DATA_HORA_LOGIN**: Data e hora do login (TIMESTAMP, valor padrão CURRENT_TIMESTAMP) - *Conforme especificação*
+- **CPF**: Identificador do usuário (VARCHAR(11), foreign key para USUARIO*SENHA.CPF, pode ser NULL para tentativas de login falhadas) - \_Equivale a UserID*
+- **DATA_HORA_LOGIN**: Data e hora do login (TIMESTAMP, valor padrão CURRENT*TIMESTAMP) - \_Conforme especificação*
 
 **Campos adicionais para funcionalidades do sistema:**
 
-- **ID_LOG**: Identificador único do registro (INT, chave primária) - *Necessário para identificação única de cada log*
+- **ID_LOG**: Identificador único do registro (INT, chave primária) - _Necessário para identificação única de cada log_
 - **TIMESTAMP_EVENTO**: Mantido (mesmo valor que DATA_HORA_LOGIN) para compatibilidade com código existente
-- **EMAIL_USUARIO**: Email do usuário (permite identificar tentativas mesmo quando CPF não está disponível) - *Melhora auditoria de tentativas falhadas*
-- **IP_ORIGEM**: Endereço IP de origem da tentativa - *Essencial para segurança e detecção de ataques*
-- **STATUS**: Status do login ('SUCCESS', 'FAILURE', 'LOCKED') - *Permite análise de padrões de acesso*
-- **MENSAGEM**: Mensagem descritiva do evento - *Facilita debugging e análise de problemas*
+- **EMAIL_USUARIO**: Email do usuário (permite identificar tentativas mesmo quando CPF não está disponível) - _Melhora auditoria de tentativas falhadas_
+- **IP_ORIGEM**: Endereço IP de origem da tentativa - _Essencial para segurança e detecção de ataques_
+- **STATUS**: Status do login ('SUCCESS', 'FAILURE', 'LOCKED') - _Permite análise de padrões de acesso_
+- **MENSAGEM**: Mensagem descritiva do evento - _Facilita debugging e análise de problemas_
 
 #### 10.2.2. Justificativa de Design
 
@@ -1294,13 +1293,6 @@ A tabela `AUDITORIA_LOGIN` **atende completamente aos requisitos funcionais** da
 2. **Suporte a Tentativas Falhadas**: Permitir CPF NULL é essencial para registrar tentativas de login onde o usuário não foi identificado (senha incorreta, usuário inexistente). Isso permite auditoria completa de segurança.
 
 3. **Integridade Referencial**: Quando CPF não é NULL, a foreign key garante que apenas usuários válidos sejam referenciados.
-
-**Por que o nome AUDITORIA_LOGIN ao invés de log_table?**
-
-A escolha do nome `AUDITORIA_LOGIN` foi feita para:
-- **Clareza semântica**: O nome descreve explicitamente que a tabela armazena logs de auditoria de acessos
-- **Consistência com nomenclatura do projeto**: Todas as tabelas do sistema utilizam nomenclatura em português e descritiva
-- **Funcionalidade equivalente**: A tabela `AUDITORIA_LOGIN` atende **completamente** aos requisitos funcionais especificados para `log_table` no PF, com todos os campos necessários e funcionalidades adicionais de segurança
 
 **Vantagens da Implementação:**
 
@@ -1360,17 +1352,7 @@ O sistema implementa múltiplos relatórios para diferentes tipos de usuários, 
 
 ## 12. Decisões de Projeto
 
-### 12.1. Escolha do SGBD
-
-**PostgreSQL 17** foi escolhido por:
-
-- Suporte completo a PL/pgSQL
-- Window functions avançadas
-- Tipos enumerados nativos
-- Índices compostos e parciais
-- Performance superior em consultas analíticas
-
-### 12.2. Estrutura de Arquivos SQL
+### 12.1. Estrutura de Arquivos SQL
 
 Os arquivos SQL foram organizados em:
 
@@ -1383,7 +1365,7 @@ Os arquivos SQL foram organizados em:
 
 **Justificativa**: Organização modular facilita manutenção, versionamento e compreensão do código.
 
-### 12.3. Uso de Stored Procedures
+### 12.2. Uso de Stored Procedures
 
 A lógica de negócio foi implementada principalmente em stored procedures para:
 
@@ -1392,7 +1374,7 @@ A lógica de negócio foi implementada principalmente em stored procedures para:
 - **Segurança**: Controlar acesso através de permissões de procedures
 - **Manutenibilidade**: Centralizar lógica de negócio
 
-### 12.4. Índices Estratégicos
+### 12.3. Índices Estratégicos
 
 Índices foram criados baseados em:
 
@@ -1407,41 +1389,7 @@ A lógica de negócio foi implementada principalmente em stored procedures para:
 
 ## 13. Conclusão
 
-Este projeto demonstra a implementação completa de um sistema de gestão utilizando os conceitos estudados na disciplina de Bases de Dados:
-
-### 13.1. Conceitos Implementados
-
-✅ **DDL**: Estrutura completa do banco com constraints, tipos enumerados e identidades
-✅ **DML**: INSERT, UPDATE, DELETE com validações e tratamento de conflitos
-✅ **Extended Group By**: CUBE, ROLLUP e GROUPING SETS em relatórios analíticos
-✅ **Window Functions**: 8 funções diferentes (RANK, ROW_NUMBER, DENSE_RANK, LAG, LEAD, SUM, AVG, COUNT)
-✅ **PL/pgSQL**: Functions e procedures com lógica de negócio complexa
-✅ **Triggers**: Validação de regras de negócio no nível do banco
-✅ **Views**: 5 views para simplificar consultas e abstrair estrutura
-✅ **Índices**: 25 índices explícitos para otimização de performance
-✅ **Segurança**: Sistema de autenticação com hash MD5 e log de acessos
-✅ **Relatórios**: Múltiplos relatórios para diferentes tipos de usuários
-
-### 13.2. Características Principais
-
-- **Integridade**: Constraints, triggers e procedures garantem consistência dos dados
-- **Performance**: Índices estratégicos otimizam consultas frequentes
-- **Manutenibilidade**: Código organizado e documentado
-- **Usabilidade**: Interface intuitiva com relatórios claros
-- **Segurança**: Autenticação e auditoria implementadas
-
-### 13.3. Atendimento aos Requisitos do PF
-
-- ✅ Tabela USERS (USUARIO_SENHA) com MD5
-- ✅ Tabela log_table (AUDITORIA_LOGIN)
-- ✅ Tela de login implementada
-- ✅ Tela de overview (dashboard) por tipo de usuário
-- ✅ Tela de relatórios com múltiplos relatórios
-- ✅ nRel ≥ (nUser × 2): 12+ relatórios para 4 tipos de usuários
-- ✅ Todos os temas da disciplina cobertos
-- ✅ Scripts SQL explícitos (sem ORMs que ocultam SQL)
-
-O sistema está pronto para uso e demonstra proficiência nos conceitos de Bases de Dados estudados ao longo do semestre.
+Este projeto demonstra a implementação completa de um sistema de gestão utilizando os conceitos estudados na disciplina de Bases de Dados. O sistema está pronto para uso e demonstra proficiência nos conceitos de Bases de Dados estudados ao longo do semestre.
 
 ---
 
@@ -1459,12 +1407,12 @@ O sistema está pronto para uso e demonstra proficiência nos conceitos de Bases
 | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **DDL**                               | [`upgrade_schema.sql`](server/sql/upgrade_schema.sql), [`downgrade_schema.sql`](server/sql/downgrade_schema.sql)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | **DML**                               | [`functions/*.sql`](server/sql/functions/), [`queries/*.sql`](server/sql/queries/)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| **Extended Group By (CUBE)**          | [`queries/reports/activities_cube.sql`](server/sql/queries/reports/activities_cube.sql)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **Extended Group By (CUBE)**          | [`queries/reports/activities_cube.sql`](server/sql/queries/reports/activities_cube.sql)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | **Extended Group By (ROLLUP)**        | [`queries/reports/reservations_rollup.sql`](server/sql/queries/reports/reservations_rollup.sql)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | **Extended Group By (GROUPING SETS)** | [`queries/reports/participants_totals.sql`](server/sql/queries/reports/participants_totals.sql)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | **Window Functions**                  | 8 arquivos: [`installation_ranking.sql`](server/sql/queries/reports/installation_ranking.sql) (RANK), [`reservations_row_number.sql`](server/sql/queries/reports/reservations_row_number.sql) (ROW_NUMBER), [`activities_dense_rank.sql`](server/sql/queries/reports/activities_dense_rank.sql) (DENSE_RANK), [`reservations_monthly_growth.sql`](server/sql/queries/reports/reservations_monthly_growth.sql) (LAG), [`admin/upcoming_reservations.sql`](server/sql/queries/admin/upcoming_reservations.sql) (LEAD - Admin Dashboard), [`reservations_cumulative.sql`](server/sql/queries/reports/reservations_cumulative.sql) (SUM OVER), [`activities_moving_average.sql`](server/sql/queries/reports/activities_moving_average.sql) (AVG OVER), [`educator_activities_count.sql`](server/sql/queries/reports/educator_activities_count.sql) (COUNT OVER) |
 | **PL/pgSQL**                          | [`functions/*.sql`](server/sql/functions/)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | **Stored Procedures**                 | [`functions/*.sql`](server/sql/functions/)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | **Triggers**                          | [`functions/common_triggers.sql`](server/sql/functions/common_triggers.sql)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| **Visões**                            | [`views.sql`](server/sql/views.sql) - 5 views implementadas; Queries em [`queries/views/*.sql`](server/sql/queries/views/)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Visões**                            | [`views.sql`](server/sql/views.sql) - 5 views implementadas; Queries em [`queries/views/*.sql`](server/sql/queries/views/)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | **Índices Explícitos**                | [`indexes.sql`](server/sql/indexes.sql) - 25 índices explícitos                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
