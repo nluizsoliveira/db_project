@@ -295,7 +295,7 @@ Consulte o arquivo `LOGINS.md` para informações sobre usuários de teste e sen
 ## 📚 Documentação Adicional
 
 - [`relatorio.md`](relatorio.md) - Relatório técnico completo do projeto (Projeto Final - Bases de Dados)
-- [`LOGINS.md`](LOGINS.md)  - Informações sobre logins de teste
+- [`LOGINS.md`](LOGINS.md) - Informações sobre logins de teste
 - `docs/` - Documentação técnica e entregas
 
 ## 📄 Sobre
@@ -303,6 +303,7 @@ Consulte o arquivo `LOGINS.md` para informações sobre usuários de teste e sen
 Este projeto foi desenvolvido como parte do Projeto Final (PF) da disciplina SCC0641 – Laboratório de Bases de Dados.
 
 **Autores**:
+
 - Breno Rodrigues - 11734142
 - Erick Barcelos - 11345562
 - Gabriel Henrique dos Santos - 13783972
