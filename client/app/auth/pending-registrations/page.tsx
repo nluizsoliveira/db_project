@@ -255,6 +255,16 @@ function PendingRegistrationsTable({
           }
           className="max-w-sm"
         />
+        <Input
+          placeholder="Filtrar por email..."
+          value={
+            (table.getColumn("email")?.getFilterValue() as string) ?? ""
+          }
+          onChange={(event) =>
+            table.getColumn("email")?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
+        />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
@@ -541,6 +551,16 @@ function ApprovedRegistrationsTable({
           }
           onChange={(event) =>
             table.getColumn("nome")?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
+        />
+        <Input
+          placeholder="Filtrar por email..."
+          value={
+            (table.getColumn("email")?.getFilterValue() as string) ?? ""
+          }
+          onChange={(event) =>
+            table.getColumn("email")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />
@@ -853,6 +873,16 @@ function RejectedRegistrationsTable({
           }
           onChange={(event) =>
             table.getColumn("nome")?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
+        />
+        <Input
+          placeholder="Filtrar por email..."
+          value={
+            (table.getColumn("email")?.getFilterValue() as string) ?? ""
+          }
+          onChange={(event) =>
+            table.getColumn("email")?.setFilterValue(event.target.value)
           }
           className="max-w-sm"
         />

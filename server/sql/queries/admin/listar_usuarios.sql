@@ -9,7 +9,6 @@ SELECT
         ELSE 'externo'
     END AS tipo_usuario,
     i.nusp,
-    i.categoria,
     f.formacao,
     ef.numero_conselho
 FROM pessoa p

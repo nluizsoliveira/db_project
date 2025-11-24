@@ -12,7 +12,8 @@ import { ApiError } from "@/lib/api";
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { refetch: refetchUser } = useCurrentUser();
+  // Desabilita useCurrentUser em páginas de autenticação para evitar queries desnecessárias
+  const { refetch: refetchUser } = useCurrentUser({ enabled: false });
   const refreshUser = useAuthStore((state) => state.refreshUser);
   const loginMutation = useLogin();
   const [email, setEmail] = useState("");
@@ -30,7 +31,9 @@ export default function LoginPage() {
       });
 
       // Recarrega o usuário após login bem-sucedido e sincroniza o store
-      await Promise.all([refetchUser(), refreshUser()]);
+      // refetchUser não é necessário aqui pois refreshUser já atualiza o store
+      // e a query será invalidada pelo onSuccess do useLogin
+      await refreshUser();
 
       // Check for redirect parameter or use backend redirect
       const redirectUrl = searchParams.get("redirect") || (data as any).redirect;

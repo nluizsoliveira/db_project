@@ -22,7 +22,7 @@ export interface AuthResponse {
   message?: string;
 }
 
-export function useCurrentUser() {
+export function useCurrentUser(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['auth', 'me'],
     queryFn: async (): Promise<User | null> => {
@@ -55,6 +55,7 @@ export function useCurrentUser() {
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
     retry: false,
+    enabled: options?.enabled !== false, // Por padrão habilitado, mas pode ser desabilitado
   });
 }
 
@@ -96,12 +97,25 @@ export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      await apiGet('/auth/logout');
+      // Tenta fazer logout na API em background, mas não bloqueia se falhar
+      try {
+        await apiGet('/auth/logout');
+      } catch (error) {
+        // Suprime erros de rede durante logout - não são críticos
+        // O logout local já foi feito no onMutate
+        // Não logar erro para evitar poluição de console
+      }
     },
-    onSuccess: () => {
+    onMutate: () => {
+      // Limpa cache imediatamente antes de tentar a API
+      // Isso garante que o logout local acontece mesmo se a API falhar
       queryClient.setQueryData(['auth', 'me'], null);
       queryClient.clear();
     },
+    // Não propagar erro para error boundary
+    useErrorBoundary: false,
+    // Não retry em erros de logout
+    retry: false,
   });
 }
 

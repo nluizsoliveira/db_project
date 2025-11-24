@@ -144,54 +144,30 @@ CREATE OR REPLACE PROCEDURE criar_interno(
     p_celular VARCHAR,
     p_data_nascimento DATE,
     -- Dados de Interno
-    p_nusp VARCHAR,
-    p_categoria VARCHAR
+    p_nusp VARCHAR
 ) LANGUAGE plpgsql AS $$
 BEGIN
     CALL criar_pessoa(p_cpf, p_nome, p_email, p_celular, p_data_nascimento);
 
-    INSERT INTO INTERNO_USP (CPF_PESSOA, NUSP, CATEGORIA)
-    VALUES (p_cpf, p_nusp, p_categoria);
+    INSERT INTO INTERNO_USP (CPF_PESSOA, NUSP)
+    VALUES (p_cpf, p_nusp);
 END;
 $$;
 
 -- READ
 CREATE OR REPLACE FUNCTION listar_internos()
-RETURNS TABLE(cpf VARCHAR, nome VARCHAR, nusp VARCHAR, categoria VARCHAR) AS $$
+RETURNS TABLE(cpf VARCHAR, nome VARCHAR, nusp VARCHAR) AS $$
 BEGIN
     RETURN QUERY
-    SELECT P.CPF, P.NOME, I.NUSP, I.CATEGORIA
+    SELECT P.CPF, P.NOME, I.NUSP
     FROM PESSOA P
     INNER JOIN INTERNO_USP I ON P.CPF = I.CPF_PESSOA;
 END;
 $$ LANGUAGE plpgsql;
 
 -- UPDATE
--- Drop old procedure if it exists with different parameter name
-DROP PROCEDURE IF EXISTS atualizar_interno(VARCHAR, VARCHAR);
-
-CREATE OR REPLACE PROCEDURE atualizar_interno(
-    p_cpf VARCHAR,
-    p_categoria_nova VARCHAR
-) LANGUAGE plpgsql AS $$
-DECLARE
-    v_cmd TEXT;
-BEGIN
-    v_cmd := 'UPDATE interno_usp SET ';
-    -- Lógica para adicionar os updates baseado se um valor NULL foi passado
-    IF p_categoria_nova IS NOT NULL THEN
-      v_cmd := v_cmd || ' categoria = ''' || p_categoria_nova || ''',';
-    END IF;
-
-    -- Corta o ultimo caracter, que seria uma virgula de um dos SETs
-    v_cmd := left(v_cmd, -1);
-    v_cmd := v_cmd || ' WHERE cpf = ''' || p_cpf || '''';
-
-    EXECUTE v_cmd;
-
-    IF NOT FOUND THEN RAISE EXCEPTION 'Interno não encontrado.'; END IF;
-END;
-$$;
+-- Procedure removed as category is no longer used
+-- Use atualizar_nusp procedure instead if NUSP needs to be updated
 
 
 -- FUNCIONÁRIO

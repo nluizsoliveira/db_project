@@ -117,6 +117,11 @@ def gerar_usuario_senha(dbsession):
         # Obter email da pessoa
         email_pessoa = internos_dict.get(cpf_pessoa, f"{cpf_pessoa}@usp.br")
 
+        # Excluir cadastro@usp.br da criação em USUARIO_SENHA (usado para testar fluxo de cadastro)
+        if email_pessoa == "cadastro@usp.br":
+            print(f"   ⏭️  Pulando criação de conta para cadastro@usp.br (usado para teste de cadastro)")
+            continue
+
         # Usar função PostgreSQL hash_password() para gerar o hash
         # A senha padrão será "senha123" para facilitar testes
         usuarios_data.append(
